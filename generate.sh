@@ -2,40 +2,24 @@
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 --os <linux|macos|windows> --arch <x86_64|armv7|arm64> [--build-type <debug|release>]"
+    echo "Usage: $0 [os] [arch] [build-type]"
+    echo "  os:         Operating system target (linux, macos, or windows) default: linux"
+    echo "  arch:       Architecture target (x64, armv7, or arm64) default: x64"
+    echo "  build-type: Build type (debug or release) default: debug"
     echo
-    echo "Options:"
-    echo "  --os         Operating system target (linux, macos, or windows)"
-    echo "  --arch       Architecture target (x86_64, armv7, or arm64)"
-    echo "  --build-type Build type (debug or release, default: debug)"
+    echo "Example: $0 linux x64 debug"
     exit 1
 }
 
 # Set default values
-OS="linux"
-ARCH="x64"
-BUILD_TYPE="debug"
+OS="${1:-linux}"
+ARCH="${2:-x64}"
+BUILD_TYPE="${3:-debug}"
 
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --os)
-            OS="$2"
-            shift 2
-            ;;
-        --arch)
-            ARCH="$2"
-            shift 2
-            ;;
-        --build-type)
-            BUILD_TYPE="$2"
-            shift 2
-            ;;
-        *)
-            usage
-            ;;
-    esac
-done
+# Show usage if help is requested
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+fi
 
 
 # Validate OS
