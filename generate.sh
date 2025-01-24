@@ -83,6 +83,33 @@ fi
 echo "Configuring CMake for $OS on $ARCH..."
 cd $BUILD_DIR
 
+# Set vcpkg triplet based on OS and architecture
+case $OS in
+    linux)
+        VCPKG_TARGET="linux"
+        ;;
+    windows)
+        VCPKG_TARGET="windows"
+        ;;
+    macos)
+        VCPKG_TARGET="osx"
+        ;;
+esac
+
+case $ARCH in
+    x64)
+        VCPKG_ARCH="x64"
+        ;;
+    arm64)
+        VCPKG_ARCH="arm64"
+        ;;
+    armv7)
+        VCPKG_ARCH="arm"
+        ;;
+esac
+
+VCPKG_TRIPLET="${VCPKG_ARCH}-${VCPKG_TARGET}"
+
 # Set architecture-specific flags
 case $ARCH in
     x64)
@@ -115,6 +142,7 @@ cmake .. \
     -DCMAKE_SYSTEM_NAME=$OS \
     -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
     $ARCH_FLAGS \
+    -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET \
     -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 echo "CMake configuration complete in $BUILD_DIR"
