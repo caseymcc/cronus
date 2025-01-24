@@ -4,73 +4,88 @@
 #include <nlohmann/json.hpp>
 
 #include <cstdlib>
-#include <stdexcept>
 
 namespace llm_hermes
 {
 
-std::string get_api_key(const std::string& provider)
+ErrorCode get_api_key(const std::string& provider, std::string& api_key)
 {
     if (provider == "openai")
     {
         if (auto key = std::getenv("OPENAI_API_KEY"))
         {
-            return key;
+            api_key = key;
+            return ErrorCode::Success;
         }
     }
     else if (provider == "anthropic")
     {
         if (auto key = std::getenv("ANTHROPIC_API_KEY"))
         {
-            return key;
+            api_key = key;
+            return ErrorCode::Success;
         }
     }
-    throw std::runtime_error("API key not found for provider: " + provider);
+    return ErrorCode::ApiKeyNotFound;
 }
 
-CompletionResponse completion(const CompletionRequest& request)
+ErrorCode completion(const CompletionRequest& request, CompletionResponse& response)
 {
     auto it = MODEL_PROVIDER_MAP.find(request.model);
     if (it == MODEL_PROVIDER_MAP.end())
     {
-        throw std::runtime_error("Unknown model: " + request.model);
+        return ErrorCode::UnknownModel;
     }
 
     const std::string& provider = it->second;
     
     if (provider == "openai")
     {
-        return providers::openai_completion(request);
+        return providers::openai_completion(request, response);
     }
     else if (provider == "anthropic")
     {
-        return providers::anthropic_completion(request);
+        return providers::anthropic_completion(request, response);
     }
     
-    throw std::runtime_error("Unsupported provider: " + provider);
+    return ErrorCode::UnsupportedProvider;
 }
 
 namespace providers
 {
 
-CompletionResponse openai_completion(const CompletionRequest& request) {
-    std::string api_key = request.api_key.value_or(get_api_key("openai"));
+ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse& response) {
+    std::string api_key;
+    if (request.api_key.has_value()) {
+        api_key = request.api_key.value();
+    } else {
+        auto result = get_api_key("openai", api_key);
+        if (result != ErrorCode::Success) {
+            return result;
+        }
+    }
     
     // Implementation using cpr for OpenAI API
     // TODO: Implement actual API call
-    CompletionResponse response;
     response.provider = "openai";
-    return response;
+    return ErrorCode::Success;
 }
 
-CompletionResponse anthropic_completion(const CompletionRequest& request) {
-    std::string api_key = request.api_key.value_or(get_api_key("anthropic"));
+ErrorCode anthropic_completion(const CompletionRequest& request, CompletionResponse& response) {
+    std::string api_key;
+    if (request.api_key.has_value()) {
+        api_key = request.api_key.value();
+    } else {
+        auto result = get_api_key("anthropic", api_key);
+        if (result != ErrorCode::Success) {
+            return result;
+        }
+    }
     
     // Implementation using cpr for Anthropic API
     // TODO: Implement actual API call
-    CompletionResponse response;
     response.provider = "anthropic";
-    return response;
+    return ErrorCode::Success;
 }
 
 } // namespace providers

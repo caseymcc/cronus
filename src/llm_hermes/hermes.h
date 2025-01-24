@@ -1,5 +1,5 @@
-#ifndef _llm_hermes_hermes_h
-#define _llm_hermes_hermes_h
+#ifndef _llm_hermes_hermes_h_
+#define _llm_hermes_hermes_h_
 
 #include <string>
 #include <memory>
@@ -10,14 +10,22 @@
 namespace llm_hermes
 {
 
-struct Message
-{
+enum class ErrorCode {
+    Success = 0,
+    ApiKeyNotFound,
+    UnknownModel,
+    UnsupportedProvider,
+    NetworkError,
+    InvalidResponse,
+    InvalidRequest
+};
+
+struct Message {
     std::string role;
     std::string content;
 };
 
-struct CompletionRequest
-{
+struct CompletionRequest {
     std::string model;           // e.g., "gpt-3.5-turbo", "claude-2"
     std::vector<Message> messages;
     std::optional<float> temperature;
@@ -25,8 +33,7 @@ struct CompletionRequest
     std::optional<std::string> api_key;  // Optional override of env var
 };
 
-struct CompletionResponse
-{
+struct CompletionResponse {
     std::string text;
     std::string model;
     int tokens_used;
@@ -34,16 +41,15 @@ struct CompletionResponse
 };
 
 // Main completion function (similar to litellm.completion)
-CompletionResponse completion(const CompletionRequest& request);
+ErrorCode completion(const CompletionRequest& request, CompletionResponse& response);
 
 // Helper to get API key from environment
-std::string get_api_key(const std::string& provider);
+ErrorCode get_api_key(const std::string& provider, std::string& api_key);
 
-namespace providers
-{
+namespace providers {
     // Provider-specific implementations
-    CompletionResponse openai_completion(const CompletionRequest& request);
-    CompletionResponse anthropic_completion(const CompletionRequest& request);
+    ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse& response);
+    ErrorCode anthropic_completion(const CompletionRequest& request, CompletionResponse& response);
     // Add more providers as needed
 }
 
