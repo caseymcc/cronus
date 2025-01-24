@@ -4,12 +4,17 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Find yaml-cpp package
+find_package(yaml-cpp CONFIG REQUIRED)
+
 set(cronus_src
     ./main.cpp
     ./client_logic.h
     ./client_logic.cpp
     ./terminal_ui.h
     ./terminal_ui.cpp
+    ./config.h
+    ./config.cpp
 )
 
 # Add executable
@@ -23,4 +28,5 @@ target_include_directories(cronus
 )
 target_link_libraries(cronus PRIVATE
     llm_hermes
+    yaml-cpp
 )
