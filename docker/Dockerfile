@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     tar \
     pkg-config \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # Install vcpkg

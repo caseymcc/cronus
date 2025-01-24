@@ -76,7 +76,7 @@ mkdir -p $BUILD_DIR
 if [ "$OS" = "windows" ]; then
     GENERATOR="Visual Studio 17 2022"
 else
-    GENERATOR="Unix Makefiles"
+    GENERATOR="Ninja"
 fi
 
 # Configure CMake based on OS and architecture
