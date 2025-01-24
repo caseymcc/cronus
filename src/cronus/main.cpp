@@ -4,36 +4,43 @@
 
 int main()
 {
-    std::cout<<"Cronus Client"<<std::endl;
+    std::cout << "Cronus Client" << std::endl;
 
-    try
-    {
-        // Using OpenAI
-        auto response=llm_hermes::completion(
-            {
-                .model="gpt-3.5-turbo",
-                .messages={
-                    {"user", "Hello, how are you?"}
-                }
-            });
-        std::cout<<"OpenAI Response: "<<response.text<<std::endl;
+    // Using OpenAI
+    llm_hermes::CompletionResponse response;
+    llm_hermes::ErrorCode result = llm_hermes::completion(
+        {
+            .model = "gpt-3.5-turbo",
+            .messages = {
+                {"user", "Hello, how are you?"}
+            }
+        },
+        response
+    );
 
-        // Using Anthropic
-        auto claude_response=llm_hermes::completion(
-            {
-                .model="claude-2",
-                .messages=
-                {
-                    {"user", "Hello, how are you?"}
-                }
-            });
-        std::cout<<"Anthropic Response: "<<claude_response.text<<std::endl;
-
+    if (result != llm_hermes::ErrorCode::Success) {
+        std::cerr << "OpenAI completion failed with error code: " << static_cast<int>(result) << std::endl;
+        return 1;
     }
-    catch (const std::exception& e)
-    {
-        std::cerr<<"Error: "<<e.what()<<std::endl;
+    std::cout << "OpenAI Response: " << response.text << std::endl;
+
+    // Using Anthropic
+    llm_hermes::CompletionResponse claude_response;
+    result = llm_hermes::completion(
+        {
+            .model = "claude-2",
+            .messages = {
+                {"user", "Hello, how are you?"}
+            }
+        },
+        claude_response
+    );
+
+    if (result != llm_hermes::ErrorCode::Success) {
+        std::cerr << "Anthropic completion failed with error code: " << static_cast<int>(result) << std::endl;
+        return 1;
     }
+    std::cout << "Anthropic Response: " << claude_response.text << std::endl;
 
     return 0;
 }
