@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <optional>
 
 namespace cronus {
 
@@ -13,40 +14,39 @@ struct Message {
 };
 
 struct CompletionRequest {
-    std::string model;
+    std::string model;           // e.g., "gpt-3.5-turbo", "claude-2"
     std::vector<Message> messages;
-    float temperature = 0.7f;
-    int max_tokens = 1000;
+    std::optional<float> temperature;
+    std::optional<int> max_tokens;
+    std::optional<std::string> api_key;  // Optional override of env var
 };
 
 struct CompletionResponse {
     std::string text;
     std::string model;
     int tokens_used;
+    std::string provider;  // "openai", "anthropic", etc.
 };
 
-class LLMClient {
-public:
-    virtual ~LLMClient() = default;
-    virtual CompletionResponse complete(const CompletionRequest& request) = 0;
-};
+// Main completion function (similar to litellm.completion)
+CompletionResponse completion(const CompletionRequest& request);
 
-class OpenAIClient : public LLMClient {
-public:
-    OpenAIClient(const std::string& api_key);
-    CompletionResponse complete(const CompletionRequest& request) override;
+// Helper to get API key from environment
+std::string get_api_key(const std::string& provider);
 
-private:
-    std::string api_key_;
-};
+namespace providers {
+    // Provider-specific implementations
+    CompletionResponse openai_completion(const CompletionRequest& request);
+    CompletionResponse anthropic_completion(const CompletionRequest& request);
+    // Add more providers as needed
+}
 
-class AnthropicClient : public LLMClient {
-public:
-    AnthropicClient(const std::string& api_key);
-    CompletionResponse complete(const CompletionRequest& request) override;
-
-private:
-    std::string api_key_;
+// Model to provider mapping
+const std::map<std::string, std::string> MODEL_PROVIDER_MAP = {
+    {"gpt-3.5-turbo", "openai"},
+    {"gpt-4", "openai"},
+    {"claude-2", "anthropic"},
+    {"claude-instant-1", "anthropic"}
 };
 
 } // namespace cronus

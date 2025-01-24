@@ -1,24 +1,28 @@
 #include <iostream>
-#include <cronus/llm.hpp>
+#include <cronus/hermes.hpp>
 
 int main() {
-    std::cout << "Cronus LLM Client" << std::endl;
+    std::cout << "Cronus Client" << std::endl;
 
-    // Example usage
-    cronus::CompletionRequest request{
-        .model = "gpt-3.5-turbo",
-        .messages = {
-            {"system", "You are a helpful assistant."},
-            {"user", "Hello, how are you?"}
-        }
-    };
-
-    // Create OpenAI client (API key should be from environment variable in production)
-    auto client = cronus::OpenAIClient("your-api-key");
-    
     try {
-        auto response = client.complete(request);
-        std::cout << "Response: " << response.text << std::endl;
+        // Using OpenAI
+        auto response = cronus::completion({
+            .model = "gpt-3.5-turbo",
+            .messages = {
+                {"user", "Hello, how are you?"}
+            }
+        });
+        std::cout << "OpenAI Response: " << response.text << std::endl;
+        
+        // Using Anthropic
+        auto claude_response = cronus::completion({
+            .model = "claude-2",
+            .messages = {
+                {"user", "Hello, how are you?"}
+            }
+        });
+        std::cout << "Anthropic Response: " << claude_response.text << std::endl;
+        
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
     }
