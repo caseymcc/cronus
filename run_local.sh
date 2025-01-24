@@ -31,7 +31,7 @@ fi
 # Check if image exists or rebuild is requested
 if [ $REBUILD -eq 1 ] || ! docker image inspect cronus >/dev/null 2>&1; then
     echo "Building Docker image..."
-    docker build -t cronus .
+    docker build -t cronus -f docker/Dockerfile .
 fi
 
 # Start container
