@@ -12,7 +12,7 @@ usage() {
 
 # Set default values
 OS="linux"
-ARCH="x86_64"
+ARCH="x64"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -44,10 +44,10 @@ esac
 
 # Validate architecture
 case $ARCH in
-    x86_64|armv7|arm64)
+    x64|armv7|arm64)
         ;;
     *)
-        echo "Error: Invalid architecture. Must be x86_64, armv7, or arm64"
+        echo "Error: Invalid architecture. Must be x64, armv7, or arm64"
         exit 1
         ;;
 esac
@@ -71,7 +71,7 @@ cd $BUILD_DIR
 
 # Set architecture-specific flags
 case $ARCH in
-    x86_64)
+    x64)
         ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=x86_64"
         ;;
     armv7)
