@@ -1,5 +1,5 @@
 #include <iostream>
-#include "cronus/llm.hpp"
+#include <cronus/llm.hpp>
 
 int main() {
     std::cout << "Cronus LLM Client" << std::endl;
