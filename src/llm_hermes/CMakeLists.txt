@@ -8,6 +8,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 set(llm_hermes_src
     ./hermes.h
     ./hermes.cpp
+    ./providers/base_llm.h
+    ./providers/base_llm.cpp
+    ./providers/openai_llm.h
+    ./providers/openai_llm.cpp
+    ./providers/anthropic_llm.h
+    ./providers/anthropic_llm.cpp
 )
 
 # Add library
