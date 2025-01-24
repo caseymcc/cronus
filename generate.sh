@@ -2,24 +2,48 @@
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 [os] [arch] [build-type]"
-    echo "  os:         Operating system target (linux, macos, or windows) default: linux"
-    echo "  arch:       Architecture target (x64, armv7, or arm64) default: x64"
-    echo "  build-type: Build type (debug or release) default: debug"
+    echo "Usage: $0 [options...]"
+    echo "Options can be provided in any order:"
+    echo "  linux|macos|windows    Operating system target (default: linux)"
+    echo "  x64|armv7|arm64       Architecture target (default: x64)"
+    echo "  debug|release         Build type (default: debug)"
     echo
     echo "Example: $0 linux x64 debug"
     exit 1
 }
 
-# Set default values
-OS="${1:-linux}"
-ARCH="${2:-x64}"
-BUILD_TYPE="${3:-debug}"
-
 # Show usage if help is requested
 if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
     usage
 fi
+
+# Set default values
+OS="linux"
+ARCH="x64"
+BUILD_TYPE="debug"
+
+# Process arguments in any order
+for arg in "$@"; do
+    case $arg in
+        linux|macos|windows)
+            OS="$arg"
+            ;;
+        x64|armv7|arm64)
+            ARCH="$arg"
+            ;;
+        debug|release)
+            BUILD_TYPE="$arg"
+            ;;
+        *)
+            echo "Error: Unknown option '$arg'"
+            echo "Valid options are:"
+            echo "  OS: linux, macos, windows"
+            echo "  Architecture: x64, armv7, arm64"
+            echo "  Build type: debug, release"
+            exit 1
+            ;;
+    esac
+done
 
 
 # Validate OS
