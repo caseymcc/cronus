@@ -1,4 +1,4 @@
-#include "cronus/hermes.h"
+#include "llm_hermes/hermes.h"
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
@@ -54,13 +54,18 @@ ErrorCode completion(const CompletionRequest& request, CompletionResponse& respo
 namespace providers
 {
 
-ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse& response) {
+ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse& response)
+{
     std::string api_key;
-    if (request.api_key.has_value()) {
+    if (request.api_key.has_value())
+    {
         api_key = request.api_key.value();
-    } else {
+    }
+    else
+    {
         auto result = get_api_key("openai", api_key);
-        if (result != ErrorCode::Success) {
+        if (result != ErrorCode::Success)
+        {
             return result;
         }
     }
@@ -73,11 +78,15 @@ ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse
 
 ErrorCode anthropic_completion(const CompletionRequest& request, CompletionResponse& response) {
     std::string api_key;
-    if (request.api_key.has_value()) {
+    if (request.api_key.has_value())
+    {
         api_key = request.api_key.value();
-    } else {
+    }
+    else
+    {
         auto result = get_api_key("anthropic", api_key);
-        if (result != ErrorCode::Success) {
+        if (result != ErrorCode::Success)
+        {
             return result;
         }
     }
