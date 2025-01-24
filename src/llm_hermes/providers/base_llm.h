@@ -3,17 +3,19 @@
 
 #include "llm_hermes/hermes.h"
 
-namespace llm_hermes {
+namespace llm_hermes
+{
 
-class BaseLLM {
+class BaseLLM
+{
 public:
-    virtual ~BaseLLM() = default;
-    
-    virtual ErrorCode completion(const CompletionRequest& request, 
-                               CompletionResponse& response) = 0;
-    
+    virtual ~BaseLLM()=default;
+
+    virtual ErrorCode completion(const CompletionRequest &request,
+        CompletionResponse &response)=0;
+
 protected:
-    ErrorCode get_api_key(const std::string& provider, std::string& api_key);
+    ErrorCode get_api_key(const std::string &provider, std::string &api_key);
 };
 
 } // namespace llm_hermes

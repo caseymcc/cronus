@@ -4,17 +4,19 @@
 #include "llm_hermes/hermes.h"
 #include "cronus/terminal_ui.h"
 
-namespace cronus {
+namespace cronus
+{
 
-class ClientLogic {
+class ClientLogic
+{
 public:
-    explicit ClientLogic(TerminalUI& ui);
+    explicit ClientLogic(TerminalUI &ui);
     int run();
 
 private:
-    int process_completion(const std::string& input);
-    
-    TerminalUI& ui_;
+    int process_completion(const std::string &input);
+
+    TerminalUI &ui_;
 };
 
 } // namespace cronus

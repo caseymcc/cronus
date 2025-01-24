@@ -66,63 +66,6 @@ case $ARCH in
         ;;
 esac
 
-# Create build directory name
-BUILD_DIR="build_${OS}_${ARCH}"
-
-# Create build directory if it doesn't exist
-mkdir -p $BUILD_DIR
-
-# Set CMake generator
-if [ "$OS" = "windows" ]; then
-    GENERATOR="Visual Studio 17 2022"
-else
-    GENERATOR="Ninja"
-fi
-
-# Configure CMake based on OS and architecture
-echo "Configuring CMake for $OS on $ARCH..."
-cd $BUILD_DIR
-
-# Set vcpkg triplet based on OS and architecture
-case $OS in
-    linux)
-        VCPKG_TARGET="linux"
-        ;;
-    windows)
-        VCPKG_TARGET="windows"
-        ;;
-    macos)
-        VCPKG_TARGET="osx"
-        ;;
-esac
-
-case $ARCH in
-    x64)
-        VCPKG_ARCH="x64"
-        ;;
-    arm64)
-        VCPKG_ARCH="arm64"
-        ;;
-    armv7)
-        VCPKG_ARCH="arm"
-        ;;
-esac
-
-VCPKG_TRIPLET="${VCPKG_ARCH}-${VCPKG_TARGET}"
-
-# Set architecture-specific flags
-case $ARCH in
-    x64)
-        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=x86_64"
-        ;;
-    armv7)
-        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=armv7"
-        ;;
-    arm64)
-        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=aarch64"
-        ;;
-esac
-
 # Validate build type
 case $BUILD_TYPE in
     debug|release)
@@ -132,6 +75,49 @@ case $BUILD_TYPE in
         exit 1
         ;;
 esac
+
+# Create build directory name
+BUILD_DIR="build_${OS}_${ARCH}_${BUILD_TYPE}"
+
+# Create build directory if it doesn't exist
+mkdir -p $BUILD_DIR
+
+# Configure CMake based on OS and architecture
+echo "Configuring CMake for $BUILD_TYPE, $OS on $ARCH..."
+cd $BUILD_DIR
+
+# Set vcpkg triplet based on OS and architecture
+case $OS in
+    linux)
+        GENERATOR="Ninja"
+        VCPKG_TARGET="linux"
+        ;;
+    windows)
+        GENERATOR="Visual Studio 17 2022"
+        VCPKG_TARGET="windows"
+        ;;
+    macos)
+        GENERATOR="Ninja"
+        VCPKG_TARGET="osx"
+        ;;
+esac
+
+case $ARCH in
+    x64)
+        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=x86_64"
+        VCPKG_ARCH="x64"
+        ;;
+    arm64)
+        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=armv7"
+        VCPKG_ARCH="arm64"
+        ;;
+    armv7)
+        ARCH_FLAGS="-DCMAKE_SYSTEM_PROCESSOR=aarch64"
+        VCPKG_ARCH="arm"
+        ;;
+esac
+
+VCPKG_TRIPLET="${VCPKG_ARCH}-${VCPKG_TARGET}"
 
 # Convert build type to CMake format (uppercase)
 CMAKE_BUILD_TYPE=$(echo $BUILD_TYPE | tr '[:lower:]' '[:upper:]')

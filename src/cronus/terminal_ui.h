@@ -4,13 +4,15 @@
 #include <string>
 #include <iostream>
 
-namespace cronus {
+namespace cronus
+{
 
-class TerminalUI {
+class TerminalUI
+{
 public:
     void display_welcome() const;
-    void display_response(const std::string& provider, const std::string& response) const;
-    void display_error(const std::string& message) const;
+    void display_response(const std::string &provider, const std::string &response) const;
+    void display_error(const std::string &message) const;
     std::string get_user_input() const;
 };
 

@@ -10,8 +10,9 @@
 namespace llm_hermes
 {
 
-enum class ErrorCode {
-    Success = 0,
+enum class ErrorCode
+{
+    Success=0,
     ApiKeyNotFound,
     UnknownModel,
     UnsupportedProvider,
@@ -20,12 +21,14 @@ enum class ErrorCode {
     InvalidRequest
 };
 
-struct Message {
+struct Message
+{
     std::string role;
     std::string content;
 };
 
-struct CompletionRequest {
+struct CompletionRequest
+{
     std::string model;           // e.g., "gpt-3.5-turbo", "claude-2"
     std::vector<Message> messages;
     std::optional<float> temperature;
@@ -33,7 +36,8 @@ struct CompletionRequest {
     std::optional<std::string> api_key;  // Optional override of env var
 };
 
-struct CompletionResponse {
+struct CompletionResponse
+{
     std::string text;
     std::string model;
     int tokens_used;
@@ -41,11 +45,11 @@ struct CompletionResponse {
 };
 
 // Main completion function (similar to litellm.completion)
-ErrorCode completion(const CompletionRequest& request, CompletionResponse& response);
+ErrorCode completion(const CompletionRequest &request, CompletionResponse &response);
 
 
 // Model to provider mapping
-const std::map<std::string, std::string> MODEL_PROVIDER_MAP =
+const std::map<std::string, std::string> MODEL_PROVIDER_MAP=
 {
     {"gpt-3.5-turbo", "openai"},
     {"gpt-4", "openai"},
