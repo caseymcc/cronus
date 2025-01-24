@@ -10,6 +10,10 @@ usage() {
     exit 1
 }
 
+# Set default values
+OS="linux"
+ARCH="x86_64"
+
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -27,11 +31,6 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Validate required arguments
-if [ -z "$OS" ] || [ -z "$ARCH" ]; then
-    echo "Error: Both --os and --arch must be specified"
-    usage
-fi
 
 # Validate OS
 case $OS in
