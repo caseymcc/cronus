@@ -1,0 +1,42 @@
+#!/bin/bash
+
+CONTAINER_NAME="cronus_dev"
+
+# Function to show usage
+usage() {
+    echo "Usage: $0 [-r] [-s]"
+    echo "  -r: Rebuild Docker image"
+    echo "  -s: Stop running container before starting"
+    exit 1
+}
+
+# Parse command line options
+REBUILD=0
+STOP=0
+
+while getopts "rs" opt; do
+    case $opt in
+        r) REBUILD=1 ;;
+        s) STOP=1 ;;
+        ?) usage ;;
+    esac
+done
+
+# Stop container if requested
+if [ $STOP -eq 1 ]; then
+    echo "Stopping existing container..."
+    docker stop $CONTAINER_NAME 2>/dev/null
+fi
+
+# Rebuild image if requested
+if [ $REBUILD -eq 1 ]; then
+    echo "Rebuilding Docker image..."
+    docker build -t cronus .
+fi
+
+# Start container
+echo "Starting development container..."
+docker run -it --rm \
+    --name $CONTAINER_NAME \
+    -v $(pwd):/app \
+    cronus
