@@ -43,15 +43,6 @@ struct CompletionResponse {
 // Main completion function (similar to litellm.completion)
 ErrorCode completion(const CompletionRequest& request, CompletionResponse& response);
 
-// Helper to get API key from environment
-ErrorCode get_api_key(const std::string& provider, std::string& api_key);
-
-namespace providers {
-    // Provider-specific implementations
-    ErrorCode openai_completion(const CompletionRequest& request, CompletionResponse& response);
-    ErrorCode anthropic_completion(const CompletionRequest& request, CompletionResponse& response);
-    // Add more providers as needed
-}
 
 // Model to provider mapping
 const std::map<std::string, std::string> MODEL_PROVIDER_MAP =
