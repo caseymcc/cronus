@@ -2,17 +2,19 @@
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 --os <linux|macos|windows> --arch <x86_64|armv7|arm64>"
+    echo "Usage: $0 --os <linux|macos|windows> --arch <x86_64|armv7|arm64> [--build-type <debug|release>]"
     echo
     echo "Options:"
-    echo "  --os    Operating system target (linux, macos, or windows)"
-    echo "  --arch  Architecture target (x86_64, armv7, or arm64)"
+    echo "  --os         Operating system target (linux, macos, or windows)"
+    echo "  --arch       Architecture target (x86_64, armv7, or arm64)"
+    echo "  --build-type Build type (debug or release, default: debug)"
     exit 1
 }
 
 # Set default values
 OS="linux"
 ARCH="x64"
+BUILD_TYPE="debug"
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -23,6 +25,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --arch)
             ARCH="$2"
+            shift 2
+            ;;
+        --build-type)
+            BUILD_TYPE="$2"
             shift 2
             ;;
         *)
@@ -82,10 +88,24 @@ case $ARCH in
         ;;
 esac
 
+# Validate build type
+case $BUILD_TYPE in
+    debug|release)
+        ;;
+    *)
+        echo "Error: Invalid build type. Must be debug or release"
+        exit 1
+        ;;
+esac
+
+# Convert build type to CMake format (uppercase)
+CMAKE_BUILD_TYPE=$(echo $BUILD_TYPE | tr '[:lower:]' '[:upper:]')
+
 # Configure CMake with appropriate options
 cmake .. \
     -G "$GENERATOR" \
     -DCMAKE_SYSTEM_NAME=$OS \
+    -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
     $ARCH_FLAGS \
     -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
 
