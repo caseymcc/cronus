@@ -6,13 +6,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Add the LLM library
-add_subdirectory(lib/llm)
+add_subdirectory(src/cronus)
+add_subdirectory(src/llm_hermes)
 
-# Add executable
-add_executable(${PROJECT_NAME} 
-    src/main.cpp
-)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    cronus_llm
-)

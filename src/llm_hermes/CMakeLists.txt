@@ -1,18 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
-project(cronus_llm VERSION 0.1.0 LANGUAGES CXX)
+project(llm_hermes VERSION 0.1.0 LANGUAGES CXX)
 
 # Find dependencies
 find_package(cpr CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-# Add library
-add_library(cronus_llm
-    src/llm.cpp
+set(llm_hermes_src
+    src/hermes.h
+    src/hermes.cpp
 )
 
-target_include_directories(cronus_llm 
+# Add library
+add_library(llm_hermes
+    ${llm_hermes_src}
+)
+
+target_include_directories(llm_hermes 
     PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 target_link_libraries(cronus_llm PUBLIC
