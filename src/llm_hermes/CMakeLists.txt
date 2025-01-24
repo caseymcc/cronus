@@ -6,8 +6,8 @@ find_package(cpr CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 set(llm_hermes_src
-    src/hermes.h
-    src/hermes.cpp
+    ./hermes.h
+    ./hermes.cpp
 )
 
 # Add library
@@ -20,7 +20,7 @@ target_include_directories(llm_hermes
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(cronus_llm PUBLIC
+target_link_libraries(llm_hermes PUBLIC
     cpr::cpr
     nlohmann_json::nlohmann_json
 )
