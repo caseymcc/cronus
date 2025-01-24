@@ -28,9 +28,9 @@ if [ $STOP -eq 1 ]; then
     docker stop $CONTAINER_NAME 2>/dev/null
 fi
 
-# Rebuild image if requested
-if [ $REBUILD -eq 1 ]; then
-    echo "Rebuilding Docker image..."
+# Check if image exists or rebuild is requested
+if [ $REBUILD -eq 1 ] || ! docker image inspect cronus >/dev/null 2>&1; then
+    echo "Building Docker image..."
     docker build -t cronus .
 fi
 
