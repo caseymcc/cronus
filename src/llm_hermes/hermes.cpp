@@ -1,6 +1,6 @@
 #include "llm_hermes/hermes.h"
-#include "llm_hermes/openai_llm.h"
-#include "llm_hermes/anthropic_llm.h"
+#include "llm_hermes/providers/openai_llm.h"
+#include "llm_hermes/providers/anthropic_llm.h"
 
 #include <memory>
 
