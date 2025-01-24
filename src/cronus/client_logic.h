@@ -12,7 +12,7 @@ public:
     int run();
 
 private:
-    int process_completion(const std::string& model, const std::string& input);
+    int process_completion(const std::string& input);
     
     TerminalUI& ui_;
 };
