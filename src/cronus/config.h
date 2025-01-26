@@ -16,21 +16,21 @@ public:
 
     void load();
 
-    std::string get_model() const { return model_; }
-    std::string get_provider() const { return provider_; }
-    void set_model_and_provider(const std::string &combined);
+    std::string getModel() const { return m_model; }
+    std::string getProvider() const { return m_provider; }
+    void setModelAndProvider(const std::string &combined);
 
-    std::optional<std::string> get_api_key(const std::string &provider) const;
-    void set_api_key(const std::string &provider, const std::string &key);
+    std::optional<std::string> getApiKey(const std::string &provider) const;
+    void setApiKey(const std::string &provider, const std::string &key);
 
 private:
     Config()=default;
-    void load_from_env();
-    void load_from_file(const std::filesystem::path &config_path);
+    void loadFromEnv();
+    void loadFromFile(const std::filesystem::path &configPath);
 
-    std::string model_{ "gpt-3.5-turbo" };
-    std::string provider_{ "openai" };
-    std::map<std::string, std::string> api_keys_;
+    std::string m_model{ "gpt-3.5-turbo" };
+    std::string m_provider{ "openai" };
+    std::map<std::string, std::string> m_apiKeys;
 };
 
 } // namespace cronus

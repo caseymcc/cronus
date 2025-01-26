@@ -14,39 +14,39 @@ Config &Config::instance()
     return instance;
 }
 
-void Config::set_model_and_provider(const std::string& combined) {
+void Config::setModelAndProvider(const std::string& combined) {
     auto pos = combined.find('/');
     if (pos != std::string::npos) {
-        provider_ = combined.substr(0, pos);
-        model_ = combined.substr(pos + 1);
+        m_provider = combined.substr(0, pos);
+        m_model = combined.substr(pos + 1);
     }
 }
 
-void Config::load_from_env()
+void Config::loadFromEnv()
 {
     if(const char *model=std::getenv("CRONUS_MODEL"))
     {
-        set_model_and_provider(model);
+        setModelAndProvider(model);
     }
-    if(const char *openai_key=std::getenv("OPENAI_API_KEY"))
+    if(const char *openaiKey=std::getenv("OPENAI_API_KEY"))
     {
-        api_keys_["openai"]=openai_key;
+        m_apiKeys["openai"]=openaiKey;
     }
-    if(const char *anthropic_key=std::getenv("ANTHROPIC_API_KEY"))
+    if(const char *anthropicKey=std::getenv("ANTHROPIC_API_KEY"))
     {
-        api_keys_["anthropic"]=anthropic_key;
+        m_apiKeys["anthropic"]=anthropicKey;
     }
 }
 
-void Config::load_from_file(const std::filesystem::path &config_path)
+void Config::loadFromFile(const std::filesystem::path &configPath)
 {
     try
     {
-        YAML::Node config=YAML::LoadFile(config_path.string());
+        YAML::Node config=YAML::LoadFile(configPath.string());
 
         if(config["model"])
         {
-            set_model_and_provider(config["model"].as<std::string>());
+            setModelAndProvider(config["model"].as<std::string>());
         }
 
         if(config["api_keys"]||config["api-keys"])
@@ -55,57 +55,57 @@ void Config::load_from_file(const std::filesystem::path &config_path)
 
             if(keys["openai"])
             {
-                api_keys_["openai"]=keys["openai"].as<std::string>();
+                m_apiKeys["openai"]=keys["openai"].as<std::string>();
             }
             if(keys["anthropic"])
             {
-                api_keys_["anthropic"]=keys["anthropic"].as<std::string>();
+                m_apiKeys["anthropic"]=keys["anthropic"].as<std::string>();
             }
         }
     }
     catch(const std::exception &e)
     {
-        std::cerr<<"Warning: Failed to load config from "<<config_path<<": "<<e.what()<<std::endl;
+        std::cerr<<"Warning: Failed to load config from "<<configPath<<": "<<e.what()<<std::endl;
     }
 }
 
 void Config::load()
 {
     // Load in order of precedence (later overrides earlier)
-    load_from_env();
+    loadFromEnv();
 
     // Load from home directory config
     if(const char *home=std::getenv("HOME"))
     {
-        std::filesystem::path home_config=std::filesystem::path(home)/".cronus"/"config.yml";
-        if(std::filesystem::exists(home_config))
+        std::filesystem::path homeConfig=std::filesystem::path(home)/".cronus"/"config.yml";
+        if(std::filesystem::exists(homeConfig))
         {
-            load_from_file(home_config);
+            loadFromFile(homeConfig);
         }
     }
 
     // Load from current directory config
-    std::filesystem::path local_config=".cronus/config.yml";
-    if(std::filesystem::exists(local_config))
+    std::filesystem::path localConfig=".cronus/config.yml";
+    if(std::filesystem::exists(localConfig))
     {
-        load_from_file(local_config);
+        loadFromFile(localConfig);
     }
 }
 
-std::optional<std::string> Config::get_api_key(const std::string &provider) const
+std::optional<std::string> Config::getApiKey(const std::string &provider) const
 {
-    auto it=api_keys_.find(provider);
+    auto it=m_apiKeys.find(provider);
 
-    if(it!=api_keys_.end())
+    if(it!=m_apiKeys.end())
     {
         return it->second;
     }
     return std::nullopt;
 }
 
-void Config::set_api_key(const std::string &provider, const std::string &key)
+void Config::setApiKey(const std::string &provider, const std::string &key)
 {
-    api_keys_[provider]=key;
+    m_apiKeys[provider]=key;
 }
 
 } // namespace cronus
