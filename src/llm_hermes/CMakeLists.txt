@@ -14,6 +14,8 @@ set(llm_hermes_src
     ./providers/openai_llm.cpp
     ./providers/anthropic_llm.h
     ./providers/anthropic_llm.cpp
+    ./providers/deepseek_llm.h
+    ./providers/deepseek_llm.cpp
 )
 
 # Add library

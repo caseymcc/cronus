@@ -27,6 +27,10 @@ ErrorCode completion(const CompletionRequest &request, CompletionResponse &respo
     {
         llm=std::make_unique<AnthropicLLM>();
     }
+    else if(provider=="deepseek")
+    {
+        llm=std::make_unique<DeepseekLLM>();
+    }
     else
     {
         return ErrorCode::UnsupportedProvider;
