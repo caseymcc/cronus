@@ -21,6 +21,16 @@ public:
 private:
     mutable ftxui::Screen m_screen;
     void render(const ftxui::Element& element) const;
+    
+    // Directory tree state
+    bool m_showDirTree{true};
+    std::filesystem::path m_currentPath;
+    ftxui::Component m_dirTree;
+    
+    // Helper methods
+    void initializeDirTree();
+    ftxui::Element createDirTree() const;
+    ftxui::Element createMainLayout(const ftxui::Element& content) const;
 };
 
 } // namespace cronus
