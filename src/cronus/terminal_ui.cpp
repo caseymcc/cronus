@@ -107,7 +107,8 @@ std::string TerminalUI::getUserInput() const
         });
 
     // Handle both Enter and F2 keys
-    container|=CatchEvent([&screen, this](Event event)
+    bool showTree = m_showDirTree;  // Local copy for the lambda
+    container|=CatchEvent([&screen, &showTree, this](Event event)
         {
             if(event==Event::Return)
             {
@@ -116,7 +117,8 @@ std::string TerminalUI::getUserInput() const
             }
             if(event==Event::F2)
             {
-                m_showDirTree=!m_showDirTree;
+                showTree = !showTree;
+                m_showDirTree = showTree;  // Update through non-const method
                 return true;
             }
             return false;
