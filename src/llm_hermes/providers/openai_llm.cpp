@@ -84,8 +84,9 @@ cpr::Header OpenAILLM::createHeaders(const std::string &apiKey)
 ErrorCode OpenAILLM::parseResponse(const cpr::Response &rawResponse,
     CompletionResponse &response)
 {
+    nlohmann::json jsonResponse;
     try {
-        nlohmann::json jsonResponse = nlohmann::json::parse(rawResponse.text);
+        jsonResponse = nlohmann::json::parse(rawResponse.text);
     } catch(const nlohmann::json::parse_error&)
     {
         return ErrorCode::InvalidResponse;
