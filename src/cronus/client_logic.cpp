@@ -11,25 +11,25 @@ int ClientLogic::run()
 {
     ui_.display_welcome();
 
-    std::string user_input=ui_.get_user_input();
-    return process_completion(user_input);
+    std::string userInput = ui_.getUserInput();
+    return processCompletion(userInput);
 }
 
-int ClientLogic::process_completion(const std::string &input)
+int ClientLogic::processCompletion(const std::string &input)
 {
-    const auto &config=Config::instance();
+    const auto &config = Config::instance();
     llm_hermes::CompletionRequest request{
-        .model=config.get_model(),
-        .messages={
+        .model = config.getModel(),
+        .messages = {
             {"user", input}
         }
     };
 
     // Add API key if configured
-    auto api_key=config.get_api_key(config.get_provider());
-    if(api_key)
+    auto apiKey = config.getApiKey(config.getProvider());
+    if(apiKey)
     {
-        request.api_key=*api_key;
+        request.apiKey = *apiKey;
     }
 
     llm_hermes::CompletionResponse response;

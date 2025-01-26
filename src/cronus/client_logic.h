@@ -14,7 +14,7 @@ public:
     int run();
 
 private:
-    int process_completion(const std::string &input);
+    int processCompletion(const std::string &input);
 
     TerminalUI &ui_;
 };
