@@ -49,22 +49,17 @@ void Config::load_from_file(const std::filesystem::path &config_path)
             provider_=config["provider"].as<std::string>();
         }
 
-        if(config["api_keys"] || config["api-keys"])
+        if(config["api_keys"]||config["api-keys"])
         {
-            auto keys = config["api_keys"].IsDefined() ? config["api_keys"] : config["api-keys"];
-            
-            // Try both formats for OpenAI
-            if(keys["openai"]) {
-                api_keys_["openai"] = keys["openai"].as<std::string>();
-            } else if(keys["open-ai"]) {
-                api_keys_["openai"] = keys["open-ai"].as<std::string>();
+            auto keys=config["api_keys"].IsDefined()?config["api_keys"]:config["api-keys"];
+
+            if(keys["openai"])
+            {
+                api_keys_["openai"]=keys["openai"].as<std::string>();
             }
-            
-            // Try both formats for Anthropic
-            if(keys["anthropic"]) {
-                api_keys_["anthropic"] = keys["anthropic"].as<std::string>();
-            } else if(keys["anthropic-ai"]) {
-                api_keys_["anthropic"] = keys["anthropic-ai"].as<std::string>();
+            if(keys["anthropic"])
+            {
+                api_keys_["anthropic"]=keys["anthropic"].as<std::string>();
             }
         }
     }
