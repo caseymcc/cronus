@@ -9,41 +9,47 @@ using namespace ftxui;
 namespace cronus
 {
 
-TerminalUI::TerminalUI() : 
+TerminalUI::TerminalUI() :
     m_screen(Screen::Create(Dimension::Full(), Dimension::Full()))
 {
     initializeDirTree();
 }
 
-void TerminalUI::initializeDirTree() {
-    m_dirTree = Container::Vertical({
-        Button("Toggle Tree [F2]", [&] { m_showDirTree = !m_showDirTree; })
-    });
+void TerminalUI::initializeDirTree()
+{
+    m_dirTree=Container::Vertical({
+        Button("Toggle Tree [F2]", [&] { m_showDirTree=!m_showDirTree; })
+        });
 }
 
-Element TerminalUI::createDirTree() const {
+Element TerminalUI::createDirTree() const
+{
     std::vector<Element> tree;
-    
-    for(const auto& [isDir, name] : m_dirContents) {
-        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+
+    for(const auto &[isDir, name]:m_dirContents)
+    {
+        auto displayName=isDir?"📁 "+name:"📄 "+name;
         tree.push_back(text(displayName));
     }
-    
-    return vbox(tree) | border | size(WIDTH, LESS_THAN, 30);
+
+    return vbox(tree)|border|size(WIDTH, LESS_THAN, 30);
 }
 
-void TerminalUI::updateDirectoryTree(const std::vector<std::pair<bool, std::string>>& contents) {
-    m_dirContents = contents;
+void TerminalUI::updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents)
+{
+    m_dirContents=contents;
 }
 
-Element TerminalUI::createMainLayout(const Element& content) const {
+Element TerminalUI::createMainLayout(const Element &content) const
+{
     std::vector<Element> layout;
     layout.push_back(content);
-    
-    if(m_showDirTree) {
+
+    if(m_showDirTree)
+    {
         layout.push_back(createDirTree());
     }
-    
+
     return hbox(layout);
 }
 
@@ -80,37 +86,41 @@ void TerminalUI::displayError(const std::string &message) const
 std::string TerminalUI::getUserInput() const
 {
     std::string input;
-    auto screen = ScreenInteractive::TerminalOutput();
+    auto screen=ScreenInteractive::TerminalOutput();
 
-    Component inputBox = Input(&input, "Enter your message");
-    
+    Component inputBox=Input(&input, "Enter your message");
+
     // Combine input box with directory tree
-    auto container = Container::Horizontal({
+    auto container=Container::Horizontal({
         inputBox,
         m_dirTree
-    });
-
-    auto renderer = Renderer(container, [&] {
-        auto inputElement = vbox({
-            text("Enter your message:") | bold,
-            inputBox->Render() | border
         });
-        
-        return createMainLayout(inputElement);
-    });
+
+    auto renderer=Renderer(container, [&]
+        {
+            auto inputElement=vbox({
+                text("Enter your message:")|bold,
+                inputBox->Render()|border
+                });
+
+            return createMainLayout(inputElement);
+        });
 
     // Handle both Enter and F2 keys
-    container |= CatchEvent([&](Event event) {
-        if(event == Event::Return) {
-            screen.ExitLoopClosure()();
-            return true;
-        }
-        if(event == Event::F2) {
-            m_showDirTree = !m_showDirTree;
-            return true;
-        }
-        return false;
-    });
+    container|=CatchEvent([&](Event event)
+        {
+            if(event==Event::Return)
+            {
+                screen.ExitLoopClosure()();
+                return true;
+            }
+            if(event==Event::F2)
+            {
+                m_showDirTree=!m_showDirTree;
+                return true;
+            }
+            return false;
+        });
 
     screen.Loop(renderer);
     return input;
