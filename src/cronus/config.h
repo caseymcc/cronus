@@ -17,10 +17,8 @@ public:
     void load();
 
     std::string get_model() const { return model_; }
-    void set_model(const std::string &model) { model_=model; }
-
     std::string get_provider() const { return provider_; }
-    void set_provider(const std::string &provider) { provider_=provider; }
+    void set_model_and_provider(const std::string &combined);
 
     std::optional<std::string> get_api_key(const std::string &provider) const;
     void set_api_key(const std::string &provider, const std::string &key);

@@ -14,15 +14,19 @@ Config &Config::instance()
     return instance;
 }
 
+void Config::set_model_and_provider(const std::string& combined) {
+    auto pos = combined.find('/');
+    if (pos != std::string::npos) {
+        provider_ = combined.substr(0, pos);
+        model_ = combined.substr(pos + 1);
+    }
+}
+
 void Config::load_from_env()
 {
     if(const char *model=std::getenv("CRONUS_MODEL"))
     {
-        model_=model;
-    }
-    if(const char *provider=std::getenv("CRONUS_PROVIDER"))
-    {
-        provider_=provider;
+        set_model_and_provider(model);
     }
     if(const char *openai_key=std::getenv("OPENAI_API_KEY"))
     {
@@ -42,11 +46,7 @@ void Config::load_from_file(const std::filesystem::path &config_path)
 
         if(config["model"])
         {
-            model_=config["model"].as<std::string>();
-        }
-        if(config["provider"])
-        {
-            provider_=config["provider"].as<std::string>();
+            set_model_and_provider(config["model"].as<std::string>());
         }
 
         if(config["api_keys"]||config["api-keys"])
