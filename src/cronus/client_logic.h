@@ -15,8 +15,11 @@ public:
 
 private:
     int processCompletion(const std::string &input);
+    void updateDirectoryTree();
+    std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
 
     TerminalUI &m_ui;
+    std::filesystem::path m_currentPath;
 };
 
 } // namespace cronus

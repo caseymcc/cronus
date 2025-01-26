@@ -10,8 +10,7 @@ namespace cronus
 {
 
 TerminalUI::TerminalUI() : 
-    m_screen(Screen::Create(Dimension::Full(), Dimension::Full())),
-    m_currentPath(std::filesystem::current_path())
+    m_screen(Screen::Create(Dimension::Full(), Dimension::Full()))
 {
     initializeDirTree();
 }
@@ -25,17 +24,16 @@ void TerminalUI::initializeDirTree() {
 Element TerminalUI::createDirTree() const {
     std::vector<Element> tree;
     
-    for(const auto& entry : std::filesystem::directory_iterator(m_currentPath)) {
-        auto name = entry.path().filename().string();
-        if(entry.is_directory()) {
-            name = "📁 " + name;
-        } else {
-            name = "📄 " + name;
-        }
-        tree.push_back(text(name));
+    for(const auto& [isDir, name] : m_dirContents) {
+        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+        tree.push_back(text(displayName));
     }
     
     return vbox(tree) | border | size(WIDTH, LESS_THAN, 30);
+}
+
+void TerminalUI::updateDirectoryTree(const std::vector<std::pair<bool, std::string>>& contents) {
+    m_dirContents = contents;
 }
 
 Element TerminalUI::createMainLayout(const Element& content) const {

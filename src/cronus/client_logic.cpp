@@ -5,7 +5,12 @@
 namespace cronus
 {
 
-ClientLogic::ClientLogic(TerminalUI &ui) : m_ui(ui) {}
+ClientLogic::ClientLogic(TerminalUI &ui) : 
+    m_ui(ui),
+    m_currentPath(std::filesystem::current_path()) 
+{
+    updateDirectoryTree();
+}
 
 int ClientLogic::run()
 {
@@ -47,3 +52,18 @@ int ClientLogic::processCompletion(const std::string &input)
 }
 
 } // namespace cronus
+void ClientLogic::updateDirectoryTree() {
+    auto contents = getCurrentDirectoryContents();
+    m_ui.updateDirectoryTree(contents);
+}
+
+std::vector<std::pair<bool, std::string>> ClientLogic::getCurrentDirectoryContents() const {
+    std::vector<std::pair<bool, std::string>> contents;
+    for(const auto& entry : std::filesystem::directory_iterator(m_currentPath)) {
+        contents.emplace_back(
+            entry.is_directory(),
+            entry.path().filename().string()
+        );
+    }
+    return contents;
+}

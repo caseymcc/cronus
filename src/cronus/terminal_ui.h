@@ -24,12 +24,15 @@ private:
     
     // Directory tree state
     bool m_showDirTree{true};
-    std::filesystem::path m_currentPath;
     ftxui::Component m_dirTree;
+    std::vector<std::pair<bool, std::string>> m_dirContents;
     
     // Helper methods
     void initializeDirTree();
     ftxui::Element createDirTree() const;
+    
+public:
+    void updateDirectoryTree(const std::vector<std::pair<bool, std::string>>& contents);
     ftxui::Element createMainLayout(const ftxui::Element& content) const;
 };
 
