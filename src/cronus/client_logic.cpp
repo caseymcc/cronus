@@ -5,13 +5,13 @@
 namespace cronus
 {
 
-ClientLogic::ClientLogic(TerminalUI &ui) : ui_(ui) {}
+ClientLogic::ClientLogic(TerminalUI &ui) : m_ui(ui) {}
 
 int ClientLogic::run()
 {
-    ui_.display_welcome();
+    m_ui.displayWelcome();
 
-    std::string userInput = ui_.getUserInput();
+    std::string userInput = m_ui.getUserInput();
     return processCompletion(userInput);
 }
 
@@ -37,12 +37,12 @@ int ClientLogic::processCompletion(const std::string &input)
 
     if(result!=llm_hermes::ErrorCode::Success)
     {
-        ui_.display_error(model+" completion failed with error code: "+
+        m_ui.displayError(model+" completion failed with error code: "+
             std::to_string(static_cast<int>(result)));
         return 1;
     }
 
-    ui_.display_response(response.provider, response.text);
+    m_ui.displayResponse(response.provider, response.text);
     return 0;
 }
 

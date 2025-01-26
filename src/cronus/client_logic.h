@@ -16,7 +16,7 @@ public:
 private:
     int processCompletion(const std::string &input);
 
-    TerminalUI &ui_;
+    TerminalUI &m_ui;
 };
 
 } // namespace cronus
