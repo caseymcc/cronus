@@ -10,7 +10,7 @@ namespace cronus
 
 TerminalUI::TerminalUI() : m_screen(Screen::Create(Dimension::Full(), Dimension::Fixed(1))) {}
 
-void TerminalUI::render(const Element& element) {
+void TerminalUI::render(const Element& element) const {
     m_screen.Clear();
     Render(m_screen, element);
     m_screen.Print();

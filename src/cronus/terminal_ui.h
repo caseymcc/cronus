@@ -20,7 +20,7 @@ public:
 
 private:
     mutable ftxui::Screen m_screen;
-    void render(const ftxui::Element& element);
+    void render(const ftxui::Element& element) const;
 };
 
 } // namespace cronus
