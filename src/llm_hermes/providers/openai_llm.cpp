@@ -41,7 +41,7 @@ ErrorCode OpenAILLM::completion(const CompletionRequest &request,
     }
 
     // Parse the response
-    return parse_response(raw_response, response);
+    return parseResponse(raw_response, response);
 }
 
 nlohmann::json OpenAILLM::createRequestBody(const CompletionRequest &request)
@@ -84,10 +84,9 @@ cpr::Header OpenAILLM::createHeaders(const std::string &apiKey)
 ErrorCode OpenAILLM::parseResponse(const cpr::Response &rawResponse,
     CompletionResponse &response)
 {
-    nlohmann::json::error_code ec;
-    nlohmann::json jsonResponse=nlohmann::json::parse(rawResponse.text, nullptr, false, ec);
-
-    if(ec)
+    try {
+        nlohmann::json jsonResponse = nlohmann::json::parse(rawResponse.text);
+    } catch(const nlohmann::json::parse_error&)
     {
         return ErrorCode::InvalidResponse;
     }

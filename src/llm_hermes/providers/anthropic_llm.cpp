@@ -13,7 +13,7 @@ ErrorCode AnthropicLLM::completion(const CompletionRequest &request,
     }
     else
     {
-        auto result=get_api_key("anthropic", api_key);
+        auto result=getApiKey("anthropic", api_key);
         if(result!=ErrorCode::Success)
         {
             return result;

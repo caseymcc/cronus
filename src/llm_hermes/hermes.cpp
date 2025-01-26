@@ -2,6 +2,7 @@
 
 #include "llm_hermes/providers/openai_llm.h"
 #include "llm_hermes/providers/anthropic_llm.h"
+#include "llm_hermes/providers/deepseek_llm.h"
 
 #include <memory>
 

@@ -29,7 +29,7 @@ int ClientLogic::processCompletion(const std::string &input)
     auto apiKey = config.getApiKey(config.getProvider());
     if(apiKey)
     {
-        request.apiKey = *apiKey;
+        request.api_key = *apiKey;
     }
 
     llm_hermes::CompletionResponse response;
@@ -37,7 +37,7 @@ int ClientLogic::processCompletion(const std::string &input)
 
     if(result!=llm_hermes::ErrorCode::Success)
     {
-        m_ui.displayError(model+" completion failed with error code: "+
+        m_ui.displayError(request.model+" completion failed with error code: "+
             std::to_string(static_cast<int>(result)));
         return 1;
     }
