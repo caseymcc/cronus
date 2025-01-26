@@ -3,6 +3,7 @@
 
 #include "llm_hermes/hermes.h"
 #include "cronus/terminal_ui.h"
+#include <filesystem>
 
 namespace cronus
 {

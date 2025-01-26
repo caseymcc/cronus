@@ -107,7 +107,7 @@ std::string TerminalUI::getUserInput() const
         });
 
     // Handle both Enter and F2 keys
-    container|=CatchEvent([&](Event event)
+    container|=CatchEvent([&screen, this](Event event)
         {
             if(event==Event::Return)
             {

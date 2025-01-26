@@ -51,7 +51,6 @@ int ClientLogic::processCompletion(const std::string &input)
     return 0;
 }
 
-} // namespace cronus
 void ClientLogic::updateDirectoryTree() {
     auto contents = getCurrentDirectoryContents();
     m_ui.updateDirectoryTree(contents);
@@ -67,3 +66,5 @@ std::vector<std::pair<bool, std::string>> ClientLogic::getCurrentDirectoryConten
     }
     return contents;
 }
+
+} // namespace cronus
