@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15)
 project(llm_hermes VERSION 0.1.0 LANGUAGES CXX)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+
 # Find dependencies
 find_package(cpr CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
