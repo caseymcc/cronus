@@ -19,8 +19,8 @@ public:
     std::string getUserInput() const;
 
 private:
-    ftxui::Screen m_screen;
-    void render(const ftxui::Element& element) const;
+    mutable ftxui::Screen m_screen;
+    void render(const ftxui::Element& element);
 };
 
 } // namespace cronus

@@ -8,9 +8,9 @@ using namespace ftxui;
 namespace cronus
 {
 
-TerminalUI::TerminalUI() : m_screen(Screen::Create(Dimension::Full(), Dimension::Fit(1))) {}
+TerminalUI::TerminalUI() : m_screen(Screen::Create(Dimension::Full(), Dimension::Fixed(1))) {}
 
-void TerminalUI::render(const Element& element) const {
+void TerminalUI::render(const Element& element) {
     m_screen.Clear();
     Render(m_screen, element);
     m_screen.Print();
