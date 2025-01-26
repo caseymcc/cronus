@@ -71,32 +71,35 @@ cpr::Header OpenAILLM::create_headers(const std::string& api_key) {
 
 ErrorCode OpenAILLM::parse_response(const cpr::Response& raw_response,
                                   CompletionResponse& response) {
-    try {
-        auto json_response = nlohmann::json::parse(raw_response.text);
-        
-        // Extract the response text from the first choice
-        if (json_response.contains("choices") && 
-            !json_response["choices"].empty() &&
-            json_response["choices"][0].contains("message") &&
-            json_response["choices"][0]["message"].contains("content")) {
-            
-            response.text = json_response["choices"][0]["message"]["content"];
-            response.provider = "openai";
-            response.model = json_response["model"];
-            
-            // Extract usage information if available
-            if (json_response.contains("usage") && 
-                json_response["usage"].contains("total_tokens")) {
-                response.tokens_used = json_response["usage"]["total_tokens"];
-            }
-            
-            return ErrorCode::Success;
-        }
-        
-        return ErrorCode::InvalidResponse;
-    } catch (const std::exception&) {
+    nlohmann::json::error_code ec;
+    nlohmann::json json_response = nlohmann::json::parse(raw_response.text, nullptr, false, ec);
+    
+    if (ec) {
         return ErrorCode::InvalidResponse;
     }
+    
+    // Extract the response text from the first choice
+    if (!json_response.contains("choices") || 
+        json_response["choices"].empty() ||
+        !json_response["choices"][0].contains("message") ||
+        !json_response["choices"][0]["message"].contains("content")) {
+        return ErrorCode::InvalidResponse;
+    }
+    
+    response.text = json_response["choices"][0]["message"]["content"];
+    response.provider = "openai";
+    
+    if (json_response.contains("model")) {
+        response.model = json_response["model"];
+    }
+    
+    // Extract usage information if available
+    if (json_response.contains("usage") && 
+        json_response["usage"].contains("total_tokens")) {
+        response.tokens_used = json_response["usage"]["total_tokens"];
+    }
+    
+    return ErrorCode::Success;
 }
 
 } // namespace llm_hermes
