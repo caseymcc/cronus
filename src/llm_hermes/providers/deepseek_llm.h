@@ -5,22 +5,25 @@
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
 
-namespace llm_hermes {
+namespace llm_hermes
+{
 
-class DeepseekLLM : public BaseLLM {
+class DeepseekLLM : public BaseLLM
+{
 public:
     DeepseekLLM();
-    ErrorCode completion(const CompletionRequest& request,
-                        CompletionResponse& response) override;
+    
+    ErrorCode completion(const CompletionRequest &request,
+        CompletionResponse &response) override;
 
 private:
-    static constexpr const char* API_URL = "https://api.deepseek.com/chat/completions";
-    
-    ErrorCode parse_response(const cpr::Response& raw_response,
-                           CompletionResponse& response);
-    
-    nlohmann::json create_request_body(const CompletionRequest& request);
-    cpr::Header create_headers(const std::string& api_key);
+    static constexpr const char *API_URL="https://api.deepseek.com/chat/completions";
+
+    ErrorCode parse_response(const cpr::Response &raw_response,
+        CompletionResponse &response);
+
+    nlohmann::json create_request_body(const CompletionRequest &request);
+    cpr::Header create_headers(const std::string &api_key);
 };
 
 } // namespace llm_hermes
