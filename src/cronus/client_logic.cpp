@@ -1,5 +1,7 @@
 #include "cronus/client_logic.h"
 
+#include "cronus/config.h"
+
 namespace cronus
 {
 
