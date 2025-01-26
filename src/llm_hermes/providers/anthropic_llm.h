@@ -9,8 +9,8 @@ namespace llm_hermes
 class AnthropicLLM : public BaseLLM
 {
 public:
-    ErrorCode completion(const CompletionRequest &request,
-        CompletionResponse &response) override;
+    ErrorCode completion(const CompletionRequest& request,
+                        CompletionResponse& response) override;
 };
 
 } // namespace llm_hermes
