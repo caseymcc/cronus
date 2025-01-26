@@ -16,6 +16,8 @@ set(cronus_src
     ./terminal_ui.cpp
     ./config.h
     ./config.cpp
+    ./task_system.h
+    ./task_system.cpp
 )
 
 # Add executable

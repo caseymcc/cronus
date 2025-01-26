@@ -10,5 +10,15 @@ int main()
 
     cronus::TerminalUI ui;
     cronus::ClientLogic logic(ui);
-    return logic.run();
+    
+    logic.start();
+    
+    while (true) {
+        std::string userInput = ui.getUserInput();
+        auto future = logic.processInput(userInput);
+        
+        if (future.get() != 0) {
+            return 1;
+        }
+    }
 }

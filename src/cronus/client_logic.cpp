@@ -7,17 +7,24 @@ namespace cronus
 
 ClientLogic::ClientLogic(TerminalUI &ui) : 
     m_ui(ui),
-    m_currentPath(std::filesystem::current_path()) 
+    m_currentPath(std::filesystem::current_path()),
+    m_taskSystem(std::make_unique<TaskSystem>())
 {
     updateDirectoryTree();
 }
 
-int ClientLogic::run()
+ClientLogic::~ClientLogic() = default;
+
+void ClientLogic::start()
 {
     m_ui.displayWelcome();
+}
 
-    std::string userInput = m_ui.getUserInput();
-    return processCompletion(userInput);
+std::future<int> ClientLogic::processInput(const std::string &input)
+{
+    return m_taskSystem->enqueue([this, input]() {
+        return processCompletion(input);
+    });
 }
 
 int ClientLogic::processCompletion(const std::string &input)
