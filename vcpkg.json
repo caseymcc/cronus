@@ -4,6 +4,7 @@
     "dependencies": [
         "cpr",
         "nlohmann-json",
-        "yaml-cpp"
+        "yaml-cpp",
+        "ftxui"
     ]
 }

@@ -4,8 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find yaml-cpp package
+# Find required packages
 find_package(yaml-cpp CONFIG REQUIRED)
+find_package(ftxui CONFIG REQUIRED)
 
 set(cronus_src
     ./main.cpp
@@ -29,4 +30,7 @@ target_include_directories(cronus
 target_link_libraries(cronus PRIVATE
     llm_hermes
     yaml-cpp
+    ftxui::screen
+    ftxui::dom
+    ftxui::component
 )
