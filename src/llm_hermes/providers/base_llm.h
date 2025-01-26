@@ -15,7 +15,7 @@ public:
         CompletionResponse &response)=0;
 
 protected:
-    ErrorCode get_api_key(const std::string &provider, std::string &api_key);
+    ErrorCode getApiKey(const std::string &provider, std::string &apiKey);
 };
 
 } // namespace llm_hermes

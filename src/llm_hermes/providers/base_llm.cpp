@@ -4,13 +4,13 @@
 namespace llm_hermes
 {
 
-ErrorCode BaseLLM::get_api_key(const std::string &provider, std::string &api_key)
+ErrorCode BaseLLM::getApiKey(const std::string &provider, std::string &apiKey)
 {
     if(provider=="openai")
     {
         if(auto key=std::getenv("OPENAI_API_KEY"))
         {
-            api_key=key;
+            apiKey=key;
             return ErrorCode::Success;
         }
     }
@@ -18,7 +18,7 @@ ErrorCode BaseLLM::get_api_key(const std::string &provider, std::string &api_key
     {
         if(auto key=std::getenv("ANTHROPIC_API_KEY"))
         {
-            api_key=key;
+            apiKey=key;
             return ErrorCode::Success;
         }
     }
