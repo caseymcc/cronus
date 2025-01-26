@@ -42,7 +42,7 @@ void TerminalUI::displayError(const std::string &message) const
 std::string TerminalUI::getUserInput() const
 {
     std::string input;
-    auto screen = ScreenInteractive::TerminalOutput();
+    auto screen = ScreenInteractive::Terminal();
     
     Component inputBox = Input(&input, "Enter your message");
     auto renderer = Renderer(inputBox, [&] {
