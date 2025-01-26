@@ -16,7 +16,7 @@ public:
     void displayWelcome() const;
     void displayResponse(const std::string &provider, const std::string &response) const;
     void displayError(const std::string &message) const;
-    std::string getUserInput() const;
+    std::string getUserInput();
 
 private:
     mutable ftxui::Screen m_screen;

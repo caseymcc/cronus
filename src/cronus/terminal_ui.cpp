@@ -83,7 +83,7 @@ void TerminalUI::displayError(const std::string &message) const
     render(error|border);
 }
 
-std::string TerminalUI::getUserInput() const
+std::string TerminalUI::getUserInput()
 {
     std::string input;
     auto screen=ScreenInteractive::TerminalOutput();
@@ -107,8 +107,7 @@ std::string TerminalUI::getUserInput() const
         });
 
     // Handle both Enter and F2 keys
-    bool showTree = m_showDirTree;  // Local copy for the lambda
-    container|=CatchEvent([&screen, &showTree, this](Event event)
+    container|=CatchEvent([&screen, this](Event event)
         {
             if(event==Event::Return)
             {
@@ -117,8 +116,7 @@ std::string TerminalUI::getUserInput() const
             }
             if(event==Event::F2)
             {
-                showTree = !showTree;
-                m_showDirTree = showTree;  // Update through non-const method
+                m_showDirTree = !m_showDirTree;
                 return true;
             }
             return false;
