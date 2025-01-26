@@ -12,13 +12,4 @@ int main()
     cronus::ClientLogic logic(ui);
     
     logic.start();
-    
-    while (true) {
-        std::string userInput = ui.getUserInput();
-        auto future = logic.processInput(userInput);
-        
-        if (future.get() != 0) {
-            return 1;
-        }
-    }
 }

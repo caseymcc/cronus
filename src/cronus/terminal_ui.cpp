@@ -10,9 +10,10 @@ namespace cronus
 {
 
 TerminalUI::TerminalUI() :
-    m_screen(Screen::Create(Dimension::Full(), Dimension::Full()))
+    m_screen(ScreenInteractive::TerminalOutput())
 {
     initializeDirTree();
+    setupInput();
 }
 
 void TerminalUI::initializeDirTree()
@@ -83,47 +84,48 @@ void TerminalUI::displayError(const std::string &message) const
     render(error|border);
 }
 
-std::string TerminalUI::getUserInput()
-{
-    std::string input;
-    auto screen=ScreenInteractive::TerminalOutput();
-
-    Component inputBox=Input(&input, "Enter your message");
-
-    // Combine input box with directory tree
-    auto container=Container::Horizontal({
-        inputBox,
+void TerminalUI::setupInput() {
+    m_inputBox = Input(&m_input, "Enter your message");
+    
+    auto container = Container::Horizontal({
+        m_inputBox,
         m_dirTree
+    });
+
+    container |= CatchEvent([this](Event event) {
+        handleInput(event);
+        return true;
+    });
+
+    auto renderer = Renderer(container, [this] {
+        auto inputElement = vbox({
+            text("Enter your message:") | bold,
+            m_inputBox->Render() | border
         });
+        return createMainLayout(inputElement);
+    });
 
-    auto renderer=Renderer(container, [&]
-        {
-            auto inputElement=vbox({
-                text("Enter your message:")|bold,
-                inputBox->Render()|border
-                });
+    m_screen.Loop(renderer);
+}
 
-            return createMainLayout(inputElement);
-        });
+void TerminalUI::handleInput(Event event) {
+    if(event == Event::Return && !m_input.empty()) {
+        if(onInput) {
+            onInput(m_input);
+            m_input.clear();
+        }
+    }
+    else if(event == Event::F2) {
+        m_showDirTree = !m_showDirTree;
+    }
+    else if(event == Event::Character('q')) {
+        m_screen.Exit();
+    }
+}
 
-    // Handle both Enter and F2 keys
-    container|=CatchEvent([&screen, this](Event event)
-        {
-            if(event==Event::Return)
-            {
-                screen.ExitLoopClosure()();
-                return true;
-            }
-            if(event==Event::F2)
-            {
-                m_showDirTree = !m_showDirTree;
-                return true;
-            }
-            return false;
-        });
-
-    screen.Loop(renderer);
-    return input;
+void TerminalUI::run() {
+    displayWelcome();
+    setupInput();
 }
 
 } // namespace cronus

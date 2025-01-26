@@ -17,14 +17,16 @@ ClientLogic::~ClientLogic() = default;
 
 void ClientLogic::start()
 {
-    m_ui.displayWelcome();
-}
-
-std::future<int> ClientLogic::processInput(const std::string &input)
-{
-    return m_taskSystem->enqueue([this, input]() {
-        return processCompletion(input);
-    });
+    m_ui.onInput = [this](const std::string& input) {
+        auto future = m_taskSystem->enqueue([this, input]() {
+            return processCompletion(input);
+        });
+        // Handle the future in a separate task to avoid blocking
+        m_taskSystem->enqueue([future = std::move(future)]() mutable {
+            future.get();
+        });
+    };
+    m_ui.run();
 }
 
 int ClientLogic::processCompletion(const std::string &input)
