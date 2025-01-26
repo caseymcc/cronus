@@ -19,11 +19,11 @@ public:
 private:
     static constexpr const char *API_URL="https://api.deepseek.com/chat/completions";
 
-    ErrorCode parse_response(const cpr::Response &raw_response,
+    ErrorCode parseResponse(const cpr::Response &rawResponse,
         CompletionResponse &response);
 
-    nlohmann::json create_request_body(const CompletionRequest &request);
-    cpr::Header create_headers(const std::string &api_key);
+    nlohmann::json createRequestBody(const CompletionRequest &request);
+    cpr::Header createHeaders(const std::string &apiKey);
 };
 
 } // namespace llm_hermes

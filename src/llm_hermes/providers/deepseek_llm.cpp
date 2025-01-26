@@ -8,14 +8,14 @@ DeepseekLLM::DeepseekLLM()=default;
 ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     CompletionResponse &response)
 {
-    std::string api_key;
+    std::string apiKey;
     if(request.api_key.has_value())
     {
-        api_key=request.api_key.value();
+        apiKey=request.api_key.value();
     }
     else
     {
-        auto result=get_api_key("deepseek", api_key);
+        auto result=getApiKey("deepseek", apiKey);
         if(result!=ErrorCode::Success)
         {
             return result;
@@ -23,8 +23,8 @@ ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     }
 
     // Create request body and headers
-    auto body=create_request_body(request);
-    auto headers=create_headers(api_key);
+    auto body=createRequestBody(request);
+    auto headers=createHeaders(apiKey);
 
     // Make the API request
     auto raw_response=cpr::Post(
@@ -44,7 +44,7 @@ ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     return parse_response(raw_response, response);
 }
 
-nlohmann::json DeepseekLLM::create_request_body(const CompletionRequest &request)
+nlohmann::json DeepseekLLM::createRequestBody(const CompletionRequest &request)
 {
     nlohmann::json body;
     body["model"]="deepseek-chat";  // Currently only supporting main chat model
@@ -80,20 +80,20 @@ nlohmann::json DeepseekLLM::create_request_body(const CompletionRequest &request
     return body;
 }
 
-cpr::Header DeepseekLLM::create_headers(const std::string &api_key)
+cpr::Header DeepseekLLM::createHeaders(const std::string &apiKey)
 {
     return cpr::Header{
         {"Content-Type", "application/json"},
         {"Accept", "application/json"},
-        {"Authorization", "Bearer "+api_key}
+        {"Authorization", "Bearer "+apiKey}
     };
 }
 
-ErrorCode DeepseekLLM::parse_response(const cpr::Response &raw_response,
+ErrorCode DeepseekLLM::parseResponse(const cpr::Response &rawResponse,
     CompletionResponse &response)
 {
     nlohmann::json::error_code ec;
-    nlohmann::json json_response=nlohmann::json::parse(raw_response.text, nullptr, false, ec);
+    nlohmann::json jsonResponse=nlohmann::json::parse(rawResponse.text, nullptr, false, ec);
 
     if(ec)
     {
@@ -101,27 +101,27 @@ ErrorCode DeepseekLLM::parse_response(const cpr::Response &raw_response,
     }
 
     // Extract the response text from the first choice
-    if(!json_response.contains("choices")||
-        json_response["choices"].empty()||
-        !json_response["choices"][0].contains("message")||
-        !json_response["choices"][0]["message"].contains("content"))
+    if(!jsonResponse.contains("choices")||
+        jsonResponse["choices"].empty()||
+        !jsonResponse["choices"][0].contains("message")||
+        !jsonResponse["choices"][0]["message"].contains("content"))
     {
         return ErrorCode::InvalidResponse;
     }
 
-    response.text=json_response["choices"][0]["message"]["content"];
+    response.text=jsonResponse["choices"][0]["message"]["content"];
     response.provider="deepseek";
 
-    if(json_response.contains("model"))
+    if(jsonResponse.contains("model"))
     {
-        response.model=json_response["model"];
+        response.model=jsonResponse["model"];
     }
 
     // Extract usage information if available
-    if(json_response.contains("usage")&&
-        json_response["usage"].contains("total_tokens"))
+    if(jsonResponse.contains("usage")&&
+        jsonResponse["usage"].contains("total_tokens"))
     {
-        response.tokens_used=json_response["usage"]["total_tokens"];
+        response.tokens_used=jsonResponse["usage"]["total_tokens"];
     }
 
     return ErrorCode::Success;
