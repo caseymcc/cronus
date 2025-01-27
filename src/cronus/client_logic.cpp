@@ -14,9 +14,29 @@ ClientLogic::ClientLogic() :
 ClientLogic::~ClientLogic() = default;
 
 
+void ClientLogic::log(const std::string& message) const {
+    if (m_logCallback) {
+        m_logCallback(message);
+    }
+}
+
+void ClientLogic::handleResponse(const std::string& provider, const std::string& response) const {
+    if (m_responseCallback) {
+        m_responseCallback(provider, response);
+    }
+}
+
+void ClientLogic::handleError(const std::string& error) const {
+    if (m_errorCallback) {
+        m_errorCallback(error);
+    }
+}
+
 int ClientLogic::processCompletion(const std::string &input)
 {
     const auto &config = Config::instance();
+    log("Processing completion request...");
+
     llm_hermes::CompletionRequest request{
         .model = config.getModel(),
         .messages = {
@@ -30,15 +50,24 @@ int ClientLogic::processCompletion(const std::string &input)
     {
         request.api_key = *apiKey;
     }
-
-    llm_hermes::CompletionResponse response;
-    llm_hermes::ErrorCode result=llm_hermes::completion(request, response);
-
-    if(result!=llm_hermes::ErrorCode::Success)
+    else
     {
+        handleError("API key not found for provider: " + config.getProvider());
         return 1;
     }
 
+    llm_hermes::CompletionResponse response;
+    llm_hermes::ErrorCode result = llm_hermes::completion(request, response);
+
+    if(result != llm_hermes::ErrorCode::Success)
+    {
+        handleError(request.model + " completion failed with error code: " + 
+                   std::to_string(static_cast<int>(result)));
+        return 1;
+    }
+
+    handleResponse(response.provider, response.text);
+    log("Completion processed successfully");
     return 0;
 }
 
