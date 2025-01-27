@@ -13,6 +13,8 @@
 namespace cronus
 {
 
+class TaskSystem;
+
 struct Task
 {
     enum class Type
@@ -41,6 +43,7 @@ public:
     void stop();
     std::future<int> processInput(const std::string &input);
     std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
+    void updateDirectoryTree();
 
     // Callback setters
     void setLogCallback(LogCallback callback) { m_logCallback=callback; }

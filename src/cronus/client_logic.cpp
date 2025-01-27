@@ -22,6 +22,17 @@ void ClientLogic::stop()
 
 std::future<int> ClientLogic::processInput(const std::string &input)
 {
+    Task task{Task::Type::Completion, 0, input, Config::instance().getProvider()};
+    std::promise<int> promise;
+    auto future = promise.get_future();
+    
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_tasks.push(task);
+    }
+    m_condition.notify_one();
+    
+    return future;
 }
 
 void ClientLogic::log(const std::string &message) const

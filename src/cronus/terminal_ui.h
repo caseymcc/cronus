@@ -5,6 +5,7 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
 #include <ftxui/component/component.hpp>
+#include <ftxui/component/screen_interactive.hpp>
 
 namespace cronus
 {
@@ -16,13 +17,14 @@ public:
     void displayWelcome() const;
     void displayResponse(const std::string &provider, const std::string &response) const;
     void displayError(const std::string &message) const;
+    void displayLog(const std::string &message) const;
     void run();
     explicit TerminalUI(class ClientLogic& logic);
 
 private:
     ClientLogic& m_logic;
     ftxui::ScreenInteractive m_screen;
-    void render(const ftxui::Element& element);
+    void render(const ftxui::Element& element) const;
     
     // Directory tree state
     bool m_showDirTree{true};

@@ -105,6 +105,12 @@ void TerminalUI::displayError(const std::string &message) const
     render(error|border);
 }
 
+void TerminalUI::displayLog(const std::string &message) const
+{
+    auto log=text(message)|color(Color::Yellow);
+    render(log|border);
+}
+
 void TerminalUI::setupInput()
 {
     m_inputBox=Input(&m_input, "Enter your message");
