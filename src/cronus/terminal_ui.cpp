@@ -1,7 +1,11 @@
 #include "cronus/terminal_ui.h"
+
+#include "cronus/client_logic.h"
+
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+
 #include <filesystem>
 
 using namespace ftxui;
@@ -9,22 +13,25 @@ using namespace ftxui;
 namespace cronus
 {
 
-TerminalUI::TerminalUI(ClientLogic& logic) :
+TerminalUI::TerminalUI(ClientLogic &logic) :
     m_logic(logic),
     m_screen(ScreenInteractive::TerminalOutput())
 {
     // Set up callbacks
-    m_logic.setLogCallback([this](const std::string& message) {
-        displayLog(message);
-    });
-    
-    m_logic.setResponseCallback([this](const std::string& provider, const std::string& response) {
-        displayResponse(provider, response);
-    });
-    
-    m_logic.setErrorCallback([this](const std::string& error) {
-        displayError(error);
-    });
+    m_logic.setLogCallback([this](const std::string &message)
+        {
+            displayLog(message);
+        });
+
+    m_logic.setResponseCallback([this](const std::string &provider, const std::string &response)
+        {
+            displayResponse(provider, response);
+        });
+
+    m_logic.setErrorCallback([this](const std::string &error)
+        {
+            displayError(error);
+        });
 
     initializeDirTree();
     setupInput();
@@ -98,44 +105,52 @@ void TerminalUI::displayError(const std::string &message) const
     render(error|border);
 }
 
-void TerminalUI::setupInput() {
-    m_inputBox = Input(&m_input, "Enter your message");
-    
-    auto container = Container::Horizontal({
+void TerminalUI::setupInput()
+{
+    m_inputBox=Input(&m_input, "Enter your message");
+
+    auto container=Container::Horizontal({
         m_inputBox,
         m_dirTree
-    });
-
-    container |= CatchEvent([this](Event event) {
-        handleInput(event);
-        return true;
-    });
-
-    auto renderer = Renderer(container, [this] {
-        auto inputElement = vbox({
-            text("Enter your message:") | bold,
-            m_inputBox->Render() | border
         });
-        return createMainLayout(inputElement);
-    });
+
+    container|=CatchEvent([this](Event event)
+        {
+            handleInput(event);
+            return true;
+        });
+
+    auto renderer=Renderer(container, [this]
+        {
+            auto inputElement=vbox({
+                text("Enter your message:")|bold,
+                m_inputBox->Render()|border
+                });
+            return createMainLayout(inputElement);
+        });
 
     m_screen.Loop(renderer);
 }
 
-void TerminalUI::handleInput(Event event) {
-    if(event == Event::Return && !m_input.empty()) {
+void TerminalUI::handleInput(Event event)
+{
+    if(event==Event::Return&&!m_input.empty())
+    {
         m_logic.processInput(m_input);
         m_input.clear();
     }
-    else if(event == Event::F2) {
-        m_showDirTree = !m_showDirTree;
+    else if(event==Event::F2)
+    {
+        m_showDirTree=!m_showDirTree;
     }
-    else if(event == Event::Character('q')) {
+    else if(event==Event::Character('q'))
+    {
         m_screen.Exit();
     }
 }
 
-void TerminalUI::run() {
+void TerminalUI::run()
+{
     displayWelcome();
     setupInput();
 }
