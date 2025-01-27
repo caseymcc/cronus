@@ -6,13 +6,36 @@ namespace cronus
 {
 
 ClientLogic::ClientLogic() : 
-    m_currentPath(std::filesystem::current_path()),
-    m_taskSystem(std::make_unique<TaskSystem>())
+    m_currentPath(std::filesystem::current_path())
 {
 }
 
 ClientLogic::~ClientLogic() = default;
 
+void ClientLogic::run() {
+    // Start the task system if not already running
+    if (!m_taskSystem) {
+        m_taskSystem = std::make_unique<TaskSystem>();
+    }
+}
+
+void ClientLogic::stop() {
+    if (m_taskSystem) {
+        m_taskSystem->stop();
+        m_taskSystem.reset();
+    }
+}
+
+std::future<int> ClientLogic::processInput(const std::string &input)
+{
+    if (!m_taskSystem) {
+        throw std::runtime_error("Task system not initialized. Call run() first.");
+    }
+    
+    return m_taskSystem->enqueue([this, input]() {
+        return processCompletion(input);
+    });
+}
 
 void ClientLogic::log(const std::string& message) const {
     if (m_logCallback) {
