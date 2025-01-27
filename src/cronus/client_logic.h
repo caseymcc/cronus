@@ -18,6 +18,8 @@ public:
     explicit ClientLogic();
     ~ClientLogic();
     
+    void run();
+    void stop();
     std::future<int> processInput(const std::string &input);
     std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
 

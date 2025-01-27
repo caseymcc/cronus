@@ -9,7 +9,10 @@ int main()
     cronus::Config::instance().load();
 
     cronus::ClientLogic logic;
-    cronus::TerminalUI ui(logic);
+    logic.run();
     
+    cronus::TerminalUI ui(logic);
     ui.run();
+    
+    logic.stop();
 }
