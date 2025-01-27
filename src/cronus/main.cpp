@@ -8,8 +8,8 @@ int main()
     // Load configuration
     cronus::Config::instance().load();
 
-    cronus::TerminalUI ui;
-    cronus::ClientLogic logic(ui);
+    cronus::ClientLogic logic;
+    cronus::TerminalUI ui(logic);
     
-    logic.start();
+    ui.run();
 }

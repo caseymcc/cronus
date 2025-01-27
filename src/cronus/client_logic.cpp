@@ -5,12 +5,10 @@
 namespace cronus
 {
 
-ClientLogic::ClientLogic(TerminalUI &ui) : 
-    m_ui(ui),
+ClientLogic::ClientLogic() : 
     m_currentPath(std::filesystem::current_path()),
     m_taskSystem(std::make_unique<TaskSystem>())
 {
-    updateDirectoryTree();
 }
 
 ClientLogic::~ClientLogic() = default;

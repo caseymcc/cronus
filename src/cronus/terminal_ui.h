@@ -17,9 +17,10 @@ public:
     void displayResponse(const std::string &provider, const std::string &response) const;
     void displayError(const std::string &message) const;
     void run();
-    std::function<void(const std::string&)> onInput;
+    explicit TerminalUI(class ClientLogic& logic);
 
 private:
+    ClientLogic& m_logic;
     ftxui::ScreenInteractive m_screen;
     void render(const ftxui::Element& element);
     

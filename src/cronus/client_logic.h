@@ -11,7 +11,7 @@ namespace cronus
 class ClientLogic
 {
 public:
-    explicit ClientLogic(TerminalUI &ui);
+    explicit ClientLogic();
     ~ClientLogic();
     
     void start();

@@ -9,7 +9,8 @@ using namespace ftxui;
 namespace cronus
 {
 
-TerminalUI::TerminalUI() :
+TerminalUI::TerminalUI(ClientLogic& logic) :
+    m_logic(logic),
     m_screen(ScreenInteractive::TerminalOutput())
 {
     initializeDirTree();
@@ -110,10 +111,8 @@ void TerminalUI::setupInput() {
 
 void TerminalUI::handleInput(Event event) {
     if(event == Event::Return && !m_input.empty()) {
-        if(onInput) {
-            onInput(m_input);
-            m_input.clear();
-        }
+        m_logic.processInput(m_input);
+        m_input.clear();
     }
     else if(event == Event::F2) {
         m_showDirTree = !m_showDirTree;
