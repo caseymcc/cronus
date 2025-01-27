@@ -13,19 +13,6 @@ ClientLogic::ClientLogic() :
 
 ClientLogic::~ClientLogic() = default;
 
-void ClientLogic::start()
-{
-    m_ui.onInput = [this](const std::string& input) {
-        auto future = m_taskSystem->enqueue([this, input]() {
-            return processCompletion(input);
-        });
-        // Handle the future in a separate task to avoid blocking
-        m_taskSystem->enqueue([future = std::move(future)]() mutable {
-            future.get();
-        });
-    };
-    m_ui.run();
-}
 
 int ClientLogic::processCompletion(const std::string &input)
 {
@@ -49,12 +36,9 @@ int ClientLogic::processCompletion(const std::string &input)
 
     if(result!=llm_hermes::ErrorCode::Success)
     {
-        m_ui.displayError(request.model+" completion failed with error code: "+
-            std::to_string(static_cast<int>(result)));
         return 1;
     }
 
-    m_ui.displayResponse(response.provider, response.text);
     return 0;
 }
 

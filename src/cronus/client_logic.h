@@ -14,15 +14,11 @@ public:
     explicit ClientLogic();
     ~ClientLogic();
     
-    void start();
     std::future<int> processInput(const std::string &input);
-    void updateDirectoryTree();
+    std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
 
 private:
     int processCompletion(const std::string &input);
-    std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
-
-    TerminalUI &m_ui;
     std::filesystem::path m_currentPath;
     std::unique_ptr<TaskSystem> m_taskSystem;
 };
