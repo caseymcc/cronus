@@ -181,7 +181,7 @@ std::optional<ModelConfig> Config::getModelConfig(const std::string &model_name)
 void Config::load(const std::string &resourcePath)
 {
     // Load model definitions first
-    loadModelDefinitions(const std::string &resourcePath);
+    loadModelDefinitions(resourcePath);
 
     // Load in order of precedence (later overrides earlier)
     loadFromEnv();
