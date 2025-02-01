@@ -94,39 +94,58 @@ std::filesystem::path Config::getDefaultModelConfigPath() const
 
 void Config::loadModelDefinitions()
 {
-    std::filesystem::path configPath=getDefaultModelConfigPath();
+    // First load from bundled resources
+    auto bundledPath = std::filesystem::path(__FILE__).parent_path() / "resources" / "model_config.yml";
+    loadModelsFromFile(bundledPath);
 
-    // If default config doesn't exist, use the bundled one
-    if(!std::filesystem::exists(configPath))
-    {
-        configPath=std::filesystem::path(__FILE__).parent_path()/"resources"/"model_config.yml";
+    // Then load from user's config directory
+    auto userConfigPath = getDefaultModelConfigPath();
+    if (std::filesystem::exists(userConfigPath)) {
+        loadModelsFromFile(userConfigPath, true);
     }
 
-    m_resourcePath=configPath.parent_path().string();
+    // Finally load from current directory
+    std::filesystem::path localConfig = ".cronus/model_config.yml";
+    if (std::filesystem::exists(localConfig)) {
+        loadModelsFromFile(localConfig, true);
+    }
 
-    try
-    {
-        YAML::Node config=YAML::LoadFile(configPath.string());
-        if(config["model_list"])
-        {
-            for(const auto &model:config["model_list"])
-            {
+    // Set resource path to the last successful load location
+    if (!m_resourcePath.empty()) {
+        m_resourcePath = std::filesystem::path(m_resourcePath).parent_path().string();
+    }
+}
+
+void Config::loadModelsFromFile(const std::filesystem::path& configPath, bool override = false)
+{
+    try {
+        YAML::Node config = YAML::LoadFile(configPath.string());
+        if (config["model_list"]) {
+            for (const auto& model : config["model_list"]) {
                 ModelConfig modelConfig;
-                modelConfig.model_name=model["model_name"].as<std::string>();
+                modelConfig.model_name = model["model_name"].as<std::string>();
 
-                const auto &params=model["litellm_params"];
-                modelConfig.actual_model=params["model"].as<std::string>();
-                modelConfig.provider=params["provider"].as<std::string>();
-                modelConfig.api_base=params["api_base"].as<std::string>();
+                const auto& params = model["litellm_params"];
+                modelConfig.actual_model = params["model"].as<std::string>();
+                modelConfig.provider = params["provider"].as<std::string>();
+                modelConfig.api_base = params["api_base"].as<std::string>();
 
+                if (override) {
+                    // Remove existing config if present
+                    auto it = std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
+                        [&](const ModelConfig& cfg) { return cfg.model_name == modelConfig.model_name; });
+                    if (it != m_modelConfigs.end()) {
+                        m_modelConfigs.erase(it);
+                    }
+                }
                 m_modelConfigs.push_back(modelConfig);
             }
+            m_resourcePath = configPath.string();
         }
     }
-    catch(const std::exception &e)
-    {
-        std::cerr<<"Warning: Failed to load model definitions from "<<configPath
-            <<": "<<e.what()<<std::endl;
+    catch (const std::exception& e) {
+        std::cerr << "Warning: Failed to load model definitions from " << configPath
+                  << ": " << e.what() << std::endl;
     }
 }
 

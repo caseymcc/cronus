@@ -40,6 +40,7 @@ private:
     void loadFromEnv();
     void loadFromFile(const std::filesystem::path &configPath);
     void loadModelDefinitions();
+    void loadModelsFromFile(const std::filesystem::path& configPath, bool override = false);
     std::filesystem::path getDefaultModelConfigPath() const;
 
     std::string m_model{ "gpt-3.5-turbo" };
