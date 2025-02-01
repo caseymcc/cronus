@@ -155,15 +155,25 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
 
         if(override)
         {
-            // Remove existing config if present
+            // Update existing config if present
             auto it=std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
                 [&](const ModelConfig &cfg) { return cfg.model_name==modelConfig.model_name; });
             if(it!=m_modelConfigs.end())
             {
-                m_modelConfigs.erase(it);
+                // Update existing values
+                it->actual_model = modelConfig.actual_model;
+                it->provider = modelConfig.provider;
+                it->api_base = modelConfig.api_base;
+            }
+            else
+            {
+                m_modelConfigs.push_back(modelConfig);
             }
         }
-        m_modelConfigs.push_back(modelConfig);
+        else
+        {
+            m_modelConfigs.push_back(modelConfig);
+        }
     }
 }
 
