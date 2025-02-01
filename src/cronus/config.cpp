@@ -68,7 +68,7 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
     }
     catch(const std::exception &e)
     {
-        std::cerr<<"Warning: Failed to load config from "<<configPath<<": "<<e.what()<<std::endl;
+        logWarning("Failed to load config from " + configPath.string() + ": " + e.what());
     }
 }
 
@@ -126,8 +126,7 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
     }
     catch(const std::exception &e)
     {
-        std::cerr<<"Warning: Failed to load model definitions from "<<configPath
-            <<": "<<e.what()<<std::endl;
+        logWarning("Failed to load model definitions from " + configPath.string() + ": " + e.what());
     }
 }
 

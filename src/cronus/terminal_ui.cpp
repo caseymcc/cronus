@@ -18,10 +18,10 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
     m_screen(ScreenInteractive::TerminalOutput())
 {
     // Set up callbacks
-    m_logic.setLogCallback([this](const std::string &message)
-        {
-            displayLog(message);
-        });
+    // Set up logging callback
+    Logger::instance().setCallback([this](LogLevel level, const std::string& message) {
+        displayLog(message);
+    });
 
     m_logic.setResponseCallback([this](const std::string &provider, const std::string &response)
         {
