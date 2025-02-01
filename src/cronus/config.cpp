@@ -87,12 +87,21 @@ std::filesystem::path Config::getDefaultModelConfigPath() const {
 }
 
 void Config::loadModelDefinitions() {
+    if (!m_resourcePath.empty()) {
+        auto configPath = std::filesystem::path(m_resourcePath) / "model_config.yml";
+        if (std::filesystem::exists(configPath)) {
+            return configPath;
+        }
+    }
+
     auto configPath = getDefaultModelConfigPath();
     
     // If default config doesn't exist, use the bundled one
     if (!std::filesystem::exists(configPath)) {
         configPath = std::filesystem::path(__FILE__).parent_path() / "resources" / "model_config.yml";
     }
+
+    m_resourcePath = configPath.parent_path().string();
     
     try {
         YAML::Node config = YAML::LoadFile(configPath.string());
@@ -124,7 +133,7 @@ std::optional<ModelConfig> Config::getModelConfig(const std::string& model_name)
     return std::nullopt;
 }
 
-void Config::load()
+void Config::load(const std::string& resourcePath)
 {
     // Load model definitions first
     loadModelDefinitions();

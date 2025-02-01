@@ -22,9 +22,10 @@ class Config
 public:
     static Config &instance();
 
-    void load();
+    void load(const std::string& resourcePath = "");
 
     std::string getModel() const { return m_model; }
+    std::string getResourcePath() const { return m_resourcePath; }
     std::string getProvider() const { return m_provider; }
     void setModelAndProvider(const std::string &combined);
 
@@ -45,6 +46,7 @@ private:
     std::string m_provider{ "openai" };
     std::map<std::string, std::string> m_apiKeys;
     std::vector<ModelConfig> m_modelConfigs;
+    std::string m_resourcePath;
 };
 
 } // namespace cronus
