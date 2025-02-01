@@ -1,6 +1,6 @@
 #include "cronus/terminal_ui.h"
-
 #include "cronus/client_logic.h"
+#include "cronus/logger.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component.hpp>

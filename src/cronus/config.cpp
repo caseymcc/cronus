@@ -58,10 +58,9 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
         return;
     }
 
-    std::string errorMsg=config.ErrorMsg();
-    if(!errorMsg.empty())
+    if(!config.IsDefined())
     {
-        logWarning("Error in config file "+configPath.string()+": "+errorMsg);
+        logWarning("Error in config file: " + configPath.string());
         return;
     }
 
@@ -106,7 +105,7 @@ std::filesystem::path Config::getDefaultModelConfigPath() const
     return std::filesystem::path();
 }
 
-void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool override=false)
+void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool override)
 {
     if(!std::filesystem::exists(configPath))
     {
@@ -121,10 +120,9 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
         return;
     }
 
-    std::string errorMsg=config.ErrorMsg();
-    if(!errorMsg.empty())
+    if(!config.IsDefined())
     {
-        logWarning("Error in model config file "+configPath.string()+": "+errorMsg);
+        logWarning("Error in model config file: " + configPath.string());
         return;
     }
 
@@ -169,7 +167,7 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
     }
 }
 
-void Config::loadModelsFromDirectory(const std::filesystem::path &dirPath, bool override=false)
+void Config::loadModelsFromDirectory(const std::filesystem::path &dirPath, bool override)
 {
     if(!std::filesystem::exists(dirPath)||!std::filesystem::is_directory(dirPath))
     {
@@ -186,9 +184,9 @@ void Config::loadModelsFromDirectory(const std::filesystem::path &dirPath, bool 
     }
 }
 
-void Config::loadModelDefinitions(const std::string &m_resourceDirectory)
+void Config::loadModelDefinitions(const std::string &resourcePath)
 {
-    m_resourceDirectory=resourcePath;
+    m_resourceDirectory = resourcePath;
     // First load from resources
     auto resourceModelPath=std::filesystem::path(m_resourceDirectory)/"models";
     loadModelsFromDirectory(resourceModelPath);
