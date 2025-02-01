@@ -45,32 +45,40 @@ void Config::loadFromEnv()
 
 void Config::loadFromFile(const std::filesystem::path &configPath)
 {
+    if(!std::filesystem::exists(configPath))
+    {
+        logWarning("Config file does not exist: "+configPath.string());
+        return;
+    }
+
+    YAML::Node config;
     try
     {
-        YAML::Node config=YAML::LoadFile(configPath.string());
-
-        if(config["model"])
-        {
-            setModelAndProvider(config["model"].as<std::string>());
-        }
-
-        if(config["api_keys"]||config["api-keys"])
-        {
-            auto keys=config["api_keys"].IsDefined()?config["api_keys"]:config["api-keys"];
-
-            if(keys["openai"])
-            {
-                m_apiKeys["openai"]=keys["openai"].as<std::string>();
-            }
-            if(keys["anthropic"])
-            {
-                m_apiKeys["anthropic"]=keys["anthropic"].as<std::string>();
-            }
-        }
+        config=YAML::LoadFile(configPath.string());
     }
-    catch(const std::exception &e)
+    catch(...)
     {
-        logWarning("Failed to load config from " + configPath.string() + ": " + e.what());
+        logWarning("Failed to parse config file: "+configPath.string());
+        return;
+    }
+
+    if(config["model"])
+    {
+        setModelAndProvider(config["model"].as<std::string>());
+    }
+
+    if(config["api_keys"]||config["api-keys"])
+    {
+        auto keys=config["api_keys"].IsDefined()?config["api_keys"]:config["api-keys"];
+
+        if(keys["openai"]&&keys["openai"].IsScalar())
+        {
+            m_apiKeys["openai"]=keys["openai"].as<std::string>();
+        }
+        if(keys["anthropic"]&&keys["anthropic"].IsScalar())
+        {
+            m_apiKeys["anthropic"]=keys["anthropic"].as<std::string>();
+        }
     }
 }
 
@@ -97,38 +105,61 @@ std::filesystem::path Config::getDefaultModelConfigPath() const
 
 void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool override=false)
 {
+    if(!std::filesystem::exists(configPath))
+    {
+        logWarning("Model config file does not exist: "+configPath.string());
+        return;
+    }
+
+    YAML::Node config;
     try
     {
-        YAML::Node config=YAML::LoadFile(configPath.string());
-        if(config["model_list"])
+        config=YAML::LoadFile(configPath.string());
+    }
+    catch(...)
+    {
+        logWarning("Failed to parse model config file: "+configPath.string());
+        return;
+    }
+
+    if(!config["model_list"]||!config["model_list"].IsSequence())
+    {
+        logWarning("Invalid model_list in config: "+configPath.string());
+        return;
+    }
+
+    for(const auto &model:config["model_list"])
+    {
+        if(!model["model_name"]||!model["litellm_params"])
         {
-            for(const auto &model:config["model_list"])
+            logWarning("Skipping invalid model entry in: "+configPath.string());
+            continue;
+        }
+
+        const auto &params=model["litellm_params"];
+        if(!params["model"]||!params["provider"]||!params["api_base"])
+        {
+            logWarning("Skipping model with missing parameters in: "+configPath.string());
+            continue;
+        }
+
+        ModelConfig modelConfig;
+        modelConfig.model_name=model["model_name"].as<std::string>();
+        modelConfig.actual_model=params["model"].as<std::string>();
+        modelConfig.provider=params["provider"].as<std::string>();
+        modelConfig.api_base=params["api_base"].as<std::string>();
+
+        if(override)
+        {
+            // Remove existing config if present
+            auto it=std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
+                [&](const ModelConfig &cfg) { return cfg.model_name==modelConfig.model_name; });
+            if(it!=m_modelConfigs.end())
             {
-                ModelConfig modelConfig;
-                modelConfig.model_name=model["model_name"].as<std::string>();
-
-                const auto &params=model["litellm_params"];
-                modelConfig.actual_model=params["model"].as<std::string>();
-                modelConfig.provider=params["provider"].as<std::string>();
-                modelConfig.api_base=params["api_base"].as<std::string>();
-
-                if(override)
-                {
-                    // Remove existing config if present
-                    auto it=std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
-                        [&](const ModelConfig &cfg) { return cfg.model_name==modelConfig.model_name; });
-                    if(it!=m_modelConfigs.end())
-                    {
-                        m_modelConfigs.erase(it);
-                    }
-                }
-                m_modelConfigs.push_back(modelConfig);
+                m_modelConfigs.erase(it);
             }
         }
-    }
-    catch(const std::exception &e)
-    {
-        logWarning("Failed to load model definitions from " + configPath.string() + ": " + e.what());
+        m_modelConfigs.push_back(modelConfig);
     }
 }
 
