@@ -125,23 +125,35 @@ void Config::loadModelsFromFile(const std::filesystem::path& configPath, bool ov
     }
 }
 
+void Config::loadModelsFromDirectory(const std::filesystem::path& dirPath, bool override = false)
+{
+    if (!std::filesystem::exists(dirPath) || !std::filesystem::is_directory(dirPath)) {
+        return;
+    }
+
+    for (const auto& entry : std::filesystem::directory_iterator(dirPath)) {
+        if (entry.is_regular_file() && 
+            (entry.path().extension() == ".yml" || entry.path().extension() == ".yaml")) {
+            loadModelsFromFile(entry.path(), override);
+        }
+    }
+}
+
 void Config::loadModelDefinitions()
 {
     // First load from bundled resources
-    auto bundledPath = std::filesystem::path(__FILE__).parent_path() / "resources" / "model_config.yml";
-    loadModelsFromFile(bundledPath);
+    auto bundledPath = std::filesystem::path(__FILE__).parent_path() / "resources" / "models";
+    loadModelsFromDirectory(bundledPath);
 
     // Then load from user's config directory
-    auto userConfigPath = getDefaultModelConfigPath();
-    if (std::filesystem::exists(userConfigPath)) {
-        loadModelsFromFile(userConfigPath, true);
+    if (const char* home = std::getenv("HOME")) {
+        auto userConfigPath = std::filesystem::path(home) / ".cronus" / "models";
+        loadModelsFromDirectory(userConfigPath, true);
     }
 
     // Finally load from current directory
-    std::filesystem::path localConfig = ".cronus/model_config.yml";
-    if (std::filesystem::exists(localConfig)) {
-        loadModelsFromFile(localConfig, true);
-    }
+    std::filesystem::path localConfig = ".cronus/models";
+    loadModelsFromDirectory(localConfig, true);
 
     // Set resource path to the last successful load location
     if (!m_resourcePath.empty()) {
