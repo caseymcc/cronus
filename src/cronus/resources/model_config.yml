@@ -1,0 +1,25 @@
+# Default model configurations following litellm format
+model_list:
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+      api_base: https://api.openai.com/v1
+      provider: openai
+  
+  - model_name: gpt-4
+    litellm_params:
+      model: gpt-4
+      api_base: https://api.openai.com/v1
+      provider: openai
+  
+  - model_name: claude-3-opus
+    litellm_params:
+      model: claude-3-opus-20240229
+      api_base: https://api.anthropic.com/v1
+      provider: anthropic
+  
+  - model_name: deepseek-coder
+    litellm_params:
+      model: deepseek-coder
+      api_base: https://api.deepseek.com/v1
+      provider: deepseek

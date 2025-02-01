@@ -5,9 +5,17 @@
 #include <optional>
 #include <filesystem>
 #include <map>
+#include <vector>
 
 namespace cronus
 {
+
+struct ModelConfig {
+    std::string model_name;
+    std::string provider;
+    std::string api_base;
+    std::string actual_model;
+};
 
 class Config
 {
@@ -22,15 +30,21 @@ public:
 
     std::optional<std::string> getApiKey(const std::string &provider) const;
     void setApiKey(const std::string &provider, const std::string &key);
+    
+    std::optional<ModelConfig> getModelConfig(const std::string &model_name) const;
+    const std::vector<ModelConfig>& getAvailableModels() const { return m_modelConfigs; }
 
 private:
     Config()=default;
     void loadFromEnv();
     void loadFromFile(const std::filesystem::path &configPath);
+    void loadModelDefinitions();
+    std::filesystem::path getDefaultModelConfigPath() const;
 
     std::string m_model{ "gpt-3.5-turbo" };
     std::string m_provider{ "openai" };
     std::map<std::string, std::string> m_apiKeys;
+    std::vector<ModelConfig> m_modelConfigs;
 };
 
 } // namespace cronus
