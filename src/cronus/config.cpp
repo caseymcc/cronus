@@ -87,10 +87,12 @@ std::filesystem::path Config::getDefaultModelConfigPath() const {
 }
 
 void Config::loadModelDefinitions() {
+    std::filesystem::path configPath;
     if (!m_resourcePath.empty()) {
-        auto configPath = std::filesystem::path(m_resourcePath) / "model_config.yml";
+        configPath = std::filesystem::path(m_resourcePath) / "model_config.yml";
         if (std::filesystem::exists(configPath)) {
-            return configPath;
+            m_resourcePath = configPath.parent_path().string();
+            return;
         }
     }
 
