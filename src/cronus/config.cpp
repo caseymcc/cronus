@@ -1,5 +1,7 @@
 #include "cronus/config.h"
 
+#include "cronus/logger.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <cstdlib>
@@ -89,8 +91,8 @@ std::filesystem::path Config::getDefaultModelConfigPath() const
         return std::filesystem::path(home)/".local"/"share"/"cronus"/"model_config.yml";
     }
 #endif
+    Logger::instance().error("Could not determine default model config path");
     return std::filesystem::path();
-//    throw std::runtime_error("Could not determine default model config path");
 }
 
 void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool override=false)
