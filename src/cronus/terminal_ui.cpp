@@ -33,8 +33,6 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
             displayError(error);
         });
 
-    initializeDirTree();
-    setupInput();
 }
 
 void TerminalUI::initializeDirTree()
@@ -44,51 +42,76 @@ void TerminalUI::initializeDirTree()
         });
 }
 
-Element TerminalUI::createDirTree() const
-{
-    std::vector<Element> tree;
+// Create the directory tree element
+Element TerminalUI::createDirTree() const {
+    std::vector<Element> treeElements;
+    for (const auto& [isDir, name] : m_directoryContents) {
+        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+        treeElements.push_back(text(displayName));
+    }
+    return vbox(treeElements) | border | size(WIDTH, LESS_THAN, 30);
+}
 
-    for(const auto &[isDir, name]:m_dirContents)
-    {
-        auto displayName=isDir?"📁 "+name:"📄 "+name;
-        tree.push_back(text(displayName));
+// Create the chat messages area
+Element TerminalUI::createChatArea() const {
+    std::vector<Element> chatElements;
+    for (const auto& message : m_chatMessages) {
+        chatElements.push_back(text(message) | border);
+    }
+    return vbox(chatElements) | border | flex;
+}
+
+// Create the input area
+Element TerminalUI::createInputArea() const {
+    return vbox({
+        text("Input:") | bold,
+        m_inputBox->Render() | border
+    });
+}
+
+void initializeDirectoryTree() {
+        for (const auto& [isDir, name] : m_directoryContents) {
+            auto displayName = isDir ? "📁 " + name : "📄 " + name;
+            m_dirTree->Add(Button(displayName, [] {})); // Add dummy buttons
+        }
     }
 
-    return vbox(tree)|border|size(WIDTH, LESS_THAN, 30);
-}
-
-void TerminalUI::updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents)
-{
-    m_dirContents=contents;
-}
+    void initializeInputArea() {
+        m_inputBox = Input(&m_userInput, "Type your message...");
+    }
 
 Element TerminalUI::createMainLayout(const Element &content) const
 {
-    std::vector<Element> layout;
-    layout.push_back(content);
+    auto chatAndInput=vbox(
+        {
+            createChatArea(),
+            createInputArea()
+        })|flex;
 
     if(m_showDirTree)
     {
-        layout.push_back(createDirTree());
+        return hbox({
+            chatAndInput|flex,
+            createDirTree()|flex_shrink // Add directory tree on the right
+            });
     }
-
-    return hbox(layout);
+    return chatAndInput; // If toolbar is hidden, only show chat and input
 }
 
-void TerminalUI::render(const Element &element) const
+void TerminalUI::render(const Element &element)
 {
     m_screen.Clear();
     Render(m_screen, createMainLayout(element));
     m_screen.Print();
 }
 
-void TerminalUI::displayWelcome() const
+void TerminalUI::displayWelcome()
 {
     auto welcome=text("Cronus Client")|bold|color(Color::Blue);
     render(welcome);
 }
 
-void TerminalUI::displayResponse(const std::string &provider, const std::string &response) const
+void TerminalUI::displayResponse(const std::string &provider, const std::string &response)
 {
     auto header=text(provider+" Response:")|bold|color(Color::Green);
     auto content=text(response);
@@ -99,21 +122,23 @@ void TerminalUI::displayResponse(const std::string &provider, const std::string 
     render(element);
 }
 
-void TerminalUI::displayError(const std::string &message) const
+void TerminalUI::displayError(const std::string &message)
 {
     auto error=text("Error: "+message)|bold|color(Color::Red);
     render(error|border);
 }
 
-void TerminalUI::displayLog(const std::string &message) const
+void TerminalUI::displayLog(const std::string &message)
 {
     auto log=text(message)|color(Color::Yellow);
     render(log|border);
 }
 
-void TerminalUI::setupInput()
+void TerminalUI::setupUI()
 {
     m_inputBox=Input(&m_input, "Enter your message");
+
+    initializeDirTree();
 
     auto container=Container::Horizontal({
         m_inputBox,
@@ -135,7 +160,7 @@ void TerminalUI::setupInput()
             return createMainLayout(inputElement);
         });
 
-    m_screen.Loop(renderer);
+
 }
 
 void TerminalUI::handleInput(Event event)
@@ -158,7 +183,9 @@ void TerminalUI::handleInput(Event event)
 void TerminalUI::run()
 {
     displayWelcome();
-    setupInput();
+    setupUI();
+
+    m_screen.Loop(renderer);
 }
 
 } // namespace cronus
