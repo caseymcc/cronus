@@ -37,48 +37,39 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 
 void TerminalUI::initializeDirTree()
 {
-    m_dirTree=Container::Vertical({
+    m_dirTree = Container::Vertical({
         Button("Toggle Tree [F2]", [&] { m_showDirTree=!m_showDirTree; })
-        });
+    });
+    
+    for (const auto& [isDir, name] : m_dirContents) {
+        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+        m_dirTree->Add(Button(displayName, [] {})); // Add dummy buttons
+    }
 }
 
-// Create the directory tree element
 Element TerminalUI::createDirTree() const {
     std::vector<Element> treeElements;
-    for (const auto& [isDir, name] : m_directoryContents) {
+    for (const auto& [isDir, name] : m_dirContents) {
         auto displayName = isDir ? "📁 " + name : "📄 " + name;
         treeElements.push_back(text(displayName));
     }
-    return vbox(treeElements) | border | size(WIDTH, LESS_THAN, 30);
+    return vbox(std::move(treeElements)) | border | size(WIDTH, LESS_THAN, 30);
 }
 
-// Create the chat messages area
 Element TerminalUI::createChatArea() const {
     std::vector<Element> chatElements;
     for (const auto& message : m_chatMessages) {
         chatElements.push_back(text(message) | border);
     }
-    return vbox(chatElements) | border | flex;
+    return vbox(std::move(chatElements)) | border | flex;
 }
 
-// Create the input area
 Element TerminalUI::createInputArea() const {
     return vbox({
         text("Input:") | bold,
         m_inputBox->Render() | border
     });
 }
-
-void initializeDirectoryTree() {
-        for (const auto& [isDir, name] : m_directoryContents) {
-            auto displayName = isDir ? "📁 " + name : "📄 " + name;
-            m_dirTree->Add(Button(displayName, [] {})); // Add dummy buttons
-        }
-    }
-
-    void initializeInputArea() {
-        m_inputBox = Input(&m_userInput, "Type your message...");
-    }
 
 Element TerminalUI::createMainLayout(const Element &content) const
 {
@@ -136,31 +127,26 @@ void TerminalUI::displayLog(const std::string &message)
 
 void TerminalUI::setupUI()
 {
-    m_inputBox=Input(&m_input, "Enter your message");
-
+    m_inputBox = Input(&m_input, "Enter your message");
     initializeDirTree();
 
-    auto container=Container::Horizontal({
+    auto container = Container::Horizontal({
         m_inputBox,
         m_dirTree
+    });
+
+    container |= CatchEvent([this](Event event) {
+        handleInput(event);
+        return true;
+    });
+
+    m_renderer = Renderer(container, [this] {
+        auto inputElement = vbox({
+            text("Enter your message:") | bold,
+            m_inputBox->Render() | border
         });
-
-    container|=CatchEvent([this](Event event)
-        {
-            handleInput(event);
-            return true;
-        });
-
-    auto renderer=Renderer(container, [this]
-        {
-            auto inputElement=vbox({
-                text("Enter your message:")|bold,
-                m_inputBox->Render()|border
-                });
-            return createMainLayout(inputElement);
-        });
-
-
+        return createMainLayout(inputElement);
+    });
 }
 
 void TerminalUI::handleInput(Event event)
@@ -185,7 +171,7 @@ void TerminalUI::run()
     displayWelcome();
     setupUI();
 
-    m_screen.Loop(renderer);
+    m_screen.Loop(m_renderer);
 }
 
 } // namespace cronus

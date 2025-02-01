@@ -7,6 +7,7 @@
 #include <ftxui/component/screen_interactive.hpp>
 
 #include <string>
+#include <vector>
 
 namespace cronus
 {
@@ -34,6 +35,8 @@ private:
     // Helper methods
     void initializeDirTree();
     ftxui::Element createDirTree() const;
+    ftxui::Element createChatArea() const;
+    ftxui::Element createInputArea() const;
     void render(const ftxui::Element& element);
 
     ClientLogic& m_logic;
@@ -46,11 +49,12 @@ private:
     
     // Input handling
     std::string m_input;
+    std::string m_userInput;
     ftxui::Component m_inputBox;
     
-    
-public:
-    
+    // Chat messages
+    std::vector<std::string> m_chatMessages;
+    ftxui::Component m_renderer;
 };
 
 } // namespace cronus
