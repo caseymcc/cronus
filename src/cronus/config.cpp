@@ -51,15 +51,17 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
         return;
     }
 
-    YAML::Node config = YAML::LoadFile(configPath.string());
-    if (config.IsNull()) {
-        logWarning("Failed to parse config file: " + configPath.string());
+    YAML::Node config=YAML::LoadFile(configPath.string());
+    if(config.IsNull())
+    {
+        logWarning("Failed to parse config file: "+configPath.string());
         return;
     }
-    
-    std::string errorMsg = config.ErrorMsg();
-    if (!errorMsg.empty()) {
-        logWarning("Error in config file " + configPath.string() + ": " + errorMsg);
+
+    std::string errorMsg=config.ErrorMsg();
+    if(!errorMsg.empty())
+    {
+        logWarning("Error in config file "+configPath.string()+": "+errorMsg);
         return;
     }
 
@@ -112,15 +114,17 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
         return;
     }
 
-    YAML::Node config = YAML::LoadFile(configPath.string());
-    if (config.IsNull()) {
-        logWarning("Failed to parse model config file: " + configPath.string());
+    YAML::Node config=YAML::LoadFile(configPath.string());
+    if(config.IsNull())
+    {
+        logWarning("Failed to parse model config file: "+configPath.string());
         return;
     }
-    
-    std::string errorMsg = config.ErrorMsg();
-    if (!errorMsg.empty()) {
-        logWarning("Error in model config file " + configPath.string() + ": " + errorMsg);
+
+    std::string errorMsg=config.ErrorMsg();
+    if(!errorMsg.empty())
+    {
+        logWarning("Error in model config file "+configPath.string()+": "+errorMsg);
         return;
     }
 
