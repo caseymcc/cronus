@@ -15,11 +15,13 @@ Config &Config::instance()
     return instance;
 }
 
-void Config::setModelAndProvider(const std::string& combined) {
-    auto pos = combined.find('/');
-    if (pos != std::string::npos) {
-        m_provider = combined.substr(0, pos);
-        m_model = combined.substr(pos + 1);
+void Config::setModelAndProvider(const std::string &combined)
+{
+    auto pos=combined.find('/');
+    if(pos!=std::string::npos)
+    {
+        m_provider=combined.substr(0, pos);
+        m_model=combined.substr(pos+1);
     }
 }
 
@@ -70,76 +72,81 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
     }
 }
 
-std::filesystem::path Config::getDefaultModelConfigPath() const {
+std::filesystem::path Config::getDefaultModelConfigPath() const
+{
 #ifdef _WIN32
-    if (const char* appdata = std::getenv("APPDATA")) {
-        return std::filesystem::path(appdata) / "cronus" / "model_config.yml";
+    if(const char *appdata=std::getenv("APPDATA"))
+    {
+        return std::filesystem::path(appdata)/"cronus"/"model_config.yml";
     }
 #else
-    if (const char* xdg_data = std::getenv("XDG_DATA_HOME")) {
-        return std::filesystem::path(xdg_data) / "cronus" / "model_config.yml";
+    if(const char *xdg_data=std::getenv("XDG_DATA_HOME"))
+    {
+        return std::filesystem::path(xdg_data)/"cronus"/"model_config.yml";
     }
-    if (const char* home = std::getenv("HOME")) {
-        return std::filesystem::path(home) / ".local" / "share" / "cronus" / "model_config.yml";
+    if(const char *home=std::getenv("HOME"))
+    {
+        return std::filesystem::path(home)/".local"/"share"/"cronus"/"model_config.yml";
     }
 #endif
     throw std::runtime_error("Could not determine default model config path");
 }
 
-void Config::loadModelDefinitions() {
-    std::filesystem::path configPath;
-    if (!m_resourcePath.empty()) {
-        configPath = std::filesystem::path(m_resourcePath) / "model_config.yml";
-        if (std::filesystem::exists(configPath)) {
-            m_resourcePath = configPath.parent_path().string();
-            return;
-        }
-    }
+void Config::loadModelDefinitions()
+{
+    std::filesystem::path configPath=getDefaultModelConfigPath();
 
-    auto configPath = getDefaultModelConfigPath();
-    
     // If default config doesn't exist, use the bundled one
-    if (!std::filesystem::exists(configPath)) {
-        configPath = std::filesystem::path(__FILE__).parent_path() / "resources" / "model_config.yml";
+    if(!std::filesystem::exists(configPath))
+    {
+        configPath=std::filesystem::path(__FILE__).parent_path()/"resources"/"model_config.yml";
     }
 
-    m_resourcePath = configPath.parent_path().string();
-    
-    try {
-        YAML::Node config = YAML::LoadFile(configPath.string());
-        if (config["model_list"]) {
-            for (const auto& model : config["model_list"]) {
+    m_resourcePath=configPath.parent_path().string();
+
+    try
+    {
+        YAML::Node config=YAML::LoadFile(configPath.string());
+        if(config["model_list"])
+        {
+            for(const auto &model:config["model_list"])
+            {
                 ModelConfig modelConfig;
-                modelConfig.model_name = model["model_name"].as<std::string>();
-                
-                const auto& params = model["litellm_params"];
-                modelConfig.actual_model = params["model"].as<std::string>();
-                modelConfig.provider = params["provider"].as<std::string>();
-                modelConfig.api_base = params["api_base"].as<std::string>();
-                
+                modelConfig.model_name=model["model_name"].as<std::string>();
+
+                const auto &params=model["litellm_params"];
+                modelConfig.actual_model=params["model"].as<std::string>();
+                modelConfig.provider=params["provider"].as<std::string>();
+                modelConfig.api_base=params["api_base"].as<std::string>();
+
                 m_modelConfigs.push_back(modelConfig);
             }
         }
-    } catch (const std::exception& e) {
-        std::cerr << "Warning: Failed to load model definitions from " << configPath 
-                  << ": " << e.what() << std::endl;
+    }
+    catch(const std::exception &e)
+    {
+        std::cerr<<"Warning: Failed to load model definitions from "<<configPath
+            <<": "<<e.what()<<std::endl;
     }
 }
 
-std::optional<ModelConfig> Config::getModelConfig(const std::string& model_name) const {
-    for (const auto& config : m_modelConfigs) {
-        if (config.model_name == model_name) {
+std::optional<ModelConfig> Config::getModelConfig(const std::string &model_name) const
+{
+    for(const auto &config:m_modelConfigs)
+    {
+        if(config.model_name==model_name)
+        {
             return config;
         }
     }
     return std::nullopt;
 }
 
-void Config::load(const std::string& resourcePath)
+void Config::load(const std::string &resourcePath)
 {
     // Load model definitions first
     loadModelDefinitions();
-    
+
     // Load in order of precedence (later overrides earlier)
     loadFromEnv();
 
