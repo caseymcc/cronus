@@ -101,7 +101,7 @@ void TerminalUI::setupUI()
     // Create the renderer
     m_renderer=Renderer(container, [this]
         {
-            return renderMainLayout();
+            return renderMainLayout() | flex | size(WIDTH, EQUAL, 100) | size(HEIGHT, EQUAL, 100);
         });
 }
 
@@ -179,7 +179,7 @@ Element TerminalUI::renderMainLayout()
     if(m_showDirTree)
     {
         return dbox({
-            renderDirTree() | size(WIDTH, LESS_THAN, 30),
+            renderDirTree() | size(WIDTH, LESS_THAN, 60),
             chatAndInput
         });
     }
