@@ -136,7 +136,7 @@ Element TerminalUI::renderDirTree()
         auto displayName=isDir?"📁 "+name:"📄 "+name;
         treeElements.push_back(text(displayName));
     }
-    return vbox(std::move(treeElements))|border|size(WIDTH, GREATER_THAN, 30);
+    return vbox(std::move(treeElements))|border|bgcolor(Color::Black)|size(WIDTH, GREATER_THAN, 30);
 }
 
 Element TerminalUI::renderChatArea()
