@@ -136,7 +136,7 @@ Element TerminalUI::renderDirTree()
         auto displayName=isDir?"📁 "+name:"📄 "+name;
         treeElements.push_back(text(displayName));
     }
-    return vbox(std::move(treeElements))|border|size(WIDTH, LESS_THAN, 30);
+    return vbox(std::move(treeElements))|border|size(WIDTH, GREATER_THAN, 30);
 }
 
 Element TerminalUI::renderChatArea()
@@ -172,15 +172,15 @@ Element TerminalUI::renderInputArea()
 Element TerminalUI::renderMainLayout()
 {
     auto chatAndInput=vbox({
-            renderChatArea(),
+            renderChatArea() | flex_grow,
             renderInputArea() | size(HEIGHT, EQUAL, 5)
         });
 
     if(m_showDirTree)
     {
         return hbox({
-            chatAndInput|flex,
-            renderDirTree()|flex_shrink // Add directory tree on the right
+            chatAndInput|flex_grow,
+            renderDirTree()|flex_grow // Add directory tree on the right
             });
     }
 
