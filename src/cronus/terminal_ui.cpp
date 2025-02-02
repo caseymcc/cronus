@@ -16,7 +16,7 @@ namespace cronus
 
 TerminalUI::TerminalUI(ClientLogic &logic) :
     m_logic(logic),
-    m_screen(ScreenInteractive::TerminalOutput())
+    m_screen(ScreenInteractive::Fullscreen())
 {
     // Set up callbacks
     // Set up logging callback
@@ -101,7 +101,7 @@ void TerminalUI::setupUI()
     // Create the renderer
     m_renderer=Renderer(container, [this]
         {
-            return renderMainLayout() | flex | size(WIDTH, EQUAL, 100) | size(HEIGHT, EQUAL, 100);
+            return renderMainLayout() | flex_grow;
         });
 }
 
@@ -136,7 +136,7 @@ Element TerminalUI::renderDirTree()
         auto displayName=isDir?"📁 "+name:"📄 "+name;
         treeElements.push_back(text(displayName));
     }
-    return vbox(std::move(treeElements))|border|bgcolor(Color::Black)|size(WIDTH, GREATER_THAN, 30);
+    return vbox(std::move(treeElements))|border|bgcolor(Color::Black)|clear_under|size(WIDTH, LESS_THAN, 60);
 }
 
 Element TerminalUI::renderChatArea()
@@ -172,14 +172,14 @@ Element TerminalUI::renderInputArea()
 Element TerminalUI::renderMainLayout()
 {
     auto chatAndInput = vbox({
-            renderChatArea() | flex_grow,
+            renderChatArea() | flex,
             renderInputArea() | size(HEIGHT, EQUAL, 5)
         });
 
     if(m_showDirTree)
     {
         return dbox({
-            renderDirTree() | size(WIDTH, LESS_THAN, 60),
+            renderDirTree(),
             chatAndInput
         });
     }
