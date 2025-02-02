@@ -40,5 +40,5 @@ echo "Starting development container..."
 docker run -it --rm \
     --name $CONTAINER_NAME \
     -v $(pwd):/app \
-    -v $VCPKG_CACHE_VOLUME:/vcpkg_cache \
+    -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
     cronus
