@@ -16,12 +16,12 @@ class TerminalUI
 {
 public:
     TerminalUI();
-    explicit TerminalUI(class ClientLogic& logic);
+    explicit TerminalUI(class ClientLogic &logic);
 
     void run();
 
-    void updateDirectoryTree(const std::vector<std::pair<bool, std::string>>& contents);
-    ftxui::Element createMainLayout(const ftxui::Element& content) const;
+    void updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents);
+    ftxui::Element renderMainLayout(const ftxui::Element &content) const;
 
 private:
     void displayWelcome();
@@ -30,28 +30,27 @@ private:
     void displayLog(const std::string &message);
 
     void handleInput(ftxui::Event event);
-    void setupUI();
-    
+
     // Helper methods
     void initializeDirTree();
-    ftxui::Element createDirTree() const;
-    ftxui::Element createChatArea() const;
-    ftxui::Element createInputArea() const;
-    void render(const ftxui::Element& element);
+    ftxui::Element renderDirTree() const;
+    ftxui::Element renderChatArea() const;
+    ftxui::Element renderInputArea() const;
+    void render(const ftxui::Element &element);
 
-    ClientLogic& m_logic;
+    ClientLogic &m_logic;
     ftxui::ScreenInteractive m_screen;
-        
+
     // Directory tree state
     ftxui::Component m_dirTree;
-    bool m_showDirTree{true};
-    std::vector<std::pair<bool, std::string>> m_dirContents;    
-    
+    bool m_showDirTree{ true };
+    std::vector<std::pair<bool, std::string>> m_dirContents;
+
     // Input handling
     std::string m_input;
     std::string m_userInput;
     ftxui::Component m_inputBox;
-    
+
     // Chat messages
     std::vector<std::string> m_chatMessages;
     ftxui::Component m_renderer;
