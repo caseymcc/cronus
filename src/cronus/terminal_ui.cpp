@@ -20,21 +20,46 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 {
     // Set up callbacks
     // Set up logging callback
-    Logger::instance().setCallback([this](LogLevel level, const std::string &message)
-        {
-            displayLog(message);
-        });
-
     m_logic.setResponseCallback([this](const std::string &provider, const std::string &response)
         {
-            displayResponse(provider, response);
+            addResponse(provider, response);
         });
 
-    m_logic.setErrorCallback([this](const std::string &error)
+    m_logic.setLogCallback([this](LogLevel logLevel, const std::string &message)
         {
-            displayError(error);
+            addLog(logLevel, message);
         });
 
+}
+
+void TerminalUI::addResponse(const std::string &provider, const std::string &response)
+{
+    m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
+    m_screen.RequestAnimationFrame();
+}
+
+void TerminalUI::addLog(LogLevel logLevel, const std::string &message)
+{
+    Role role=Role::Log;
+
+    switch(logLevel)
+    {
+        case LogLevel::Debug:
+            role=Role::Log;
+            break;
+        case LogLevel::Info:
+            role=Role::Log;
+            break;
+        case LogLevel::Warning:
+            role=Role::Warning;
+            break;
+        case LogLevel::Error:
+            role=Role::Error;
+            break;
+    }
+
+    m_chatMessages.emplace_back(ChatType::Log, role, message);
+    m_screen.RequestAnimationFrame();
 }
 
 void TerminalUI::initializeDirTree()
@@ -47,121 +72,6 @@ void TerminalUI::initializeDirTree()
     {
         auto displayName=isDir?"📁 "+name:"📄 "+name;
         m_dirTree->Add(Button(displayName, [] {})); // Add dummy buttons
-    }
-}
-
-Element TerminalUI::renderDirTree()
-{
-    std::vector<Element> treeElements;
-    for(const auto &[isDir, name]:m_dirContents)
-    {
-        auto displayName=isDir?"📁 "+name:"📄 "+name;
-        treeElements.push_back(text(displayName));
-    }
-    return vbox(std::move(treeElements))|border|size(WIDTH, LESS_THAN, 30);
-}
-
-Element TerminalUI::renderChatArea()
-{
-    std::vector<Element> chatElements;
-    for(const auto &message:m_chatMessages)
-    {
-        chatElements.push_back(text(message)|border);
-    }
-    return vbox(std::move(chatElements))|border|flex;
-}
-
-Element TerminalUI::renderInputArea()
-{
-    return vbox({
-        text("Input:")|bold,
-        m_inputBox->Render()|border
-        });
-}
-
-void TerminalUI::handleInput(ftxui::Event event)
-{
-    if(event==Event::Return&&!m_input.empty())
-    {
-        m_logic.processInput(m_input);
-        m_input.clear();
-    }
-    else if(event==Event::F2)
-    {
-        m_showDirTree=!m_showDirTree;
-    }
-    else if(event==Event::Character('q'))
-    {
-        m_screen.Exit();
-    }
-}
-
-Element TerminalUI::renderMainLayout()
-{
-    ftxui::Component chatAndInput=vbox(
-        {
-            renderChatArea(),
-            renderInputArea()
-        })|flex;
-
-    if(m_showDirTree)
-    {
-        return hbox({
-            chatAndInput|flex,
-            renderDirTree()|flex_shrink // Add directory tree on the right
-            });
-    }
-
-    chatAndInput|=CatchEvent(handleInput(Event::event));
-
-    return chatAndInput; // If toolbar is hidden, only show chat and input
-}
-
-
-
-void TerminalUI::displayWelcome()
-{
-    auto welcome=text("Cronus Client")|bold|color(Color::Blue);
-    render(welcome);
-}
-
-void TerminalUI::displayResponse(const std::string &provider, const std::string &response)
-{
-    auto header=text(provider+" Response:")|bold|color(Color::Green);
-    auto content=text(response);
-    auto element=vbox({
-        header,
-        content
-        })|border;
-    render(element);
-}
-
-void TerminalUI::displayError(const std::string &message)
-{
-    auto error=text("Error: "+message)|bold|color(Color::Red);
-    render(error|border);
-}
-
-void TerminalUI::displayLog(const std::string &message)
-{
-    auto log=text(message)|color(Color::Yellow);
-    render(log|border);
-}
-
-void TerminalUI::handleInput(Event event)
-{
-    if(event==Event::Return&&!m_input.empty())
-    {
-        m_logic.processInput(m_input);
-        m_input.clear();
-    }
-    else if(event==Event::F2)
-    {
-        m_showDirTree=!m_showDirTree;
-    }
-    else if(event==Event::Character('q'))
-    {
-        m_screen.Exit();
     }
 }
 
@@ -199,6 +109,83 @@ void TerminalUI::run()
 {
     setupUI();
     m_screen.Loop(m_renderer);
+}
+
+void TerminalUI::handleInput(Event event)
+{
+    if(event==Event::Return&&!m_input.empty())
+    {
+        m_logic.processInput(m_input);
+        m_input.clear();
+    }
+    else if(event==Event::F2)
+    {
+        m_showDirTree=!m_showDirTree;
+    }
+    else if(event==Event::Character('q'))
+    {
+        m_screen.Exit();
+    }
+}
+
+Element TerminalUI::renderDirTree()
+{
+    std::vector<Element> treeElements;
+    for(const auto &[isDir, name]:m_dirContents)
+    {
+        auto displayName=isDir?"📁 "+name:"📄 "+name;
+        treeElements.push_back(text(displayName));
+    }
+    return vbox(std::move(treeElements))|border|size(WIDTH, LESS_THAN, 30);
+}
+
+Element TerminalUI::renderChatArea()
+{
+    std::vector<Element> chatElements;
+    for(const auto &entry:m_chatMessages)
+    {
+        if(entry.type == ChatType::Log)
+        {
+            if(entry.role==Role::Error)
+                chatElements.push_back(text("Error: "+entry.content)|bold|color(Color::Red));
+            else if(entry.role==Role::Warning)
+                chatElements.push_back(text("Warning: "+entry.content)|bold|color(Color::Yellow));
+            else if(entry.role==Role::Log)
+                chatElements.push_back(text("Log: "+entry.content)|bold|color(Color::Green));
+            else
+                chatElements.push_back(text(entry.content)|border);
+        }
+        else
+            chatElements.push_back(text(entry.content)|border);
+    }
+    return vbox(std::move(chatElements))|border|flex;
+}
+
+Element TerminalUI::renderInputArea()
+{
+    return vbox({
+        text("Input:")|bold,
+        m_inputBox->Render()|border
+        });
+}
+
+Element TerminalUI::renderMainLayout()
+{
+    auto chatAndInput=vbox(
+        {
+            renderChatArea(),
+            renderInputArea()
+        })|flex;
+
+    if(m_showDirTree)
+    {
+        return hbox({
+            chatAndInput|flex,
+            renderDirTree()|flex_shrink // Add directory tree on the right
+            });
+    }
+
+    return chatAndInput; // If toolbar is hidden, only show chat and input
 }
 
 } // namespace cronus
