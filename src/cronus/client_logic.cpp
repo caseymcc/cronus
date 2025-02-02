@@ -37,10 +37,7 @@ std::future<int> ClientLogic::processInput(const std::string &input)
 
 void ClientLogic::log(const std::string &message) const
 {
-    if(m_logCallback)
-    {
-        m_logCallback(message);
-    }
+    logInfo(message);
 }
 
 void ClientLogic::handleResponse(const std::string &provider, const std::string &response) const
@@ -53,10 +50,7 @@ void ClientLogic::handleResponse(const std::string &provider, const std::string 
 
 void ClientLogic::handleError(const std::string &error) const
 {
-    if(m_errorCallback)
-    {
-        m_errorCallback(error);
-    }
+    logError(error);
 }
 
 void ClientLogic::workerLoop()
