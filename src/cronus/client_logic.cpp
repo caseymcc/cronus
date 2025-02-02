@@ -14,10 +14,17 @@ ClientLogic::~ClientLogic()=default;
 
 void ClientLogic::run()
 {
+    m_running = true;
+    m_workerThread = std::thread(&ClientLogic::workerLoop, this);
 }
 
 void ClientLogic::stop()
 {
+    m_running = false;
+    m_condition.notify_one();
+    if (m_workerThread.joinable()) {
+        m_workerThread.join();
+    }
 }
 
 std::future<int> ClientLogic::processInput(const std::string &input)

@@ -62,8 +62,8 @@ private:
     std::queue<Task> m_tasks;
     std::mutex m_mutex;
     std::condition_variable m_condition;
-    std::thread m_worker;
-    bool m_running;
+    std::thread m_workerThread;
+    bool m_running{false};
 };
 
 } // namespace cronus
