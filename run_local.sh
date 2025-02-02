@@ -21,7 +21,7 @@ while getopts "rsv:" opt; do
     case $opt in
         r) REBUILD=1 ;;
         s) STOP=1 ;;
-        v) VCPKG_CACHE_DIR= ;;
+        v) VCPKG_CACHE_DIR="$OPTARG" ;;
         ?) usage ;;
     esac
 done
