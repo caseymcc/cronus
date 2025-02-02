@@ -21,9 +21,10 @@ public:
     void run();
 
     void updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents);
-    ftxui::Element renderMainLayout(const ftxui::Element &content) const;
+    ftxui::Element renderMainLayout() const;
 
 private:
+    void setupUI();
     void displayWelcome();
     void displayResponse(const std::string &provider, const std::string &response);
     void displayError(const std::string &message);

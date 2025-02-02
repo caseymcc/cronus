@@ -48,7 +48,7 @@ void TerminalUI::initializeDirTree()
     }
 }
 
-Element TerminalUI::renderDirTree() {
+Element TerminalUI::renderDirTree() const {
     std::vector<Element> treeElements;
     for (const auto& [isDir, name] : m_dirContents) {
         auto displayName = isDir ? "📁 " + name : "📄 " + name;
@@ -57,7 +57,7 @@ Element TerminalUI::renderDirTree() {
     return vbox(std::move(treeElements)) | border | size(WIDTH, LESS_THAN, 30);
 }
 
-Element TerminalUI::renderChatArea() {
+Element TerminalUI::renderChatArea() const {
     std::vector<Element> chatElements;
     for (const auto& message : m_chatMessages) {
         chatElements.push_back(text(message) | border);
@@ -65,7 +65,7 @@ Element TerminalUI::renderChatArea() {
     return vbox(std::move(chatElements)) | border | flex;
 }
 
-Element TerminalUI::renderInputArea() {
+Element TerminalUI::renderInputArea() const {
     return vbox({
         text("Input:") | bold,
         m_inputBox->Render() | border
@@ -89,7 +89,7 @@ void TerminalUI::handleInput(ftxui::Event event)
     }
 }
 
-Element TerminalUI::renderMainLayout()
+Element TerminalUI::renderMainLayout() const
 {
     ftxui::Component chatAndInput=vbox(
         {
@@ -158,11 +158,37 @@ void TerminalUI::handleInput(Event event)
     }
 }
 
+void TerminalUI::setupUI()
+{
+    // Create input box
+    m_inputBox = Input(&m_input, "Enter your message");
+    
+    // Initialize directory tree
+    initializeDirTree();
+
+    // Create main container with input and directory tree
+    auto container = Container::Horizontal({
+        Container::Vertical({
+            m_inputBox
+        }),
+        m_dirTree
+    });
+
+    // Add event handling
+    container |= CatchEvent([this](Event event) {
+        handleInput(event);
+        return true;
+    });
+
+    // Create the renderer
+    m_renderer = Renderer(container, [this] {
+        return renderMainLayout();
+    });
+}
+
 void TerminalUI::run()
 {
     setupUI();
-
-    m_renderer=Render(m_screen, renderMainLayout());
     m_screen.Loop(m_renderer);
 }
 
