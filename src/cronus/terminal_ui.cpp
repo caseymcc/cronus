@@ -117,6 +117,7 @@ void TerminalUI::handleInput(Event event)
     {
         m_logic.processInput(m_input);
         m_input.clear();
+        m_screen.RequestAnimationFrame();
     }
     else if(event==Event::F2)
     {
@@ -125,6 +126,17 @@ void TerminalUI::handleInput(Event event)
     else if(event==Event::Character('q'))
     {
         m_screen.Exit();
+    }
+    else if(event.is_character())
+    {
+        m_input.clear();
+        m_input += event.character();
+        m_screen.RequestAnimationFrame();
+    }
+    else if(event == Event::Backspace && !m_input.empty())
+    {
+        m_input.pop_back();
+        m_screen.RequestAnimationFrame();
     }
 }
 
