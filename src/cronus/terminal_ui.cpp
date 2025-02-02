@@ -171,17 +171,17 @@ Element TerminalUI::renderInputArea()
 
 Element TerminalUI::renderMainLayout()
 {
-    auto chatAndInput=vbox({
+    auto chatAndInput = vbox({
             renderChatArea() | flex_grow,
             renderInputArea() | size(HEIGHT, EQUAL, 5)
         });
 
     if(m_showDirTree)
     {
-        return hbox({
-            chatAndInput|flex_grow,
-            renderDirTree()|flex_grow // Add directory tree on the right
-            });
+        return dbox({
+            renderDirTree() | size(WIDTH, LESS_THAN, 30),
+            chatAndInput
+        });
     }
 
     return chatAndInput; // If toolbar is hidden, only show chat and input
