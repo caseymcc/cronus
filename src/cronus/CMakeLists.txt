@@ -9,15 +9,15 @@ find_package(yaml-cpp CONFIG REQUIRED)
 find_package(ftxui CONFIG REQUIRED)
 
 set(cronus_src
-    ./main.cpp
     ./client_logic.h
     ./client_logic.cpp
-    ./terminal_ui.h
-    ./terminal_ui.cpp
     ./config.h
     ./config.cpp
-    ./task_system.h
-    ./task_system.cpp
+    ./logger.h
+    ./logger.cpp
+    ./terminal_ui.h
+    ./terminal_ui.cpp
+    ./main.cpp
 )
 
 # Add executable

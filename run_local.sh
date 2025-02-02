@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CONTAINER_NAME="cronus_dev"
-DEFAULT_CACHE_DIR="$HOME/.vcpkg/cache"
+DEFAULT_CACHE_DIR="$HOME/.cache/vcpkg"
 VCPKG_CACHE_DIR="${VCPKG_CACHE_DIR:-$DEFAULT_CACHE_DIR}"
 
 # Function to show usage
@@ -25,9 +25,6 @@ while getopts "rsv:" opt; do
         ?) usage ;;
     esac
 done
-
-# Create cache directory if it doesn't exist
-mkdir -p "$VCPKG_CACHE_DIR"
 
 # Stop container if requested
 if [ $STOP -eq 1 ]; then

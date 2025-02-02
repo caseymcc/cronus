@@ -29,6 +29,8 @@ COPY . .
 
 # Configure CMake to use vcpkg
 ENV VCPKG_ROOT=/opt/vcpkg
+ENV VCPKG_DEFAULT_BINARY_CACHE=/vcpkg_cache
+
 ENV CMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
 
 # Build command (to be run when container starts)

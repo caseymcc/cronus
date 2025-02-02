@@ -1,0 +1,7 @@
+# Default model configurations following litellm format
+model_list:
+  - model_name: deepseek-resolver
+    litellm_params:
+      model: deepseek-resolver:14b
+      api_base: https://192.168.2.87/v1
+      provider: openai

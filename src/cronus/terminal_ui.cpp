@@ -20,9 +20,10 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 {
     // Set up callbacks
     // Set up logging callback
-    Logger::instance().setCallback([this](LogLevel level, const std::string& message) {
-        displayLog(message);
-    });
+    Logger::instance().setCallback([this](LogLevel level, const std::string &message)
+        {
+            displayLog(message);
+        });
 
     m_logic.setResponseCallback([this](const std::string &provider, const std::string &response)
         {
@@ -38,38 +39,44 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 
 void TerminalUI::initializeDirTree()
 {
-    m_dirTree = Container::Vertical({
+    m_dirTree=Container::Vertical({
         Button("Toggle Tree [F2]", [&] { m_showDirTree=!m_showDirTree; })
-    });
-    
-    for (const auto& [isDir, name] : m_dirContents) {
-        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+        });
+
+    for(const auto &[isDir, name]:m_dirContents)
+    {
+        auto displayName=isDir?"📁 "+name:"📄 "+name;
         m_dirTree->Add(Button(displayName, [] {})); // Add dummy buttons
     }
 }
 
-Element TerminalUI::renderDirTree() const {
+Element TerminalUI::renderDirTree()
+{
     std::vector<Element> treeElements;
-    for (const auto& [isDir, name] : m_dirContents) {
-        auto displayName = isDir ? "📁 " + name : "📄 " + name;
+    for(const auto &[isDir, name]:m_dirContents)
+    {
+        auto displayName=isDir?"📁 "+name:"📄 "+name;
         treeElements.push_back(text(displayName));
     }
-    return vbox(std::move(treeElements)) | border | size(WIDTH, LESS_THAN, 30);
+    return vbox(std::move(treeElements))|border|size(WIDTH, LESS_THAN, 30);
 }
 
-Element TerminalUI::renderChatArea() const {
+Element TerminalUI::renderChatArea()
+{
     std::vector<Element> chatElements;
-    for (const auto& message : m_chatMessages) {
-        chatElements.push_back(text(message) | border);
+    for(const auto &message:m_chatMessages)
+    {
+        chatElements.push_back(text(message)|border);
     }
-    return vbox(std::move(chatElements)) | border | flex;
+    return vbox(std::move(chatElements))|border|flex;
 }
 
-Element TerminalUI::renderInputArea() const {
+Element TerminalUI::renderInputArea()
+{
     return vbox({
-        text("Input:") | bold,
-        m_inputBox->Render() | border
-    });
+        text("Input:")|bold,
+        m_inputBox->Render()|border
+        });
 }
 
 void TerminalUI::handleInput(ftxui::Event event)
@@ -89,7 +96,7 @@ void TerminalUI::handleInput(ftxui::Event event)
     }
 }
 
-Element TerminalUI::renderMainLayout() const
+Element TerminalUI::renderMainLayout()
 {
     ftxui::Component chatAndInput=vbox(
         {
@@ -105,7 +112,7 @@ Element TerminalUI::renderMainLayout() const
             });
     }
 
-    chatAndInput|= CatchEvent(handleInput(Event::event));
+    chatAndInput|=CatchEvent(handleInput(Event::event));
 
     return chatAndInput; // If toolbar is hidden, only show chat and input
 }
@@ -161,29 +168,31 @@ void TerminalUI::handleInput(Event event)
 void TerminalUI::setupUI()
 {
     // Create input box
-    m_inputBox = Input(&m_input, "Enter your message");
-    
+    m_inputBox=Input(&m_input, "Enter your message");
+
     // Initialize directory tree
     initializeDirTree();
 
     // Create main container with input and directory tree
-    auto container = Container::Horizontal({
+    auto container=Container::Horizontal({
         Container::Vertical({
             m_inputBox
         }),
         m_dirTree
-    });
+        });
 
     // Add event handling
-    container |= CatchEvent([this](Event event) {
-        handleInput(event);
-        return true;
-    });
+    container|=CatchEvent([this](Event event)
+        {
+            handleInput(event);
+            return true;
+        });
 
     // Create the renderer
-    m_renderer = Renderer(container, [this] {
-        return renderMainLayout();
-    });
+    m_renderer=Renderer(container, [this]
+        {
+            return renderMainLayout();
+        });
 }
 
 void TerminalUI::run()

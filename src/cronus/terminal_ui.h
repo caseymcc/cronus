@@ -21,10 +21,9 @@ public:
     void run();
 
     void updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents);
-    ftxui::Element renderMainLayout() const;
+    ftxui::Element renderMainLayout();
 
 private:
-    void setupUI();
     void displayWelcome();
     void displayResponse(const std::string &provider, const std::string &response);
     void displayError(const std::string &message);
@@ -34,10 +33,9 @@ private:
 
     // Helper methods
     void initializeDirTree();
-    ftxui::Element renderDirTree() const;
-    ftxui::Element renderChatArea() const;
-    ftxui::Element renderInputArea() const;
-    void render(const ftxui::Element &element);
+    ftxui::Element renderDirTree();
+    ftxui::Element renderChatArea();
+    ftxui::Element renderInputArea();
 
     ClientLogic &m_logic;
     ftxui::ScreenInteractive m_screen;

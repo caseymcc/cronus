@@ -60,7 +60,7 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
 
     if(!config.IsDefined())
     {
-        logWarning("Error in config file: " + configPath.string());
+        logWarning("Error in config file: "+configPath.string());
         return;
     }
 
@@ -122,7 +122,7 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
 
     if(!config.IsDefined())
     {
-        logWarning("Error in model config file: " + configPath.string());
+        logWarning("Error in model config file: "+configPath.string());
         return;
     }
 
@@ -158,22 +158,18 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
             // Update existing config if present
             auto it=std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
                 [&](const ModelConfig &cfg) { return cfg.model_name==modelConfig.model_name; });
+
             if(it!=m_modelConfigs.end())
             {
                 // Update existing values
-                it->actual_model = modelConfig.actual_model;
-                it->provider = modelConfig.provider;
-                it->api_base = modelConfig.api_base;
-            }
-            else
-            {
-                m_modelConfigs.push_back(modelConfig);
+                it->actual_model=modelConfig.actual_model;
+                it->provider=modelConfig.provider;
+                it->api_base=modelConfig.api_base;
+                continue;
             }
         }
-        else
-        {
-            m_modelConfigs.push_back(modelConfig);
-        }
+        m_modelConfigs.push_back(modelConfig);
+        continue;
     }
 }
 
@@ -196,7 +192,7 @@ void Config::loadModelsFromDirectory(const std::filesystem::path &dirPath, bool 
 
 void Config::loadModelDefinitions(const std::string &resourcePath)
 {
-    m_resourceDirectory = resourcePath;
+    m_resourceDirectory=resourcePath;
     // First load from resources
     auto resourceModelPath=std::filesystem::path(m_resourceDirectory)/"models";
     loadModelsFromDirectory(resourceModelPath);

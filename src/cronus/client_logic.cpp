@@ -85,7 +85,6 @@ void ClientLogic::workerLoop()
             processCompletion(task.input);
             break;
         case Task::Type::DirectoryContents:
-            updateDirectoryTree();
             break;
         }
     }
@@ -128,12 +127,6 @@ int ClientLogic::processCompletion(const std::string &input)
     handleResponse(response.provider, response.text);
     log("Completion processed successfully");
     return 0;
-}
-
-void ClientLogic::updateDirectoryTree()
-{
-    auto contents=getCurrentDirectoryContents();
-    m_ui.updateDirectoryTree(contents);
 }
 
 std::vector<std::pair<bool, std::string>> ClientLogic::getCurrentDirectoryContents() const

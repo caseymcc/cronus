@@ -25,7 +25,7 @@ public:
     void load(const std::string& resourcePath = "");
 
     std::string getModel() const { return m_model; }
-    std::string getResourcePath() const { return m_resourcePath; }
+    std::string getResourcePath() const { return m_resourceDirectory; }
     std::string getProvider() const { return m_provider; }
     void setModelAndProvider(const std::string &combined);
 
@@ -39,7 +39,7 @@ private:
     Config()=default;
     void loadFromEnv();
     void loadFromFile(const std::filesystem::path &configPath);
-    void loadModelDefinitions();
+    void loadModelDefinitions(const std::string &resourcePath);
     void loadModelsFromFile(const std::filesystem::path& configPath, bool override = false);
     void loadModelsFromDirectory(const std::filesystem::path& dirPath, bool override = false);
     std::filesystem::path getDefaultModelConfigPath() const;
@@ -48,7 +48,7 @@ private:
     std::string m_provider{ "openai" };
     std::map<std::string, std::string> m_apiKeys;
     std::vector<ModelConfig> m_modelConfigs;
-    std::string m_resourcePath;
+    std::string m_resourceDirectory;
 };
 
 } // namespace cronus
