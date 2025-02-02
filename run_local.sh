@@ -1,6 +1,11 @@
 #!/bin/bash
 
 CONTAINER_NAME="cronus_dev"
+DEFAULT_CACHE_DIR="$HOME/.vcpkg/cache"
+VCPKG_CACHE_DIR="${VCPKG_CACHE_DIR:-$DEFAULT_CACHE_DIR}"
+
+# Create cache directory if it doesn't exist
+mkdir -p "$VCPKG_CACHE_DIR"
 
 # Function to show usage
 usage() {
