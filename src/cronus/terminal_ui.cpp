@@ -158,7 +158,7 @@ Element TerminalUI::renderChatArea()
         else
             chatElements.push_back(text(entry.content)|border);
     }
-    return vbox(std::move(chatElements))|border|flex;
+    return vbox(std::move(chatElements))|border|flex|size(HEIGHT, GREATER_THAN, 10);
 }
 
 Element TerminalUI::renderInputArea()
@@ -172,9 +172,9 @@ Element TerminalUI::renderInputArea()
 Element TerminalUI::renderMainLayout()
 {
     auto chatAndInput=vbox({
-            renderChatArea() | flex,
+            renderChatArea(),
             renderInputArea() | size(HEIGHT, EQUAL, 5)
-        }) | flex;
+        });
 
     if(m_showDirTree)
     {
