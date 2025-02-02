@@ -7,6 +7,7 @@ usage() {
     echo "Usage: $0 [-r] [-s]"
     echo "  -r: Rebuild Docker image"
     echo "  -s: Stop running container before starting"
+    echo "  -v: Path to vcpkg installation on host system"
     exit 1
 }
 
@@ -39,4 +40,5 @@ echo "Starting development container..."
 docker run -it --rm \
     --name $CONTAINER_NAME \
     -v $(pwd):/app \
+    -v $VCPKG_CACHE_VOLUME:/vcpkg_cache \
     cronus
