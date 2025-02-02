@@ -171,11 +171,10 @@ Element TerminalUI::renderInputArea()
 
 Element TerminalUI::renderMainLayout()
 {
-    auto chatAndInput=vbox(
-        {
-            renderChatArea(),
-            renderInputArea()
-        })|flex;
+    auto chatAndInput=vbox({
+            renderChatArea() | flex,
+            renderInputArea() | size(HEIGHT, EQUAL, 5)
+        }) | flex;
 
     if(m_showDirTree)
     {
