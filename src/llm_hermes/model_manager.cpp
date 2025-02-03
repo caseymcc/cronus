@@ -11,27 +11,31 @@ ModelManager& ModelManager::instance()
     return instance;
 }
 
-bool ModelManager::initialize(const std::filesystem::path& configPath)
+bool ModelManager::initialize(const std::vector<std::filesystem::path>& configPaths)
 {
-    auto modelsPath = configPath / "models";
-    
-    if (!std::filesystem::exists(modelsPath)) {
-        return false;
-    }
-
     // Clear existing data
     m_models.clear();
     m_modelProviderMap.clear();
 
-    // Iterate through all JSON files in the models directory
     bool anyLoaded = false;
-    for (const auto& entry : std::filesystem::directory_iterator(modelsPath)) {
-        if (entry.path().extension() != ".json") {
+    
+    // Process directories in order, allowing later ones to override earlier ones
+    for (const auto& configPath : configPaths) {
+        auto modelsPath = configPath / "models";
+        
+        if (!std::filesystem::exists(modelsPath)) {
             continue;
         }
 
-        if (loadModelFile(entry.path())) {
-            anyLoaded = true;
+        // Iterate through all JSON files in the models directory
+        for (const auto& entry : std::filesystem::directory_iterator(modelsPath)) {
+            if (entry.path().extension() != ".json") {
+                continue;
+            }
+
+            if (loadModelFile(entry.path())) {
+                anyLoaded = true;
+            }
         }
     }
 
@@ -89,6 +93,14 @@ bool ModelManager::loadModelFile(const std::filesystem::path& filePath)
                 info.output_cost_per_token = modelJson["output_cost_per_token"].get<double>();
             }
 
+            // Remove any existing model with the same name (for override)
+            auto it = std::find_if(m_models.begin(), m_models.end(),
+                [&info](const ModelInfo& existing) { return existing.model == info.model; });
+            if (it != m_models.end()) {
+                m_models.erase(it);
+            }
+            
+            // Add the new model info
             m_models.push_back(info);
             m_modelProviderMap[info.model] = info.provider;
         }

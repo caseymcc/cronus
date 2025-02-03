@@ -28,7 +28,10 @@ class ModelManager {
 public:
     static ModelManager& instance();
 
-    bool initialize(const std::filesystem::path& configPath);
+    bool initialize(const std::vector<std::filesystem::path>& configPaths);
+    bool initialize(const std::filesystem::path& configPath) {
+        return initialize(std::vector<std::filesystem::path>{configPath});
+    }
     std::optional<std::string> getProvider(const std::string& model) const;
     std::optional<ModelInfo> getModelInfo(const std::string& model) const;
     const std::map<std::string, std::string>& getModelProviderMap() const { return m_modelProviderMap; }
