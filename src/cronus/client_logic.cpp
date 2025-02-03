@@ -96,7 +96,7 @@ int ClientLogic::processCompletion(const std::string &input)
     const auto &config=Config::instance();
     log("Processing completion request...");
 
-    llm_hermes::CompletionRequest request{
+    hermes::CompletionRequest request{
         .model=config.getModel(),
         .messages={
             {"user", input}
@@ -115,10 +115,10 @@ int ClientLogic::processCompletion(const std::string &input)
         return 1;
     }
 
-    llm_hermes::CompletionResponse response;
-    llm_hermes::ErrorCode result=llm_hermes::completion(request, response);
+    hermes::CompletionResponse response;
+    hermes::ErrorCode result=hermes::completion(request, response);
 
-    if(result!=llm_hermes::ErrorCode::Success)
+    if(result!=hermes::ErrorCode::Success)
     {
         handleError(request.model+" completion failed with error code: "+
             std::to_string(static_cast<int>(result)));
