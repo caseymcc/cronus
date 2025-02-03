@@ -103,16 +103,23 @@ int ClientLogic::processCompletion(const std::string &input)
         }
     };
 
-    // Add API key if configured
-    auto apiKey=config.getApiKey(config.getProvider());
-    if(apiKey)
-    {
-        request.api_key=*apiKey;
-    }
-    else
-    {
-        handleError("API key not found for provider: "+config.getProvider());
+    // Get model config
+    auto modelConfig = config.getModelConfig(config.getModel());
+    if (!modelConfig) {
+        handleError("Model configuration not found for: " + config.getModel());
         return 1;
+    }
+
+    // Add API key if required by model
+    if (modelConfig->require_api_key) {
+        auto apiKey = config.getApiKey(config.getProvider());
+        if (apiKey) {
+            request.api_key = *apiKey;
+        }
+        else {
+            handleError("API key not found for provider: " + config.getProvider());
+            return 1;
+        }
     }
 
     hermes::CompletionResponse response;
