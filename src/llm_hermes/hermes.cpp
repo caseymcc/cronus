@@ -13,6 +13,17 @@
 namespace llm_hermes
 {
 
+struct Hermes
+{
+    Hermes &instance()
+    {
+        static Hermes instance;
+        return instance;
+    }
+
+    bool llm_hermes_initialized=false;
+};
+
 ErrorCode initialize(const std::string &configPath)
 {
     std::filesystem::path modelsPath = std::filesystem::path(configPath) / "models";
@@ -47,11 +58,17 @@ ErrorCode initialize(const std::string &configPath)
         }
     }
 
+    llm_hermes_initialized=true;
     return ErrorCode::Success;
 }
 
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response)
 {
+    if(!llm_hermes_initialized)
+    {
+        return ErrorCode::InvalidRequest;
+    }
+
     auto it=MODEL_PROVIDER_MAP.find(request.model);
     if(it==MODEL_PROVIDER_MAP.end())
     {

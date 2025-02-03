@@ -8,6 +8,8 @@ find_package(nlohmann_json CONFIG REQUIRED)
 set(llm_hermes_src
     ./hermes.h
     ./hermes.cpp
+    ./models_manager.h
+    ./models_manager.cpp
     ./providers/base_llm.h
     ./providers/base_llm.cpp
     ./providers/openai_llm.h
