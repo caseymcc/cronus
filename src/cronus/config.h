@@ -22,7 +22,7 @@ class Config
 public:
     static Config &instance();
 
-    void load(const std::string& resourcePath = "");
+    void load(const std::string& resourceDir = "");
 
     std::string getModel() const { return m_model; }
     std::string getResourcePath() const { return m_resourceDirectory; }
