@@ -27,6 +27,8 @@ public:
     std::string getModel() const { return m_model; }
     std::string getResourcePath() const { return m_resourceDirectory; }
     std::string getProvider() const { return m_provider; }
+    bool isApiKeyRequired() const { return m_requireApiKey; }
+    void setApiKeyRequired(bool required) { m_requireApiKey = required; }
     void setModelAndProvider(const std::string &combined);
 
     std::optional<std::string> getApiKey(const std::string &provider) const;
@@ -47,6 +49,7 @@ private:
     std::string m_model{ "gpt-3.5-turbo" };
     std::string m_provider{ "openai" };
     std::map<std::string, std::string> m_apiKeys;
+    bool m_requireApiKey{true};
     std::vector<ModelConfig> m_modelConfigs;
     std::string m_resourceDirectory;
 };
