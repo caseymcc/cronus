@@ -2,6 +2,9 @@
 
 #include "cronus/config.h"
 #include "cronus/logger.h"
+
+#include "hermes/hermes.h"
+
 #include <yaml-cpp/yaml.h>
 
 #include <cstdlib>
@@ -221,16 +224,29 @@ std::optional<ModelConfig> Config::getModelConfig(const std::string &model_name)
     return std::nullopt;
 }
 
-void Config::load(const std::string &resourcePath)
+void Config::load(const std::string &resourceDir)
 {
+    std::filesystem::path resourcePath=resourceDir;
+    std::vector<std::filesystem::path> configPaths;
+    const char *home=std::getenv("HOME");
+
+    configPaths.push_back(resourcePath/"hermes");
+    if(home)
+    {
+        configPaths.push_back(std::filesystem::path(home)/".cronus"/"hermes");
+    }
+    configPaths.push_back(std::filesystem::path(".cronus/hermes"));
+
+    hermes::initialize(configPaths);
+
     // Load model definitions first
-    loadModelDefinitions(resourcePath);
+    loadModelDefinitions(resourceDir);
 
     // Load in order of precedence (later overrides earlier)
     loadFromEnv();
 
     // Load from home directory config
-    if(const char *home=std::getenv("HOME"))
+    if(home)
     {
         std::filesystem::path homeConfig=std::filesystem::path(home)/".cronus"/"config.yml";
         if(std::filesystem::exists(homeConfig))
