@@ -50,15 +50,6 @@ ErrorCode initialize(const std::string &configPath);
 // Main completion function (similar to litellm.completion)
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response);
 
-// Model to provider mapping
-std::map<std::string, std::string> MODEL_PROVIDER_MAP=
-{
-    {"gpt-3.5-turbo", "openai"},
-    {"gpt-4", "openai"},
-    {"claude-2", "anthropic"},
-    {"claude-instant-1", "anthropic"},
-    {"deepseek-chat", "deepseek"}
-};
 
 }//namespace llm_hermes
 
