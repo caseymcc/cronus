@@ -155,6 +155,11 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
         modelConfig.actual_model=params["model"].as<std::string>();
         modelConfig.provider=params["provider"].as<std::string>();
         modelConfig.api_base=params["api_base"].as<std::string>();
+        
+        // Load require_api_key if present
+        if (model["require_api_key"]) {
+            modelConfig.require_api_key = model["require_api_key"].as<bool>();
+        }
 
         if(override)
         {
