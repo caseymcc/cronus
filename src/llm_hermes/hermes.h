@@ -44,12 +44,14 @@ struct CompletionResponse
     std::string provider;  // "openai", "anthropic", etc.
 };
 
+// Library initialization
+ErrorCode initialize(const std::string &configPath);
+
 // Main completion function (similar to litellm.completion)
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response);
 
-
 // Model to provider mapping
-const std::map<std::string, std::string> MODEL_PROVIDER_MAP=
+std::map<std::string, std::string> MODEL_PROVIDER_MAP=
 {
     {"gpt-3.5-turbo", "openai"},
     {"gpt-4", "openai"},

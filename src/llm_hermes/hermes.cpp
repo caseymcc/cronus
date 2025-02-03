@@ -1,5 +1,9 @@
 #include "llm_hermes/hermes.h"
 
+#include <nlohmann/json.hpp>
+#include <filesystem>
+#include <fstream>
+
 #include "llm_hermes/providers/openai_llm.h"
 #include "llm_hermes/providers/anthropic_llm.h"
 #include "llm_hermes/providers/deepseek_llm.h"
@@ -8,6 +12,43 @@
 
 namespace llm_hermes
 {
+
+ErrorCode initialize(const std::string &configPath)
+{
+    std::filesystem::path modelsPath = std::filesystem::path(configPath) / "models";
+    
+    if (!std::filesystem::exists(modelsPath)) {
+        return ErrorCode::InvalidRequest;
+    }
+
+    // Clear existing mappings
+    MODEL_PROVIDER_MAP.clear();
+
+    // Iterate through all JSON files in the models directory
+    for (const auto &entry : std::filesystem::directory_iterator(modelsPath)) {
+        if (entry.path().extension() != ".json") {
+            continue;
+        }
+
+        try {
+            std::ifstream file(entry.path());
+            nlohmann::json modelConfig = nlohmann::json::parse(file);
+
+            // Each JSON file can contain multiple model mappings
+            for (const auto &[model, provider] : modelConfig.items()) {
+                if (provider.is_string()) {
+                    MODEL_PROVIDER_MAP[model] = provider.get<std::string>();
+                }
+            }
+        }
+        catch (const std::exception &) {
+            // Skip invalid files but continue processing others
+            continue;
+        }
+    }
+
+    return ErrorCode::Success;
+}
 
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response)
 {
