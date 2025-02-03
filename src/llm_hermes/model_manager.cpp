@@ -93,15 +93,43 @@ bool ModelManager::loadModelFile(const std::filesystem::path& filePath)
                 info.output_cost_per_token = modelJson["output_cost_per_token"].get<double>();
             }
 
-            // Remove any existing model with the same name (for override)
+            // Find existing model to update
             auto it = std::find_if(m_models.begin(), m_models.end(),
                 [&info](const ModelInfo& existing) { return existing.model == info.model; });
-            if (it != m_models.end()) {
-                m_models.erase(it);
-            }
             
-            // Add the new model info
-            m_models.push_back(info);
+            if (it != m_models.end()) {
+                // Update existing model settings
+                if (modelJson.contains("mode")) {
+                    it->mode = info.mode;
+                }
+                if (modelJson.contains("api_base")) {
+                    it->api_base = info.api_base;
+                }
+                if (modelJson.contains("examples_as_sys_msg")) {
+                    it->examples_as_sys_msg = info.examples_as_sys_msg;
+                }
+                if (modelJson.contains("context_window")) {
+                    it->context_window = info.context_window;
+                }
+                if (modelJson.contains("max_tokens")) {
+                    it->max_tokens = info.max_tokens;
+                }
+                if (modelJson.contains("max_input_tokens")) {
+                    it->max_input_tokens = info.max_input_tokens;
+                }
+                if (modelJson.contains("max_output_tokens")) {
+                    it->max_output_tokens = info.max_output_tokens;
+                }
+                if (modelJson.contains("input_cost_per_token")) {
+                    it->input_cost_per_token = info.input_cost_per_token;
+                }
+                if (modelJson.contains("output_cost_per_token")) {
+                    it->output_cost_per_token = info.output_cost_per_token;
+                }
+            } else {
+                // Add new model
+                m_models.push_back(info);
+            }
             m_modelProviderMap[info.model] = info.provider;
         }
 
