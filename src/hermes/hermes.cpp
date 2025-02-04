@@ -60,19 +60,8 @@ std::unique_ptr<BaseLLM> createLLM(const ModelInfo& modelInfo) {
     return nullptr;
 }
 
-ErrorCode completion(const CompletionRequest &request, CompletionResponse &response)
+BaseLLM &getLLM(const CompletionRequest &request)
 {
-    if(!Hermes::instance().initialized)
-    {
-        return ErrorCode::InvalidRequest;
-    }
-
-    std::optional<ModelInfo> modelInfo=ModelManager::instance().getModelInfo(request.model);
-    if(!modelInfo)
-    {
-        return ErrorCode::UnknownModel;
-    }
-
     auto& hermes = Hermes::instance();
     
     // Check if we already have an LLM instance for this model
@@ -86,7 +75,25 @@ ErrorCode completion(const CompletionRequest &request, CompletionResponse &respo
         it = hermes.llms.emplace(request.model, std::move(llm)).first;
     }
 
-    return it->second->completion(request, response);
+    return *(it->second);
+}
+
+ErrorCode completion(const CompletionRequest &request, CompletionResponse &response)
+{
+    if(!Hermes::instance().initialized)
+    {
+        return ErrorCode::InvalidRequest;
+    }
+
+    std::optional<ModelInfo> modelInfo=ModelManager::instance().getModelInfo(request.model);
+    if(!modelInfo)
+    {
+        return ErrorCode::UnknownModel;
+    }
+
+    BaseLLM &llm=getLLM(request);
+
+    return llm.second->completion(request, response);
 }
 
 ErrorCode streamingCompletion(const CompletionRequest &request,
@@ -103,20 +110,9 @@ ErrorCode streamingCompletion(const CompletionRequest &request,
         return ErrorCode::UnknownModel;
     }
 
-    auto& hermes = Hermes::instance();
-    
-    // Check if we already have an LLM instance for this model
-    auto it = hermes.llms.find(request.model);
-    if (it == hermes.llms.end()) {
-        // Create new LLM instance
-        auto llm = createLLM(*modelInfo);
-        if (!llm) {
-            return ErrorCode::UnsupportedProvider;
-        }
-        it = hermes.llms.emplace(request.model, std::move(llm)).first;
-    }
+    BaseLLM &llm=getLLM(request);
 
-    return it->second->streamingCompletion(request, callback);
+    return llm.second->streamingCompletion(request, callback);
 }
 
 } // namespace hermes
