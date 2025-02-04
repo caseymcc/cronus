@@ -14,6 +14,7 @@ struct ModelConfig
 {
     std::string name;
     std::string model;
+    bool streaming{false};
 };
 
 class Config
