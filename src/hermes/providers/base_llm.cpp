@@ -1,7 +1,7 @@
-#include "llm_hermes/providers/base_llm.h"
+#include "hermes/providers/base_llm.h"
 #include <cstdlib>
 
-namespace llm_hermes
+namespace hermes
 {
 
 ErrorCode BaseLLM::getApiKey(const std::string &provider, std::string &apiKey)
@@ -25,4 +25,4 @@ ErrorCode BaseLLM::getApiKey(const std::string &provider, std::string &apiKey)
     return ErrorCode::ApiKeyNotFound;
 }
 
-} // namespace llm_hermes
+} // namespace hermes

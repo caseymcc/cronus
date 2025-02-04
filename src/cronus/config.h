@@ -10,12 +10,10 @@
 namespace cronus
 {
 
-struct ModelConfig {
-    std::string model_name;
-    std::string provider;
-    std::string api_base;
-    std::string actual_model;
-    bool require_api_key{true};
+struct ModelConfig
+{
+    std::string name;
+    std::string model;
 };
 
 class Config
@@ -23,7 +21,7 @@ class Config
 public:
     static Config &instance();
 
-    void load(const std::string& resourceDir = "");
+    void load(const std::string &resourceDir="");
 
     std::string getModel() const { return m_model; }
     std::string getResourcePath() const { return m_resourceDirectory; }
@@ -32,17 +30,17 @@ public:
 
     std::optional<std::string> getApiKey(const std::string &provider) const;
     void setApiKey(const std::string &provider, const std::string &key);
-    
+
     std::optional<ModelConfig> getModelConfig(const std::string &model_name) const;
-    const std::vector<ModelConfig>& getAvailableModels() const { return m_modelConfigs; }
+    const std::vector<ModelConfig> &getAvailableModels() const { return m_modelConfigs; }
 
 private:
     Config()=default;
     void loadFromEnv();
     void loadFromFile(const std::filesystem::path &configPath);
     void loadModelDefinitions(const std::string &resourcePath);
-    void loadModelsFromFile(const std::filesystem::path& configPath, bool override = false);
-    void loadModelsFromDirectory(const std::filesystem::path& dirPath, bool override = false);
+    void loadModelsFromFile(const std::filesystem::path &configPath, bool override=false);
+    void loadModelsFromDirectory(const std::filesystem::path &dirPath, bool override=false);
     std::filesystem::path getDefaultModelConfigPath() const;
 
     std::string m_model{ "gpt-3.5-turbo" };

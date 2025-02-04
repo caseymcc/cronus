@@ -3,7 +3,7 @@
 
 #include "cronus/logger.h"
 
-#include "llm_hermes/hermes.h"
+#include "hermes/hermes.h"
 
 #include <filesystem>
 #include <future>

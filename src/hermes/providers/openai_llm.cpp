@@ -1,34 +1,33 @@
-#include "llm_hermes/providers/deepseek_llm.h"
+#include "hermes/providers/openai_llm.h"
 
-namespace llm_hermes
+namespace hermes
 {
+OpenAILLM::OpenAILLM(ModelInfo &modelInfo):
+    m_modelInfo(modelInfo)
+{
+    if(m_modelInfo.api_base.has_value())
+    {
+        m_apiUrl=m_modelInfo.api_base.value();
+    }
 
-DeepseekLLM::DeepseekLLM()=default;
+    if(m_modelInfo.api_key.has_value())
+    {
+        m_apiKey=m_modelInfo.api_key.value();
+    }
+};
 
-ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
+ErrorCode OpenAILLM::completion(const CompletionRequest &request,
     CompletionResponse &response)
 {
-    std::string apiKey;
-    if(request.api_key.has_value())
-    {
-        apiKey=request.api_key.value();
-    }
-    else
-    {
-        auto result=getApiKey("deepseek", apiKey);
-        if(result!=ErrorCode::Success)
-        {
-            return result;
-        }
-    }
-
-    // Create request body and headers
+    // Create request headers and body
+    auto headers=createHeaders();
     auto body=createRequestBody(request);
-    auto headers=createHeaders(apiKey);
 
+    std::string completionUrl=m_apiUrl+"/chat/completions";
+    
     // Make the API request
     auto raw_response=cpr::Post(
-        cpr::Url{ API_URL },
+        cpr::Url{ completionUrl },
         headers,
         cpr::Body{ body.dump() },
         cpr::VerifySsl{ true }
@@ -44,12 +43,12 @@ ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     return parseResponse(raw_response, response);
 }
 
-nlohmann::json DeepseekLLM::createRequestBody(const CompletionRequest &request)
+nlohmann::json OpenAILLM::createRequestBody(const CompletionRequest &request)
 {
     nlohmann::json body;
-    body["model"]="deepseek-chat";  // Currently only supporting main chat model
+    body["model"]=request.model;
 
-    // Convert messages to Deepseek format
+    // Convert messages to OpenAI format
     nlohmann::json messages=nlohmann::json::array();
     for(const auto &msg:request.messages)
     {
@@ -70,26 +69,25 @@ nlohmann::json DeepseekLLM::createRequestBody(const CompletionRequest &request)
         body["max_tokens"]=request.max_tokens.value();
     }
 
-    // Add default values for required fields
-    body["frequency_penalty"]=0;
-    body["presence_penalty"]=0;
-    body["response_format"]={ {"type", "text"} };
-    body["stream"]=false;
-    body["top_p"]=1;
-
     return body;
 }
 
-cpr::Header DeepseekLLM::createHeaders(const std::string &apiKey)
+cpr::Header OpenAILLM::createHeaders()
 {
+    if(m_apiKey.empty())
+    {
+        return cpr::Header{
+            {"Content-Type", "application/json"}
+        };
+    }
+
     return cpr::Header{
         {"Content-Type", "application/json"},
-        {"Accept", "application/json"},
-        {"Authorization", "Bearer "+apiKey}
+        {"Authorization", "Bearer "+m_apiKey}
     };
 }
 
-ErrorCode DeepseekLLM::parseResponse(const cpr::Response &rawResponse,
+ErrorCode OpenAILLM::parseResponse(const cpr::Response &rawResponse,
     CompletionResponse &response)
 {
     nlohmann::json jsonResponse;
@@ -110,7 +108,7 @@ ErrorCode DeepseekLLM::parseResponse(const cpr::Response &rawResponse,
     }
 
     response.text=jsonResponse["choices"][0]["message"]["content"];
-    response.provider="deepseek";
+    response.provider="openai";
 
     if(jsonResponse.contains("model"))
     {
@@ -127,4 +125,4 @@ ErrorCode DeepseekLLM::parseResponse(const cpr::Response &rawResponse,
     return ErrorCode::Success;
 }
 
-} // namespace llm_hermes
+} // namespace hermes

@@ -1,13 +1,14 @@
-#ifndef _llm_hermes_hermes_h_
-#define _llm_hermes_hermes_h_
+#ifndef _hermes_hermes_h_
+#define _hermes_hermes_h_
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <map>
 #include <optional>
+#include <filesystem>
 
-namespace llm_hermes
+namespace hermes
 {
 
 enum class ErrorCode
@@ -29,11 +30,11 @@ struct Message
 
 struct CompletionRequest
 {
-    std::string model;           // e.g., "gpt-3.5-turbo", "claude-2"
+    std::string model;
     std::vector<Message> messages;
     std::optional<float> temperature;
     std::optional<int> max_tokens;
-    std::optional<std::string> api_key;  // Optional override of env var
+    std::optional<std::string> api_key;
 };
 
 struct CompletionResponse
@@ -45,12 +46,15 @@ struct CompletionResponse
 };
 
 // Library initialization
-ErrorCode initialize(const std::string &configPath);
+ErrorCode initialize(const std::vector<std::filesystem::path> &configPaths);
+
+// Check if a model requires an API key
+bool doesModelNeedApiKey(const std::string &model);
 
 // Main completion function (similar to litellm.completion)
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response);
 
 
-}//namespace llm_hermes
+}//namespace hermes
 
-#endif//_llm_hermes_hermes_h
+#endif//_hermes_hermes_h

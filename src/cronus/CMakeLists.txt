@@ -30,7 +30,7 @@ target_include_directories(cronus
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 target_link_libraries(cronus PRIVATE
-    llm_hermes
+    hermes
     yaml-cpp
     ftxui::screen
     ftxui::dom

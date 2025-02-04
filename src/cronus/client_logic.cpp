@@ -96,31 +96,20 @@ int ClientLogic::processCompletion(const std::string &input)
     const auto &config=Config::instance();
     log("Processing completion request...");
 
-    hermes::CompletionRequest request{
-        .model=config.getModel(),
-        .messages={
-            {"user", input}
-        }
-    };
-
     // Get model config
     auto modelConfig = config.getModelConfig(config.getModel());
+    
     if (!modelConfig) {
         handleError("Model configuration not found for: " + config.getModel());
         return 1;
     }
 
-    // Add API key if required by model
-    if (modelConfig->require_api_key) {
-        auto apiKey = config.getApiKey(config.getProvider());
-        if (apiKey) {
-            request.api_key = *apiKey;
+    hermes::CompletionRequest request{
+        .model=modelConfig->model,
+        .messages={
+            {"user", input}
         }
-        else {
-            handleError("API key not found for provider: " + config.getProvider());
-            return 1;
-        }
-    }
+    };
 
     hermes::CompletionResponse response;
     hermes::ErrorCode result=hermes::completion(request, response);

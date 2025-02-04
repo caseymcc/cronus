@@ -1,6 +1,6 @@
-#include "llm_hermes/providers/anthropic_llm.h"
+#include "hermes/providers/anthropic_llm.h"
 
-namespace llm_hermes
+namespace hermes
 {
 
 ErrorCode AnthropicLLM::completion(const CompletionRequest &request,
@@ -26,4 +26,4 @@ ErrorCode AnthropicLLM::completion(const CompletionRequest &request,
     return ErrorCode::Success;
 }
 
-} // namespace llm_hermes
+} // namespace hermes

@@ -1,9 +1,9 @@
-#ifndef _llm_hermes_providers_base_llm_h_
-#define _llm_hermes_providers_base_llm_h_
+#ifndef _hermes_providers_base_llm_h_
+#define _hermes_providers_base_llm_h_
 
-#include "llm_hermes/hermes.h"
+#include "hermes/hermes.h"
 
-namespace llm_hermes
+namespace hermes
 {
 
 class BaseLLM
@@ -18,6 +18,6 @@ protected:
     ErrorCode getApiKey(const std::string &provider, std::string &apiKey);
 };
 
-} // namespace llm_hermes
+} // namespace hermes
 
-#endif//_llm_hermes_providers_base_llm_h_
+#endif//_hermes_providers_base_llm_h_

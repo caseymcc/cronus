@@ -8,5 +8,5 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 
 # Add the LLM library
 add_subdirectory(src/cronus)
-add_subdirectory(src/llm_hermes)
+add_subdirectory(src/hermes)
 

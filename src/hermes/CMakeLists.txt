@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 3.15)
-project(llm_hermes VERSION 0.1.0 LANGUAGES CXX)
+project(hermes VERSION 0.1.0 LANGUAGES CXX)
 
 # Find dependencies
 find_package(cpr CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-set(llm_hermes_src
+set(hermes_src
     ./hermes.h
     ./hermes.cpp
-    ./models_manager.h
-    ./models_manager.cpp
     ./model_manager.h
     ./model_manager.cpp
     ./providers/base_llm.h
@@ -23,16 +21,16 @@ set(llm_hermes_src
 )
 
 # Add library
-add_library(llm_hermes
-    ${llm_hermes_src}
+add_library(hermes
+    ${hermes_src}
 )
 
-target_include_directories(llm_hermes 
+target_include_directories(hermes 
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
-target_link_libraries(llm_hermes PUBLIC
+target_link_libraries(hermes PUBLIC
     cpr::cpr
     nlohmann_json::nlohmann_json
 )

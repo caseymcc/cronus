@@ -115,9 +115,13 @@ void TerminalUI::handleInput(Event event)
 {
     if(event==Event::Return&&!m_input.empty())
     {
-        m_logic.processInput(m_input);
+        std::string input=m_input;
+
         m_input.clear();
         m_screen.RequestAnimationFrame();
+
+        m_chatMessages.emplace_back(ChatType::Message, Role::User, input);
+        m_logic.processInput(m_input);
     }
     else if(event==Event::F2)
     {
@@ -129,7 +133,11 @@ void TerminalUI::handleInput(Event event)
     }
     else if(event.is_character())
     {
-        m_input.clear();
+        if(!inputActive)
+        {
+            m_input.clear();
+            inputActive=true;
+        }
         m_input += event.character();
         m_screen.RequestAnimationFrame();
     }
@@ -163,12 +171,17 @@ Element TerminalUI::renderChatArea()
             else if(entry.role==Role::Warning)
                 chatElements.push_back(text("Warning: "+entry.content)|bold|color(Color::Yellow));
             else if(entry.role==Role::Log)
-                chatElements.push_back(text("Log: "+entry.content)|bold|color(Color::Green));
+                chatElements.push_back(text("Log: "+entry.content)|color(Color::Green));
             else
-                chatElements.push_back(text(entry.content)|border);
+                chatElements.push_back(text(entry.content));
         }
         else
-            chatElements.push_back(text(entry.content)|border);
+        {
+            if(entry.role==Role::User)
+                chatElements.push_back(paragraphAlignLeft(entry.content)|color(Color::GrayDark));
+            else
+                chatElements.push_back(paragraphAlignRight(entry.content)|color(Color::Blue));
+        }
     }
     return vbox(std::move(chatElements))|border|flex|size(HEIGHT, GREATER_THAN, 10);
 }

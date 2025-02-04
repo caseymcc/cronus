@@ -137,42 +137,27 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
 
     for(const auto &model:config["model_list"])
     {
-        if(!model["model_name"]||!model["litellm_params"])
+        if(!model["name"]||!model["model"])
         {
             logWarning("Skipping invalid model entry in: "+configPath.string());
             continue;
         }
 
-        const auto &params=model["litellm_params"];
-        if(!params["model"]||!params["provider"]||!params["api_base"])
-        {
-            logWarning("Skipping model with missing parameters in: "+configPath.string());
-            continue;
-        }
-
         ModelConfig modelConfig;
-        modelConfig.model_name=model["model_name"].as<std::string>();
-        modelConfig.actual_model=params["model"].as<std::string>();
-        modelConfig.provider=params["provider"].as<std::string>();
-        modelConfig.api_base=params["api_base"].as<std::string>();
-        
-        // Load require_api_key if present
-        if (model["require_api_key"]) {
-            modelConfig.require_api_key = model["require_api_key"].as<bool>();
-        }
 
+        modelConfig.name=model["name"].as<std::string>();
+        modelConfig.model=model["model"].as<std::string>();
+        
         if(override)
         {
             // Update existing config if present
             auto it=std::find_if(m_modelConfigs.begin(), m_modelConfigs.end(),
-                [&](const ModelConfig &cfg) { return cfg.model_name==modelConfig.model_name; });
+                [&](const ModelConfig &cfg) { return cfg.name==modelConfig.name; });
 
             if(it!=m_modelConfigs.end())
             {
                 // Update existing values
-                it->actual_model=modelConfig.actual_model;
-                it->provider=modelConfig.provider;
-                it->api_base=modelConfig.api_base;
+                it->model=modelConfig.model;
                 continue;
             }
         }
@@ -221,7 +206,7 @@ std::optional<ModelConfig> Config::getModelConfig(const std::string &model_name)
 {
     for(const auto &config:m_modelConfigs)
     {
-        if(config.model_name==model_name)
+        if(config.name==model_name)
         {
             return config;
         }

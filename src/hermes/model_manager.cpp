@@ -1,8 +1,8 @@
-#include "llm_hermes/model_manager.h"
+#include "hermes/model_manager.h"
 #include <nlohmann/json.hpp>
 #include <fstream>
 
-namespace llm_hermes
+namespace hermes
 {
 
 ModelManager& ModelManager::instance()
@@ -160,4 +160,4 @@ std::optional<ModelInfo> ModelManager::getModelInfo(const std::string& model) co
     return std::nullopt;
 }
 
-} // namespace llm_hermes
+} // namespace hermes
