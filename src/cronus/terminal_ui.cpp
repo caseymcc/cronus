@@ -131,7 +131,7 @@ void TerminalUI::handleInput(Event event)
         m_screen.RequestAnimationFrame();
 
         m_chatMessages.emplace_back(ChatType::Message, Role::User, input);
-        m_logic.processInput(m_input);
+        m_logic.processInput(input);
     }
     else if(event==Event::F2)
     {
