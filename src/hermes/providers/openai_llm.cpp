@@ -2,7 +2,7 @@
 
 namespace hermes
 {
-OpenAILLM::OpenAILLM(ModelInfo &modelInfo):
+OpenAILLM::OpenAILLM(const ModelInfo &modelInfo):
     m_modelInfo(modelInfo)
 {
     if(m_modelInfo.api_base.has_value())
