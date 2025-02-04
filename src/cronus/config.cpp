@@ -148,6 +148,11 @@ void Config::loadModelsFromFile(const std::filesystem::path &configPath, bool ov
         modelConfig.name=model["name"].as<std::string>();
         modelConfig.model=model["model"].as<std::string>();
         
+        // Load streaming if present
+        if (model["streaming"]) {
+            modelConfig.streaming = model["streaming"].as<bool>();
+        }
+        
         if(override)
         {
             // Update existing config if present
