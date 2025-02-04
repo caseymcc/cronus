@@ -137,9 +137,15 @@ void TerminalUI::handleInput(Event event)
     {
         m_showDirTree=!m_showDirTree;
     }
-    else if(event==Event::Character('q'))
+    else if(event==Event::Character(4)) // Ctrl-D
     {
         m_screen.Exit();
+    }
+    else if(event==Event::Character(3)) // Ctrl-C
+    {
+        // Clear input but don't exit
+        m_input.clear();
+        m_screen.RequestAnimationFrame();
     }
     else if(event.is_character())
     {
