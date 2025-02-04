@@ -66,6 +66,7 @@ private:
     void setupUI();
 
     ftxui::Element renderDirTree();
+    ftxui::Element renderDebugArea();
     ftxui::Element renderChatArea();
     ftxui::Element renderInputArea();
     ftxui::Element renderMainLayout();
@@ -86,6 +87,7 @@ private:
     // Chat messages
     std::vector<ChatMessage> m_chatMessages;
     bool m_isStreaming{false};
+    bool m_showDebug{false};
     ftxui::Component m_renderer;
 };
 

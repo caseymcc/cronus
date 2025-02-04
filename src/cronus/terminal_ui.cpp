@@ -137,6 +137,10 @@ void TerminalUI::handleInput(Event event)
     {
         m_showDirTree=!m_showDirTree;
     }
+    else if(event==Event::F3)
+    {
+        m_showDebug=!m_showDebug;
+    }
     else if(event==Event::Character(4)) // Ctrl-D
     {
         m_screen.Exit();
@@ -210,9 +214,22 @@ Element TerminalUI::renderInputArea()
         });
 }
 
+Element TerminalUI::renderDebugArea()
+{
+    return vbox({
+        text("Debug Info:") | bold,
+        text("Press F3 to close"),
+        text("Application Status:") | color(Color::Green),
+        text(" - Streaming: " + std::string(m_isStreaming ? "Yes" : "No")),
+        text(" - Directory Tree: " + std::string(m_showDirTree ? "Visible" : "Hidden")),
+        text(" - Message Count: " + std::to_string(m_chatMessages.size()))
+    }) | border | bgcolor(Color::Black) | size(HEIGHT, LESS_THAN, 40);
+}
+
 Element TerminalUI::renderMainLayout()
 {
-    auto chatAndInput = vbox({
+    auto mainContent = vbox({
+            m_showDebug ? renderDebugArea() : text(""),
             renderChatArea() | flex,
             renderInputArea() | size(HEIGHT, EQUAL, 5)
         });
@@ -221,11 +238,11 @@ Element TerminalUI::renderMainLayout()
     {
         return dbox({
             renderDirTree(),
-            chatAndInput
+            mainContent
         });
     }
 
-    return chatAndInput; // If toolbar is hidden, only show chat and input
+    return mainContent; // If toolbar is hidden, only show chat and input
 }
 
 } // namespace cronus
