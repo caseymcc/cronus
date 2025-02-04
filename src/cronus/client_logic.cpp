@@ -111,17 +111,27 @@ int ClientLogic::processCompletion(const std::string &input)
         }
     };
 
-    hermes::CompletionResponse response;
-    hermes::ErrorCode result=hermes::completion(request, response);
+    hermes::ErrorCode result;
+    
+    if (modelConfig->streaming) {
+        result = hermes::streamingCompletion(request, 
+            [this, &response](const std::string& content) {
+                handleResponse("streaming", content);
+            });
+    } else {
+        hermes::CompletionResponse response;
+        result = hermes::completion(request, response);
+        if (result == hermes::ErrorCode::Success) {
+            handleResponse(response.provider, response.text);
+        }
+    }
 
-    if(result!=hermes::ErrorCode::Success)
-    {
-        handleError(request.model+" completion failed with error code: "+
+    if (result != hermes::ErrorCode::Success) {
+        handleError(request.model + " completion failed with error code: " +
             std::to_string(static_cast<int>(result)));
         return 1;
     }
 
-    handleResponse(response.provider, response.text);
     log("Completion processed successfully");
     return 0;
 }
