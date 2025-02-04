@@ -54,6 +54,9 @@ bool doesModelNeedApiKey(const std::string &model);
 // Main completion function (similar to litellm.completion)
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response);
 
+// Streaming completion function
+ErrorCode streamingCompletion(const CompletionRequest &request, 
+    std::function<void(const std::string&)> callback);
 
 }//namespace hermes
 
