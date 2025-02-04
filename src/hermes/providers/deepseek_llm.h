@@ -13,7 +13,7 @@ namespace hermes
 class DeepseekLLM : public BaseLLM
 {
 public:
-    DeepseekLLM(ModelInfo &modelInfo) : m_modelInfo(modelInfo) {};
+    DeepseekLLM(const ModelInfo &modelInfo) : m_modelInfo(modelInfo) {};
     
     ErrorCode completion(const CompletionRequest &request,
         CompletionResponse &response) override;

@@ -11,7 +11,7 @@ namespace hermes {
 
 class OpenAILLM : public BaseLLM {
 public:
-    OpenAILLM(ModelInfo &modelInfo);
+    OpenAILLM(const ModelInfo &modelInfo);
 
     ErrorCode completion(const CompletionRequest& request,
                         CompletionResponse& response) override;

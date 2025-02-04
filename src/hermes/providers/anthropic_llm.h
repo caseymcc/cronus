@@ -10,7 +10,7 @@ namespace hermes
 class AnthropicLLM : public BaseLLM
 {
 public:
-    AnthropicLLM(ModelInfo& modelInfo) : m_modelInfo(modelInfo) {};
+    AnthropicLLM(const ModelInfo& modelInfo) : m_modelInfo(modelInfo) {};
 
     ErrorCode completion(const CompletionRequest& request,
                         CompletionResponse& response) override;

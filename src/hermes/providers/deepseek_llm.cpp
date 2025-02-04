@@ -121,16 +121,16 @@ ErrorCode DeepseekLLM::streamingCompletion(const CompletionRequest &request,
     // Setup streaming request
     auto session = cpr::Session();
     session.SetUrl(cpr::Url{m_apiUrl});
-    session.SetHeaders(headers);
+    session.SetHeader(headers);
     session.SetBody(body.dump());
     session.SetVerifySsl(true);
 
     // Make streaming request
-    session.SetOption(cpr::WriteCallback([callback](const std::string& data) -> bool {
+    session.SetOption(cpr::WriteCallback([callback](const std::string_view& data, intptr_t) -> bool {
         if (data.empty() || data == "\n") return true;
         
         try {
-            if (data.starts_with("data: ")) {
+            if (data.substr(0, 6) == "data: ") {
                 std::string jsonStr = data.substr(6); // Remove "data: " prefix
                 if (jsonStr == "[DONE]") return true;
                 
