@@ -34,7 +34,17 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 
 void TerminalUI::addResponse(const std::string &provider, const std::string &response)
 {
-    m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
+    if (provider == "streaming") {
+        if (!m_isStreaming) {
+            m_isStreaming = true;
+            m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
+        } else {
+            m_chatMessages.back().content += response;
+        }
+    } else {
+        m_isStreaming = false;
+        m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
+    }
     m_screen.RequestAnimationFrame();
 }
 

@@ -85,6 +85,7 @@ private:
 
     // Chat messages
     std::vector<ChatMessage> m_chatMessages;
+    bool m_isStreaming{false};
     ftxui::Component m_renderer;
 };
 
