@@ -7,6 +7,7 @@
 #include <map>
 #include <optional>
 #include <filesystem>
+#include <functional>
 
 namespace hermes
 {

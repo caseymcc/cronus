@@ -23,7 +23,7 @@ private:
     ErrorCode parseResponse(const cpr::Response& rawResponse,
                           CompletionResponse& response);
     
-    nlohmann::json createRequestBody(const CompletionRequest& request);
+    nlohmann::json createRequestBody(const CompletionRequest& request, bool streaming = false);
     cpr::Header createHeaders();
 
     ModelInfo m_modelInfo;

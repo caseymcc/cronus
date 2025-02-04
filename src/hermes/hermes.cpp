@@ -60,7 +60,7 @@ std::unique_ptr<BaseLLM> createLLM(const ModelInfo& modelInfo) {
     return nullptr;
 }
 
-BaseLLM &getLLM(const CompletionRequest &request)
+BaseLLM* getLLM(const CompletionRequest &request, const ModelInfo &modelInfo)
 {
     auto& hermes = Hermes::instance();
     
@@ -68,14 +68,14 @@ BaseLLM &getLLM(const CompletionRequest &request)
     auto it = hermes.llms.find(request.model);
     if (it == hermes.llms.end()) {
         // Create new LLM instance
-        auto llm = createLLM(*modelInfo);
+        auto llm = createLLM(modelInfo);
         if (!llm) {
-            return ErrorCode::UnsupportedProvider;
+            return nullptr;
         }
         it = hermes.llms.emplace(request.model, std::move(llm)).first;
     }
 
-    return *(it->second);
+    return it->second.get();
 }
 
 ErrorCode completion(const CompletionRequest &request, CompletionResponse &response)
@@ -91,9 +91,12 @@ ErrorCode completion(const CompletionRequest &request, CompletionResponse &respo
         return ErrorCode::UnknownModel;
     }
 
-    BaseLLM &llm=getLLM(request);
+    BaseLLM *llm = getLLM(request, *modelInfo);
+    if (!llm) {
+        return ErrorCode::UnsupportedProvider;
+    }
 
-    return llm.second->completion(request, response);
+    return llm->completion(request, response);
 }
 
 ErrorCode streamingCompletion(const CompletionRequest &request,
@@ -110,9 +113,12 @@ ErrorCode streamingCompletion(const CompletionRequest &request,
         return ErrorCode::UnknownModel;
     }
 
-    BaseLLM &llm=getLLM(request);
+    BaseLLM *llm = getLLM(request, *modelInfo);
+    if (!llm) {
+        return ErrorCode::UnsupportedProvider;
+    }
 
-    return llm.second->streamingCompletion(request, callback);
+    return llm->streamingCompletion(request, callback);
 }
 
 } // namespace hermes

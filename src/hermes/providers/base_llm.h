@@ -2,6 +2,7 @@
 #define _hermes_providers_base_llm_h_
 
 #include "hermes/hermes.h"
+#include <functional>
 
 namespace hermes
 {
