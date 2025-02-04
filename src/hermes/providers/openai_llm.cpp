@@ -146,7 +146,7 @@ ErrorCode OpenAILLM::streamingCompletion(const CompletionRequest &request,
         
         try {
             if (data.substr(0, 6) == "data: ") {
-                std::string jsonStr = data.substr(6); // Remove "data: " prefix
+                std::string jsonStr = std::string(data.substr(6)); // Remove "data: " prefix
                 if (jsonStr == "[DONE]") return true;
                 
                 auto json = nlohmann::json::parse(jsonStr);
