@@ -17,6 +17,9 @@ public:
     
     ErrorCode completion(const CompletionRequest &request,
         CompletionResponse &response) override;
+        
+    ErrorCode streamingCompletion(const CompletionRequest &request,
+        std::function<void(const std::string&)> callback) override;
 
 private:
     ErrorCode parseResponse(const cpr::Response &rawResponse,

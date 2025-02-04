@@ -21,7 +21,7 @@ ErrorCode OpenAILLM::completion(const CompletionRequest &request,
 {
     // Create request headers and body
     auto headers=createHeaders();
-    auto body=createRequestBody(request);
+    auto body=createRequestBody(request, false);
 
     std::string completionUrl=m_apiUrl+"/chat/completions";
     
@@ -43,10 +43,11 @@ ErrorCode OpenAILLM::completion(const CompletionRequest &request,
     return parseResponse(raw_response, response);
 }
 
-nlohmann::json OpenAILLM::createRequestBody(const CompletionRequest &request)
+nlohmann::json OpenAILLM::createRequestBody(const CompletionRequest &request, bool streaming)
 {
     nlohmann::json body;
     body["model"]=request.model;
+    body["stream"]=streaming;
 
     // Convert messages to OpenAI format
     nlohmann::json messages=nlohmann::json::array();
@@ -120,6 +121,53 @@ ErrorCode OpenAILLM::parseResponse(const cpr::Response &rawResponse,
         jsonResponse["usage"].contains("total_tokens"))
     {
         response.tokens_used=jsonResponse["usage"]["total_tokens"];
+    }
+
+    return ErrorCode::Success;
+}
+
+ErrorCode OpenAILLM::streamingCompletion(const CompletionRequest &request,
+    std::function<void(const std::string&)> callback)
+{
+    auto headers = createHeaders();
+    auto body = createRequestBody(request, true);
+    std::string completionUrl = m_apiUrl + "/chat/completions";
+
+    // Setup streaming request
+    auto session = cpr::Session();
+    session.SetUrl(cpr::Url{completionUrl});
+    session.SetHeaders(headers);
+    session.SetBody(body.dump());
+    session.SetVerifySsl(true);
+
+    // Make streaming request
+    session.SetOption(cpr::WriteCallback([callback](const std::string& data) -> bool {
+        if (data.empty() || data == "\n") return true;
+        
+        try {
+            if (data.starts_with("data: ")) {
+                std::string jsonStr = data.substr(6); // Remove "data: " prefix
+                if (jsonStr == "[DONE]") return true;
+                
+                auto json = nlohmann::json::parse(jsonStr);
+                if (json.contains("choices") && !json["choices"].empty() &&
+                    json["choices"][0].contains("delta") &&
+                    json["choices"][0]["delta"].contains("content")) {
+                    
+                    std::string content = json["choices"][0]["delta"]["content"];
+                    callback(content);
+                }
+            }
+        } catch (const std::exception&) {
+            return false;
+        }
+        return true;
+    }));
+
+    auto response = session.Get();
+    
+    if (response.status_code != 200) {
+        return ErrorCode::NetworkError;
     }
 
     return ErrorCode::Success;

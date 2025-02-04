@@ -26,4 +26,12 @@ ErrorCode AnthropicLLM::completion(const CompletionRequest &request,
     return ErrorCode::Success;
 }
 
+ErrorCode AnthropicLLM::streamingCompletion(const CompletionRequest &request,
+    std::function<void(const std::string&)> callback)
+{
+    // TODO: Implement Anthropic streaming API
+    // This will be similar to OpenAI implementation but with Anthropic's specific API format
+    return ErrorCode::NotImplemented;
+}
+
 } // namespace hermes

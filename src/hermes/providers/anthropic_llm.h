@@ -14,6 +14,9 @@ public:
 
     ErrorCode completion(const CompletionRequest& request,
                         CompletionResponse& response) override;
+                        
+    ErrorCode streamingCompletion(const CompletionRequest &request,
+        std::function<void(const std::string&)> callback) override;
 
 private:
     ModelInfo m_modelInfo;

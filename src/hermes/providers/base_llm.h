@@ -13,6 +13,9 @@ public:
 
     virtual ErrorCode completion(const CompletionRequest &request,
         CompletionResponse &response)=0;
+    
+    virtual ErrorCode streamingCompletion(const CompletionRequest &request,
+        std::function<void(const std::string&)> callback)=0;
 
 protected:
     ErrorCode getApiKey(const std::string &provider, std::string &apiKey);

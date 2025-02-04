@@ -7,7 +7,7 @@ ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     CompletionResponse &response)
 {
     // Create request body and headers
-    auto body=createRequestBody(request);
+    auto body=createRequestBody(request, false);
     auto headers=createHeaders();
 
     // Make the API request
@@ -28,10 +28,11 @@ ErrorCode DeepseekLLM::completion(const CompletionRequest &request,
     return parseResponse(raw_response, response);
 }
 
-nlohmann::json DeepseekLLM::createRequestBody(const CompletionRequest &request)
+nlohmann::json DeepseekLLM::createRequestBody(const CompletionRequest &request, bool streaming)
 {
     nlohmann::json body;
     body["model"]="deepseek-chat";  // Currently only supporting main chat model
+    body["stream"]=streaming;
 
     // Convert messages to Deepseek format
     nlohmann::json messages=nlohmann::json::array();
@@ -106,6 +107,52 @@ ErrorCode DeepseekLLM::parseResponse(const cpr::Response &rawResponse,
         jsonResponse["usage"].contains("total_tokens"))
     {
         response.tokens_used=jsonResponse["usage"]["total_tokens"];
+    }
+
+    return ErrorCode::Success;
+}
+
+ErrorCode DeepseekLLM::streamingCompletion(const CompletionRequest &request,
+    std::function<void(const std::string&)> callback)
+{
+    auto headers = createHeaders();
+    auto body = createRequestBody(request, true);
+
+    // Setup streaming request
+    auto session = cpr::Session();
+    session.SetUrl(cpr::Url{m_apiUrl});
+    session.SetHeaders(headers);
+    session.SetBody(body.dump());
+    session.SetVerifySsl(true);
+
+    // Make streaming request
+    session.SetOption(cpr::WriteCallback([callback](const std::string& data) -> bool {
+        if (data.empty() || data == "\n") return true;
+        
+        try {
+            if (data.starts_with("data: ")) {
+                std::string jsonStr = data.substr(6); // Remove "data: " prefix
+                if (jsonStr == "[DONE]") return true;
+                
+                auto json = nlohmann::json::parse(jsonStr);
+                if (json.contains("choices") && !json["choices"].empty() &&
+                    json["choices"][0].contains("delta") &&
+                    json["choices"][0]["delta"].contains("content")) {
+                    
+                    std::string content = json["choices"][0]["delta"]["content"];
+                    callback(content);
+                }
+            }
+        } catch (const std::exception&) {
+            return false;
+        }
+        return true;
+    }));
+
+    auto response = session.Get();
+    
+    if (response.status_code != 200) {
+        return ErrorCode::NetworkError;
     }
 
     return ErrorCode::Success;
