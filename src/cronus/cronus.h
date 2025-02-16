@@ -27,13 +27,13 @@ struct Task
     std::string provider;
 };
 
-class ClientLogic
+class Cronus
 {
 public:
     using ResponseCallback=std::function<void(const std::string &, const std::string &)>;
 
-    explicit ClientLogic();
-    ~ClientLogic();
+    explicit Cronus();
+    ~Cronus();
 
     void run();
     void stop();

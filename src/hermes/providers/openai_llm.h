@@ -28,7 +28,7 @@ private:
 
     ModelInfo m_modelInfo;
 
-    std::string m_apiUrl="https://api.deepseek.com/chat/completions";
+    std::string m_apiUrl="https://api.openai.com/v1";
     std::string m_apiKey="";
 };
 

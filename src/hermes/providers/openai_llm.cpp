@@ -164,7 +164,7 @@ ErrorCode OpenAILLM::streamingCompletion(const CompletionRequest &request,
         return true;
     }));
 
-    auto response = session.Get();
+    auto response = session.Post();
     
     if (response.status_code != 200) {
         return ErrorCode::NetworkError;

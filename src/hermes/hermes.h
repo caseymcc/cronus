@@ -20,7 +20,8 @@ enum class ErrorCode
     UnsupportedProvider,
     NetworkError,
     InvalidResponse,
-    InvalidRequest
+    InvalidRequest,
+    NotImplemented
 };
 
 struct Message

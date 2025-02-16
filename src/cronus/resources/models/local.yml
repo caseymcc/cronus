@@ -2,3 +2,4 @@
 model_list:
   - name: deepseek-reasoner
     model: local/deepseek-reasoner:14b
+    streaming: true

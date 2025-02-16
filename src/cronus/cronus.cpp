@@ -1,24 +1,24 @@
-#include "cronus/client_logic.h"
+#include "cronus/cronus.h"
 
 #include "cronus/config.h"
 
 namespace cronus
 {
 
-ClientLogic::ClientLogic() :
+Cronus::Cronus() :
     m_currentPath(std::filesystem::current_path())
 {
 }
 
-ClientLogic::~ClientLogic()=default;
+Cronus::~Cronus()=default;
 
-void ClientLogic::run()
+void Cronus::run()
 {
     m_running = true;
-    m_workerThread = std::thread(&ClientLogic::workerLoop, this);
+    m_workerThread = std::thread(&Cronus::workerLoop, this);
 }
 
-void ClientLogic::stop()
+void Cronus::stop()
 {
     m_running = false;
     m_condition.notify_one();
@@ -27,7 +27,7 @@ void ClientLogic::stop()
     }
 }
 
-std::future<int> ClientLogic::processInput(const std::string &input)
+std::future<int> Cronus::processInput(const std::string &input)
 {
     Task task{Task::Type::Completion, 0, input, Config::instance().getProvider()};
     std::promise<int> promise;
@@ -42,12 +42,12 @@ std::future<int> ClientLogic::processInput(const std::string &input)
     return future;
 }
 
-void ClientLogic::log(const std::string &message) const
+void Cronus::log(const std::string &message) const
 {
     logInfo(message);
 }
 
-void ClientLogic::handleResponse(const std::string &provider, const std::string &response) const
+void Cronus::handleResponse(const std::string &provider, const std::string &response) const
 {
     if(m_responseCallback)
     {
@@ -55,12 +55,12 @@ void ClientLogic::handleResponse(const std::string &provider, const std::string 
     }
 }
 
-void ClientLogic::handleError(const std::string &error) const
+void Cronus::handleError(const std::string &error) const
 {
     logError(error);
 }
 
-void ClientLogic::workerLoop()
+void Cronus::workerLoop()
 {
     while(true)
     {
@@ -91,7 +91,7 @@ void ClientLogic::workerLoop()
     }
 }
 
-int ClientLogic::processCompletion(const std::string &input)
+int Cronus::processCompletion(const std::string &input)
 {
     const auto &config=Config::instance();
     log("Processing completion request...");
@@ -115,7 +115,7 @@ int ClientLogic::processCompletion(const std::string &input)
     
     if (modelConfig->streaming) {
         result = hermes::streamingCompletion(request, 
-            [this, &response](const std::string& content) {
+            [this](const std::string& content) {
                 handleResponse("streaming", content);
             });
     } else {
@@ -136,7 +136,7 @@ int ClientLogic::processCompletion(const std::string &input)
     return 0;
 }
 
-std::vector<std::pair<bool, std::string>> ClientLogic::getCurrentDirectoryContents() const
+std::vector<std::pair<bool, std::string>> Cronus::getCurrentDirectoryContents() const
 {
     std::vector<std::pair<bool, std::string>> contents;
     for(const auto &entry:std::filesystem::directory_iterator(m_currentPath))

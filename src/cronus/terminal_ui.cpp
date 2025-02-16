@@ -34,15 +34,24 @@ TerminalUI::TerminalUI(ClientLogic &logic) :
 
 void TerminalUI::addResponse(const std::string &provider, const std::string &response)
 {
-    if (provider == "streaming") {
-        if (!m_isStreaming) {
-            m_isStreaming = true;
+    if(provider=="streaming")
+    {
+        if(!m_isStreaming)
+        {
+            m_isStreaming=true;
             m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
-        } else {
-            m_chatMessages.back().content += response;
         }
-    } else {
-        m_isStreaming = false;
+        else
+        {
+            if(!m_chatMessages.empty() && m_chatMessages.back().role == Role::Bot)
+                m_chatMessages.back().content+=response;
+            else
+                m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
+        }
+    }
+    else
+    {
+        m_isStreaming=false;
         m_chatMessages.emplace_back(ChatType::Message, Role::Bot, response);
     }
     m_screen.RequestAnimationFrame();
@@ -54,18 +63,18 @@ void TerminalUI::addLog(LogLevel logLevel, const std::string &message)
 
     switch(logLevel)
     {
-        case LogLevel::Debug:
-            role=Role::Log;
-            break;
-        case LogLevel::Info:
-            role=Role::Log;
-            break;
-        case LogLevel::Warning:
-            role=Role::Warning;
-            break;
-        case LogLevel::Error:
-            role=Role::Error;
-            break;
+    case LogLevel::Debug:
+        role=Role::Log;
+        break;
+    case LogLevel::Info:
+        role=Role::Log;
+        break;
+    case LogLevel::Warning:
+        role=Role::Warning;
+        break;
+    case LogLevel::Error:
+        role=Role::Error;
+        break;
     }
 
     m_chatMessages.emplace_back(ChatType::Log, role, message);
@@ -111,7 +120,7 @@ void TerminalUI::setupUI()
     // Create the renderer
     m_renderer=Renderer(container, [this]
         {
-            return renderMainLayout() | flex_grow;
+            return renderMainLayout()|flex_grow;
         });
 }
 
@@ -141,11 +150,11 @@ void TerminalUI::handleInput(Event event)
     {
         m_showDebug=!m_showDebug;
     }
-    else if(event==Event::Character(4)) // Ctrl-D
+    else if(event==Event::Character("Event::CtrlD")) // Ctrl-D
     {
         m_screen.Exit();
     }
-    else if(event==Event::Character(3)) // Ctrl-C
+    else if(event==Event::Character("Event::CtrlC")) // Ctrl-C
     {
         // Clear input but don't exit
         m_input.clear();
@@ -158,10 +167,10 @@ void TerminalUI::handleInput(Event event)
             m_input.clear();
             inputActive=true;
         }
-        m_input += event.character();
+        m_input+=event.character();
         m_screen.RequestAnimationFrame();
     }
-    else if(event == Event::Backspace && !m_input.empty())
+    else if(event==Event::Backspace&&!m_input.empty())
     {
         m_input.pop_back();
         m_screen.RequestAnimationFrame();
@@ -184,7 +193,7 @@ Element TerminalUI::renderChatArea()
     std::vector<Element> chatElements;
     for(const auto &entry:m_chatMessages)
     {
-        if(entry.type == ChatType::Log)
+        if(entry.type==ChatType::Log)
         {
             if(entry.role==Role::Error)
                 chatElements.push_back(text("Error: "+entry.content)|bold|color(Color::Red));
@@ -217,21 +226,21 @@ Element TerminalUI::renderInputArea()
 Element TerminalUI::renderDebugArea()
 {
     return vbox({
-        text("Debug Info:") | bold,
+        text("Debug Info:")|bold,
         text("Press F3 to close"),
-        text("Application Status:") | color(Color::Green),
-        text(" - Streaming: " + std::string(m_isStreaming ? "Yes" : "No")),
-        text(" - Directory Tree: " + std::string(m_showDirTree ? "Visible" : "Hidden")),
-        text(" - Message Count: " + std::to_string(m_chatMessages.size()))
-    }) | border | bgcolor(Color::Black) | size(HEIGHT, LESS_THAN, 40);
+        text("Application Status:")|color(Color::Green),
+        text(" - Streaming: "+std::string(m_isStreaming?"Yes":"No")),
+        text(" - Directory Tree: "+std::string(m_showDirTree?"Visible":"Hidden")),
+        text(" - Message Count: "+std::to_string(m_chatMessages.size()))
+        })|border|bgcolor(Color::Black)|size(HEIGHT, LESS_THAN, 60);
 }
 
 Element TerminalUI::renderMainLayout()
 {
-    auto mainContent = vbox({
-            m_showDebug ? renderDebugArea() : text(""),
-            renderChatArea() | flex,
-            renderInputArea() | size(HEIGHT, EQUAL, 5)
+    auto mainContent=vbox({
+            m_showDebug?renderDebugArea():text(""),
+            renderChatArea()|flex,
+            renderInputArea()|size(HEIGHT, EQUAL, 5)
         });
 
     if(m_showDirTree)
@@ -239,7 +248,7 @@ Element TerminalUI::renderMainLayout()
         return dbox({
             renderDirTree(),
             mainContent
-        });
+            });
     }
 
     return mainContent; // If toolbar is hidden, only show chat and input
