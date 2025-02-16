@@ -26,10 +26,10 @@ while getopts "rsv:" opt; do
     esac
 done
 
-# Stop container if requested
+# Remove existing container if requested
 if [ $STOP -eq 1 ]; then
-    echo "Stopping existing container..."
-    docker stop $CONTAINER_NAME 2>/dev/null
+    echo "Removing existing container..."
+    docker rm -f $CONTAINER_NAME 2>/dev/null
 fi
 
 # Check if image exists or rebuild is requested
