@@ -19,8 +19,8 @@ namespace cronus
 
     struct CacheItem
     {
-        int mTime;
-        std::vector<Tag> mData;
+        int m_time;
+        std::vector<Tag> m_data;
     };
 
     class SourceMap
@@ -50,14 +50,14 @@ namespace cronus
         );
 
     private:
-        std::mutex mCacheMutex;
-        std::unordered_map<std::string, CacheItem> mTagsCache;
-        std::string mRoot;
-        int mMaxMapTokens;
-        int mMaxContextWindow;
-        int mMapMulNoFiles;
-        bool mVerbose;
-        std::string mRepoContentPrefix;
+        std::mutex m_cache_mutex;
+        std::unordered_map<std::string, CacheItem> m_tags_cache;
+        std::string m_root;
+        int m_max_map_tokens;
+        int m_max_context_window;
+        int m_map_mul_no_files;
+        bool m_verbose;
+        std::string m_repo_content_prefix;
     };
 } // namespace cronus
 

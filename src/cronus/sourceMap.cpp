@@ -8,19 +8,19 @@
 using namespace cronus;
 
 SourceMap::SourceMap(std::string &workingDir) {
-    mRoot = workingDir;
-    mMaxMapTokens = 1024;
-    mMaxContextWindow = 0;
-    mMapMulNoFiles = 8;
-    mVerbose = false;
-    mRepoContentPrefix = "";
+    m_root = workingDir;
+    m_max_map_tokens = 1024;
+    m_max_context_window = 0;
+    m_map_mul_no_files = 8;
+    m_VERBOSE = false;
+    m_repo_content_prefix = "";
 }
 
 SourceMap::~SourceMap() {
     // Cleanup cache
 }
 
-std::string SourceMap::getRelFname(const std::string &fname) {
+std::string SourceMap::get_rel_fname(const std::string &fname) {
     try {
         return std::filesystem::relpath(fname, m_root);
     } catch (const std::filesystem::filesystem_error& e) {
