@@ -1,6 +1,6 @@
 #include "cronus/terminal_ui.h"
 
-#include "cronus/client_logic.h"
+#include "cronus/cronus.h"
 #include "cronus/logger.h"
 
 #include <ftxui/dom/elements.hpp>
@@ -14,18 +14,18 @@ using namespace ftxui;
 namespace cronus
 {
 
-TerminalUI::TerminalUI(ClientLogic &logic) :
-    m_logic(logic),
+TerminalUI::TerminalUI(Cronus &cronus) :
+    m_cronus(cronus),
     m_screen(ScreenInteractive::Fullscreen())
 {
     // Set up callbacks
     // Set up logging callback
-    m_logic.setResponseCallback([this](const std::string &provider, const std::string &response)
+    m_cronus.setResponseCallback([this](const std::string &provider, const std::string &response)
         {
             addResponse(provider, response);
         });
 
-    m_logic.setLogCallback([this](LogLevel logLevel, const std::string &message)
+    m_cronus.setLogCallback([this](LogLevel logLevel, const std::string &message)
         {
             addLog(logLevel, message);
         });
@@ -140,7 +140,7 @@ void TerminalUI::handleInput(Event event)
         m_screen.RequestAnimationFrame();
 
         m_chatMessages.emplace_back(ChatType::Message, Role::User, input);
-        m_logic.processInput(input);
+        m_cronus.processInput(input);
     }
     else if(event==Event::F2)
     {

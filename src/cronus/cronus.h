@@ -63,7 +63,7 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_condition;
     std::thread m_workerThread;
-    bool m_running{false};
+    bool m_running{ false };
 };
 
 } // namespace cronus

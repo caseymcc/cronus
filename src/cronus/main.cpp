@@ -1,5 +1,5 @@
 #include "cronus/terminal_ui.h"
-#include "cronus/client_logic.h"
+#include "cronus/cronus.h"
 #include "cronus/config.h"
 
 #include <iostream>
@@ -34,11 +34,11 @@ int main(int argc, char* argv[])
     // Load configuration
     cronus::Config::instance().load(resourcePath);
 
-    cronus::ClientLogic logic;
-    logic.run();
+    cronus::Cronus cronusApps;
+    cronusApps.run();
     
-    cronus::TerminalUI ui(logic);
+    cronus::TerminalUI ui(cronusApps);
     ui.run();
     
-    logic.stop();
+    cronusApps.stop();
 }

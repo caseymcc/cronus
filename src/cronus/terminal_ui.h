@@ -1,7 +1,7 @@
 #ifndef _cronus_terminal_ui_h_
 #define _cronus_terminal_ui_h_
 
-#include "client_logic.h"
+#include "cronus/cronus.h"
 
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/screen.hpp>
@@ -49,7 +49,7 @@ class TerminalUI
 {
 public:
     TerminalUI();
-    explicit TerminalUI(class ClientLogic &logic);
+    explicit TerminalUI(class Cronus &cronus);
 
     void updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents);
 
@@ -71,7 +71,7 @@ private:
     ftxui::Element renderInputArea();
     ftxui::Element renderMainLayout();
 
-    ClientLogic &m_logic;
+    Cronus &m_cronus;
     ftxui::ScreenInteractive m_screen;
 
     // Directory tree state
