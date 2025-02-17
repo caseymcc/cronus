@@ -52,10 +52,10 @@ namespace cronus
     private:
         std::mutex m_cache_mutex;
         std::unordered_map<std::string, CacheItem> m_tags_cache;
-        std::string m_root;
-        int m_max_map_tokens;
-        int m_max_context_window;
-        int m_map_mul_no_files;
+        std::string m_workingDir;
+        int m_maxMapTokens;
+        int m_maxContextWindow;
+        int m_mapMulNoFiles;
         bool m_verbose;
         std::string m_repo_content_prefix;
     };

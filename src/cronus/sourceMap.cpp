@@ -7,51 +7,65 @@
 
 using namespace cronus;
 
-SourceMap::SourceMap(std::string &workingDir) {
-    m_root = workingDir;
-    m_max_map_tokens = 1024;
-    m_max_context_window = 0;
-    m_map_mul_no_files = 8;
-    m_VERBOSE = false;
-    m_repo_content_prefix = "";
+SourceMap::SourceMap(std::string &workingDir)
+{
+    m_workingDir=workingDir;
+    m_maxMapTokens=1024;
+    m_maxContextWindow=0;
+    m_mapMulNoFiles=8;
+    m_verbose=false;
+    m_repoContentPrefix="";
 }
 
-SourceMap::~SourceMap() {
+SourceMap::~SourceMap()
+{
     // Cleanup cache
 }
 
-std::string SourceMap::get_rel_fname(const std::string &fname) {
-    try {
-        return std::filesystem::relpath(fname, m_root);
-    } catch (const std::filesystem::filesystem_error& e) {
-        return fname;
+std::string SourceMap::getRelFname(const std::string &fileName)
+{
+    try
+    {
+        return std::filesystem::relpath(fileName, m_workingDir);
+    }
+    catch(const std::filesystem::filesystem_error &e)
+    {
+        return fileName;
     }
 }
 
-void SourceMap::tags_cache_error(const std::string &error) {
-    if (mVerbose) {
-        std::cout << "Tags cache error: " << error << std::endl;
+void SourceMap::tags_cache_error(const std::string &error)
+{
+    if(m_verbose)
+    {
+        std::cout<<"Tags cache error: "<<error<<std::endl;
     }
 }
 
-void SourceMap::loadTagsCache() {
+void SourceMap::loadTagsCache()
+{
     // Implementation pending
 }
 
-void SourceMap::saveTagsCache() {
+void SourceMap::saveTagsCache()
+{
     // Implementation pending
 }
 
-int SourceMap::getMTime(const std::string &fname) {
-    try {
-        return std::filesystem::file_time(fname).last_write_time().count();
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cout << "File not found error: " << fname << std::endl;
+int SourceMap::getMTime(const std::string &fileName)
+{
+    std::filesystem::path filePath(fileName);
+
+    if(!std::filesystem::exists(filePath))
+    {
+        std::cout<<"File not found error: "<<fileName<<std::endl;
         return -1;
     }
+    return filePath.last_write_time().count();
 }
 
-std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string &rel_fname) {
+std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string &rel_fname)
+{
     // Implementation pending
     return {};
 }
@@ -62,7 +76,8 @@ std::vector<std::pair<std::string, std::vector<Tag>>> SourceMap::get_ranked_tags
     const std::vector<std::string> &mentioned_fnames,
     const std::vector<std::string> &mentioned_idents,
     bool force_refresh
-) {
+)
+{
     // Implementation pending
     return {};
 }
