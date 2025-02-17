@@ -9,8 +9,8 @@ find_package(yaml-cpp CONFIG REQUIRED)
 find_package(ftxui CONFIG REQUIRED)
 
 set(cronus_src
-    ./client_logic.h
-    ./client_logic.cpp
+    ./cronus.h
+    ./cronus.cpp
     ./config.h
     ./config.cpp
     ./logger.h
