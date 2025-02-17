@@ -30,6 +30,8 @@ namespace cronus
         ~SourceMap();
 
         std::string getRelFname(const std::string &fname);
+    
+        std::vector<std::string> locateSourceFiles();
         
         void tagsCacheError(const std::string &error = "");
         
