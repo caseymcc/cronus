@@ -19,8 +19,8 @@ namespace cronus
 
     struct CacheItem
     {
-        int mtime;
-        std::vector<Tag> data;
+        int mTime;
+        std::vector<Tag> mData;
     };
 
     class SourceMap
@@ -29,15 +29,15 @@ namespace cronus
         SourceMap(std::string &workingDir);
         ~SourceMap();
 
-        std::string get_rel_fname(const std::string &fname);
+        std::string getRelFname(const std::string &fname);
         
-        void tags_cache_error(const std::string &error = "");
+        void tagsCacheError(const std::string &error = "");
         
-        void load_tags_cache();
+        void loadTagsCache();
         
-        void save_tags_cache();
+        void saveTagsCache();
         
-        int get_mtime(const std::string &fname);
+        int getMTime(const std::string &fname);
         
         std::vector<Tag> get_tags(const std::string &fname, const std::string &rel_fname);
         
@@ -50,14 +50,14 @@ namespace cronus
         );
 
     private:
-        std::mutex m_cache_mutex;
-        std::unordered_map<std::string, CacheItem> m_tags_cache;
-        std::string m_root;
-        int m_max_map_tokens;
-        int m_max_context_window;
-        int m_map_mul_no_files;
-        bool m_verbose;
-        std::string m_repo_content_prefix;
+        std::mutex mCacheMutex;
+        std::unordered_map<std::string, CacheItem> mTagsCache;
+        std::string mRoot;
+        int mMaxMapTokens;
+        int mMaxContextWindow;
+        int mMapMulNoFiles;
+        bool mVerbose;
+        std::string mRepoContentPrefix;
     };
 } // namespace cronus
 
