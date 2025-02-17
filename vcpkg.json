@@ -5,6 +5,16 @@
         "cpr",
         "nlohmann-json",
         "yaml-cpp",
-        "ftxui"
-    ]
+        "ftxui",
+        "tree-sitter-cli",
+        "tree-sitter-python",
+        "tree-sitter-c"
+    ],
+    "buildOptions": {
+        "cmake": {
+            "args": [
+                "-DTREE_SITTER_DIR=${VCPKG_INSTALLED_DIR}/tree-sitter-c"
+            ]
+        }
+    }
 }

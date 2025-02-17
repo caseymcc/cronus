@@ -28,6 +28,9 @@ add_executable(cronus
 target_include_directories(cronus 
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/..
+    PRIVATE
+        ${VCPKG_INSTALLED_DIR}/tree-sitter-c/include
+        ${VCPKG_INSTALLED_DIR}/tree-sitter-python/include
 )
 target_link_libraries(cronus PRIVATE
     hermes
@@ -35,4 +38,6 @@ target_link_libraries(cronus PRIVATE
     ftxui::screen
     ftxui::dom
     ftxui::component
+    tree-sitter-c::tree-sitter-c
+    tree-sitter-python::tree-sitter-python
 )

@@ -1,35 +1,64 @@
 #ifndef _cronus_sourceMap_h_
 #define _cronus_sourceMap_h_
 
+#include <vector>
+#include <string>
+#include <filesystem>
+#include <mutex>
+
 namespace cronus
 {
+    struct Tag
+    {
+        std::string rel_fname;
+        std::string fname;
+        std::string name;
+        std::string kind;
+        int line;
+    };
 
+    struct CacheItem
+    {
+        int mtime;
+        std::vector<Tag> data;
+    };
 
-struct Tag
-{
-    std::string rel_fname;
-    std::string fname;
-    std::string name;
-    std::string kind;
-    int line;
-};
+    class SourceMap
+    {
+    public:
+        SourceMap(std::string &workingDir);
+        ~SourceMap();
 
-struct CacheItem
-{
-    int mtime;
-    std::vector<Tag> data;
-};
+        std::string get_rel_fname(const std::string &fname);
+        
+        void tags_cache_error(const std::string &error = "");
+        
+        void load_tags_cache();
+        
+        void save_tags_cache();
+        
+        int get_mtime(const std::string &fname);
+        
+        std::vector<Tag> get_tags(const std::string &fname, const std::string &rel_fname);
+        
+        std::vector<std::pair<std::string, std::vector<Tag>>> get_ranked_tags_map(
+            const std::vector<std::string> &chat_fnames,
+            const std::vector<std::string> &other_fnames,
+            const std::vector<std::string> &mentioned_fnames,
+            const std::vector<std::string> &mentioned_idents,
+            bool force_refresh = false
+        );
 
-class SourceMap
-{
-public:
-    SourceMap(std::string &workingDir);
-    ~SourceMap();
-
-private:
-
-};
-
+    private:
+        std::mutex m_cache_mutex;
+        std::unordered_map<std::string, CacheItem> m_tags_cache;
+        std::string m_root;
+        int m_max_map_tokens;
+        int m_max_context_window;
+        int m_map_mul_no_files;
+        bool m_verbose;
+        std::string m_repo_content_prefix;
+    };
 } // namespace cronus
 
 #endif// _cronus_sourceMap_h_
