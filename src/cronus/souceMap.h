@@ -53,6 +53,8 @@ namespace cronus
 
     private:
        std::vector<std::string> locateSourceFiles();
+    
+       void update();
 
         std::mutex m_cache_mutex;
         std::unordered_map<std::string, CacheItem> m_tags_cache;
@@ -62,6 +64,7 @@ namespace cronus
         int m_mapMulNoFiles;
         bool m_verbose;
         std::string m_repo_content_prefix;
+        time_t lastUpdate;
     };
 } // namespace cronus
 

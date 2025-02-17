@@ -22,6 +22,48 @@ SourceMap::SourceMap(std::string &workingDir)
     m_repoContentPrefix="";
 }
 
+std::vector<std::string> SourceMap::locateSourceFiles() {
+    std::vector<std::string> sourceFiles;
+    std::filesystem::path currentDir(m_workingDir);
+
+    // Helper function to read file content and metadata
+    auto getSourceFileInfo = [](const std::filesystem::path &path) {
+        std::string content;
+        std::string ext = path.extension();
+        try {
+            std::ifstream file(path);
+            content = std::string(std::istreambuf_iterator(file.rdbuf()), '\0');
+        } catch (const std::ifstream::failure& e) {
+            content = "";
+        }
+        return std::make_pair(content, path.last_write_time().count());
+    };
+
+    // Traverse directory recursively
+    for (const auto& entry : std::filesystem::directory_iterator(currentDir)) {
+        if (entry.is_regular_file() && isSourceFile(entry.path())) {
+            auto fileInfo = getSourceFileInfo(entry.path());
+            sourceFiles.push_back(fileInfo);
+        }
+    }
+
+    return sourceFiles;
+}
+
+void SourceMap::update() {
+    std::vector<std::string> currentFiles = locateSourceFiles();
+    
+    // Compare with cached files
+    for (const auto& file : currentFiles) {
+        // Check if file exists in cache
+        // If not, add it
+        // If exists but modified, update it
+    }
+
+    // Update last update time
+    lastUpdate = time(nullptr);
+}
+
 SourceMap::~SourceMap()
 {
     // Cleanup cache
