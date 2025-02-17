@@ -2,43 +2,15 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-using namespace cronus;
 #include <sqlite3.h>
 #include <random>
 #include <algorithm>
 #include <chrono>
 #include <networkx/pagerank.h>
 
-using namespace cronus;
+namespace cronus
+{
 
-// Helper function to check if a file is a source file
-bool isSourceFile(const std::string &ext) {
-    static const std::unordered_set<std::string> sourceExts = {
-        ".cpp", ".h", ".hpp", ".py", ".js", ".ts", ".php", ".java",
-        ".swift", ".dart", ".go", ".rs", ".lua", ".rb", ".hs", ".scm"
-    };
-    return sourceExts.find(ext) != sourceExts.end();
-}
-
-std::vector<std::string> SourceMap::locateSourceFiles() {
-    std::vector<std::string> sourceFiles;
-    std::filesystem::path currentDir(m_workingDir);
-    
-    // Helper function to check if a file is a source file
-    auto isSourceFile = [](const std::filesystem::path &path) {
-        std::string ext = path.extension();
-        return isSourceFile(ext);
-    };
-
-    // Traverse directory recursively
-    for (const auto& entry : std::filesystem::directory_iterator(currentDir)) {
-        if (entry.is_regular_file() && isSourceFile(entry.path())) {
-            sourceFiles.push_back(entry.path().string());
-        }
-    }
-
-    return sourceFiles;
-}
 
 SourceMap::SourceMap(std::string &workingDir)
 {
@@ -77,12 +49,12 @@ void SourceMap::tags_cache_error(const std::string &error)
 
 void SourceMap::loadTagsCache()
 {
-    m_workingDir = workingDir;
-    m_maxMapTokens = 1024;
-    m_maxContextWindow = 0;
-    m_mapMulNoFiles = 8;
-    m_verbose = false;
-    m_repoContentPrefix = "";
+    m_workingDir=workingDir;
+    m_maxMapTokens=1024;
+    m_maxContextWindow=0;
+    m_mapMulNoFiles=8;
+    m_verbose=false;
+    m_repoContentPrefix="";
 }
 
 void SourceMap::saveTagsCache()
@@ -119,3 +91,29 @@ std::vector<std::pair<std::string, std::vector<Tag>>> SourceMap::get_ranked_tags
     // Implementation pending
     return {};
 }
+
+std::vector<std::string> SourceMap::locateSourceFiles()
+{
+    std::vector<std::string> sourceFiles;
+    std::filesystem::path currentDir(m_workingDir);
+
+    // Helper function to check if a file is a source file
+    auto isSourceFile=[](const std::filesystem::path &path)
+        {
+            std::string ext=path.extension();
+            return isSourceFile(ext);
+        };
+
+    // Traverse directory recursively
+    for(const auto &entry:std::filesystem::directory_iterator(currentDir))
+    {
+        if(entry.is_regular_file()&&isSourceFile(entry.path()))
+        {
+            sourceFiles.push_back(entry.path().string());
+        }
+    }
+
+    return sourceFiles;
+}
+
+}//namespace cronus
