@@ -203,13 +203,14 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 void SourceMap::update()
 {
     char buffer[4096];
-    const struct inotify_event *event;
     ssize_t len;
 
     // Non-blocking read from inotify fd
     while ((len = read(m_inotifyFd, buffer, sizeof(buffer))) > 0) {
-        for (char *ptr = buffer; ptr < buffer + len; ptr += sizeof(struct inotify_event) + event->len) {
-            event = (const struct inotify_event *)ptr;
+        char *ptr = buffer;
+        while (ptr < buffer + len) {
+            const struct inotify_event *event = (const struct inotify_event *)ptr;
+            ptr += sizeof(struct inotify_event) + event->len;
 
             if (event->mask & (IN_MODIFY | IN_CREATE)) {
                 // Get the filename from our watch descriptor mapping
