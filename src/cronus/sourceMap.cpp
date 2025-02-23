@@ -1,6 +1,8 @@
 #include "sourceMap.h"
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/inotify.h>
+#include <unistd.h>
 
 #include <sqlite3.h>
 #include <random>
@@ -61,6 +63,20 @@ SourceMap::SourceMap(std::string &workingDir)
     m_mapMulNoFiles=8;
     m_verbose=false;
     m_repoContentPrefix="";
+
+    // Initialize inotify
+    m_inotifyFd = inotify_init1(IN_NONBLOCK);
+    if (m_inotifyFd == -1) {
+        std::cerr << "Failed to initialize inotify" << std::endl;
+        return;
+    }
+
+    // Get initial files and set up watches
+    std::vector<std::string> initialFiles = locateSourceFiles();
+    for (const auto& file : initialFiles) {
+        addFileWatch(file);
+        parseFile(file);
+    }
 }
 
 bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::path &path)
@@ -186,23 +202,53 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 
 void SourceMap::update()
 {
-    std::vector<std::string> currentFiles=locateSourceFiles();
+    char buffer[4096];
+    const struct inotify_event *event;
+    ssize_t len;
 
-    // Compare with cached files
-    for(const auto &file:currentFiles)
-    {
-        // Check if file exists in cache
-        // If not, add it
-        // If exists but modified, update it
+    // Non-blocking read from inotify fd
+    while ((len = read(m_inotifyFd, buffer, sizeof(buffer))) > 0) {
+        for (char *ptr = buffer; ptr < buffer + len; ptr += sizeof(struct inotify_event) + event->len) {
+            event = (const struct inotify_event *)ptr;
+
+            if (event->mask & (IN_MODIFY | IN_CREATE)) {
+                // Get the filename from our watch descriptor mapping
+                auto it = m_watchToFile.find(event->wd);
+                if (it != m_watchToFile.end()) {
+                    parseFile(it->second);
+                }
+            }
+            else if (event->mask & IN_DELETE) {
+                auto it = m_watchToFile.find(event->wd);
+                if (it != m_watchToFile.end()) {
+                    m_tagsCache.erase(it->second);
+                    m_watchToFile.erase(it);
+                }
+            }
+        }
     }
 
     // Update last update time
-    lastUpdate=time(nullptr);
+    lastUpdate = time(nullptr);
+}
+
+void SourceMap::addFileWatch(const std::string& filename) {
+    int wd = inotify_add_watch(m_inotifyFd, filename.c_str(), IN_MODIFY | IN_CREATE | IN_DELETE);
+    if (wd != -1) {
+        m_watchToFile[wd] = filename;
+    }
 }
 
 SourceMap::~SourceMap()
 {
-    // Cleanup cache
+    // Close inotify
+    if (m_inotifyFd != -1) {
+        close(m_inotifyFd);
+    }
+    
+    // Clear maps
+    m_watchToFile.clear();
+    m_tagsCache.clear();
 }
 
 std::string SourceMap::getRelFname(const std::string &fileName)
