@@ -1,16 +1,10 @@
 #include "sourceMap.h"
 #include <dirent.h>
-#include <sys/stat.h>
-#include <sys/inotify.h>
-#include <unistd.h>
 
-#include <sqlite3.h>
 #include <random>
 #include <algorithm>
 #include <chrono>
-#include <networkx/pagerank.h>
-
-#include <filesystem>
+//#include <networkx/pagerank.h>
 #include <fstream>
 
 // Tree-sitter language parsers
@@ -64,23 +58,12 @@ SourceMap::SourceMap(std::string &workingDir)
     m_verbose=false;
     m_repoContentPrefix="";
 
-    // Initialize inotify
-    m_inotifyFd = inotify_init1(IN_NONBLOCK);
-    if (m_inotifyFd == -1) {
-        std::cerr << "Failed to initialize inotify" << std::endl;
-        return;
-    }
-
-    // Get initial files and set up watches
-    std::vector<std::string> initialFiles = locateSourceFiles();
-    for (const auto& file : initialFiles) {
-        addFileWatch(file);
-        parseFile(file);
-    }
+    update();
 }
 
-bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::path &path)
+bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileName)
 {
+    std::filesystem::path path(fileName);
     std::string ext=path.extension().string();
     std::string content;
     TSLanguage *language=nullptr;
@@ -104,11 +87,11 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::p
 
     // Read file content
     std::ifstream file(path);
-    if (!file.is_open())
+    if(!file.is_open())
     {
         return false;
     }
-    content = std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    content=std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 
     fileTags.m_tags.clear();
 
@@ -125,7 +108,7 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::p
     while(!nodes.empty())
     {
         TSNode node=nodes.back();
-        
+
         nodes.pop_back();
 
         if(ts_node_is_null(node)) continue;
@@ -150,8 +133,8 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::p
                 });
         }
 
-        uint32_t child_count = ts_node_child_count(node);
-        for (int32_t i = child_count - 1; i >= 0; --i)
+        uint32_t child_count=ts_node_child_count(node);
+        for(int32_t i=child_count-1; i>=0; --i)
         {
             nodeStack.push(ts_node_child(node, i));
         }
@@ -164,19 +147,8 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::filesystem::p
     return true;
 };
 
-bool SourceMap::parseFile(std::string &fileName)
+bool SourceMap::parseFile(FileTags &fileTags, std::string &fileName)
 {
-    std::unordered_map<std::string, FileTags>::iterator tagsIter=m_tagsCache.find(fileName);
-
-    if(tagsIter == m_tagsCache.end())
-    {
-        tagsIter=m_tagsCache[fileName].insert({
-            .fileName=fileName,
-            .relativeFileName=getRelFname(fileName),
-            .m_time=getMTime(fileName)
-        });
-    }
-
     if(canParseWithTreeSitter(fileName))
         return parseWithTreeSitter(*tagsIter, fileName);
 
@@ -187,14 +159,12 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 {
     std::vector<std::string> sourceFiles;
     std::filesystem::path currentDir(m_workingDir);
+    
     // Traverse directory recursively
     for(const auto &entry:std::filesystem::directory_iterator(currentDir))
     {
         if(entry.is_regular_file()&&isSourceFile(entry.path()))
-        {
-            auto fileInfo=getSourceFileInfo(entry.path());
-            sourceFiles.push_back(fileInfo);
-        }
+            sourceFiles.push_back(entry.path().string());
     }
 
     return sourceFiles;
@@ -202,66 +172,79 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 
 void SourceMap::update()
 {
-    char buffer[4096];
-    ssize_t len;
+    std::filesystem::path currentDir(m_workingDir);
+    std::vector<std::string> cachedFiles;    
 
-    // Non-blocking read from inotify fd
-    while ((len = read(m_inotifyFd, buffer, sizeof(buffer))) > 0) {
-        char *ptr = buffer;
-        while (ptr < buffer + len) {
-            const struct inotify_event *event = (const struct inotify_event *)ptr;
-            ptr += sizeof(struct inotify_event) + event->len;
+    for(const auto &fileEntry : m_fileCache)
+    {
+        cachedFiles.push_back(fileEntry.first);
+    }
 
-            if (event->mask & (IN_MODIFY | IN_CREATE)) {
-                // Get the filename from our watch descriptor mapping
-                auto it = m_watchToFile.find(event->wd);
-                if (it != m_watchToFile.end()) {
-                    parseFile(it->second);
-                }
+    for(const auto &entry:std::filesystem::directory_iterator(currentDir))
+    {
+        auto iter=m_fileCache.find(entry.path());
+
+        if(entry.is_regular_file())
+            continue;
+
+        int time=getMTime(entry.path());
+
+        if(iter!=m_fileCache.end())
+        {
+            if(time != iter->second.m_time)
+            {
+                iter->second.m_time=time;
+
+                if(iter->second.m_isSource)
+                    parseFile(*iter, entry.path().string);
             }
-            else if (event->mask & IN_DELETE) {
-                auto it = m_watchToFile.find(event->wd);
-                if (it != m_watchToFile.end()) {
-                    m_tagsCache.erase(it->second);
-                    m_watchToFile.erase(it);
-                }
+        }
+        else
+        {
+            bool isSource=isSourceFile(entry.path().string());
+
+            iter=m_fileCache.insert({entry.path().string(), {
+                .m_fileName=entry.path().string(),
+                .m_relativeFileName=getRelativeFname(entry.path().string()),
+                .m_time=time,
+                .m_isSource=isSource
+                }});
+            
+            if(isSource)
+            {
+                parseFile(*iter, entry.path().string());
             }
+        }
+
+        auto fileIter=cachedFiles.find(entry.path());
+
+        if(fileIter!=cachedFiles.end())
+        {
+            cachedFiles.erase(fileIter);
         }
     }
 
-    // Update last update time
-    lastUpdate = time(nullptr);
-}
-
-void SourceMap::addFileWatch(const std::string& filename) {
-    int wd = inotify_add_watch(m_inotifyFd, filename.c_str(), IN_MODIFY | IN_CREATE | IN_DELETE);
-    if (wd != -1) {
-        m_watchToFile[wd] = filename;
+    for(const auto &file:cachedFiles)
+    {
+        m_fileCache.erase(file);
     }
 }
 
 SourceMap::~SourceMap()
 {
-    // Close inotify
-    if (m_inotifyFd != -1) {
-        close(m_inotifyFd);
-    }
-    
-    // Clear maps
-    m_watchToFile.clear();
-    m_tagsCache.clear();
+    m_fileCache.clear();
 }
 
-std::string SourceMap::getRelFname(const std::string &fileName)
+std::string SourceMap::getRelativeFname(const std::string &fileName)
 {
-    try
-    {
-        return std::filesystem::relpath(fileName, m_workingDir);
-    }
-    catch(const std::filesystem::filesystem_error &e)
+    std::error_code ec;
+    auto relPath = std::filesystem::relative(fileName, m_workingDir, ec);
+
+    if(ec)
     {
         return fileName;
     }
+    return relPath.string();
 }
 
 void SourceMap::tags_cache_error(const std::string &error)
