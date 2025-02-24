@@ -24,7 +24,6 @@ bool isSourceFile(const std::filesystem::path& path) {
     std::string ext = path.extension().string();
     return std::find(sourceExts.begin(), sourceExts.end(), ext) != sourceExts.end();
 }
-{
 
 TreeSitterParser treeSitterParsers[]={
     { { ".cpp", ".h", ".cxx", ".hpp" }, tree_sitter_cpp() },
