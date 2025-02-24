@@ -137,10 +137,10 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
             uint32_t end=ts_node_end_byte(node);
 
             fileTags.m_tags.emplace_back(Tag{
-                .name=content.substr(start, end-start),
-                .start=startPoint.row+1,
-                .end=endPoint.row,
-                .type=type
+                content.substr(start, end-start),
+                type,
+                static_cast<int>(startPoint.row + 1),
+                static_cast<int>(endPoint.row)
                 });
         }
 
@@ -160,10 +160,9 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
 
 void SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
 {
-    if(canParseWithTreeSitter(fileName))
-        return parseWithTreeSitter(*tagsIter, fileName);
-
-    return false;
+    if(canParseWithTreeSitter(fileName)) {
+        parseWithTreeSitter(fileTags, fileName);
+    }
 }
 
 std::vector<std::string> SourceMap::locateSourceFiles()
@@ -224,7 +223,7 @@ void SourceMap::update()
             
             if(isSource)
             {
-                parseFile(*iter, entry.path().string());
+                parseFile(iter->second, entry.path().string());
             }
         }
 
@@ -269,12 +268,7 @@ void SourceMap::tagsCacheError(const std::string &error)
 
 void SourceMap::loadTagsCache()
 {
-    m_workingDir=workingDir;
-    m_maxMapTokens=1024;
-    m_maxContextWindow=0;
-    m_mapMulNoFiles=8;
-    m_verbose=false;
-    m_repoContentPrefix="";
+    // Default initialization already done in constructor
 }
 
 void SourceMap::saveTagsCache()
