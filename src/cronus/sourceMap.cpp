@@ -1,11 +1,11 @@
 #include "sourceMap.h"
 #include <dirent.h>
-
 #include <random>
 #include <algorithm>
 #include <chrono>
-//#include <networkx/pagerank.h>
 #include <fstream>
+#include <iostream>
+#include <stack>
 
 // Tree-sitter language parsers
 extern "C" TSLanguage *tree_sitter_cpp();
@@ -13,6 +13,17 @@ extern "C" TSLanguage *tree_sitter_python();
 extern "C" TSLanguage *tree_sitter_java();
 
 namespace cronus
+{
+
+bool isSourceFile(const std::filesystem::path& path) {
+    static const std::vector<std::string> sourceExts = {
+        ".cpp", ".h", ".hpp", ".cxx", ".cc", 
+        ".py", ".java"
+    };
+    
+    std::string ext = path.extension().string();
+    return std::find(sourceExts.begin(), sourceExts.end(), ext) != sourceExts.end();
+}
 {
 
 TreeSitterParser treeSitterParsers[]={
@@ -51,7 +62,7 @@ bool canParseWithTreeSitter(const std::string &ext)
 
 SourceMap::SourceMap(std::string &workingDir)
 {
-    m_workingDir=workingDir;
+    // Nothing to load yet
     m_maxMapTokens=1024;
     m_maxContextWindow=0;
     m_mapMulNoFiles=8;
@@ -118,9 +129,10 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
         TSPoint startPoint=ts_node_start_point(node);
         TSPoint endPoint=ts_node_end_point(node);
 
-        TagType type=getTagType(nodeType);
+        std::string nodeTypeStr(nodeType);
+        Tag::Type type = getTagType(nodeTypeStr);
         // Collect important identifiers (functions, classes, variables)
-        if(type!=TagType::Unset)
+        if(type != Tag::Type::Unset)
         {
             uint32_t start=ts_node_start_byte(node);
             uint32_t end=ts_node_end_byte(node);
@@ -136,7 +148,7 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
         uint32_t child_count=ts_node_child_count(node);
         for(int32_t i=child_count-1; i>=0; --i)
         {
-            nodeStack.push(ts_node_child(node, i));
+            nodes.push_back(ts_node_child(node, i));
         }
     }
 
@@ -147,7 +159,7 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
     return true;
 };
 
-bool SourceMap::parseFile(FileTags &fileTags, std::string &fileName)
+void SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
 {
     if(canParseWithTreeSitter(fileName))
         return parseWithTreeSitter(*tagsIter, fileName);
@@ -196,19 +208,20 @@ void SourceMap::update()
                 iter->second.m_time=time;
 
                 if(iter->second.m_isSource)
-                    parseFile(*iter, entry.path().string);
+                    parseFile(iter->second, entry.path().string());
             }
         }
         else
         {
             bool isSource=isSourceFile(entry.path().string());
 
-            iter=m_fileCache.insert({entry.path().string(), {
-                .m_fileName=entry.path().string(),
-                .m_relativeFileName=getRelativeFname(entry.path().string()),
-                .m_time=time,
-                .m_isSource=isSource
-                }});
+            FileTags newTags;
+            newTags.m_fileName = entry.path().string();
+            newTags.m_relativeFileName = getRelativeFname(entry.path().string());
+            newTags.m_time = time;
+            newTags.m_isSource = isSource;
+            auto [it, inserted] = m_fileCache.insert({entry.path().string(), std::move(newTags)});
+            iter = it;
             
             if(isSource)
             {
@@ -216,7 +229,7 @@ void SourceMap::update()
             }
         }
 
-        auto fileIter=cachedFiles.find(entry.path());
+        auto fileIter = std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
 
         if(fileIter!=cachedFiles.end())
         {
@@ -247,7 +260,7 @@ std::string SourceMap::getRelativeFname(const std::string &fileName)
     return relPath.string();
 }
 
-void SourceMap::tags_cache_error(const std::string &error)
+void SourceMap::tagsCacheError(const std::string &error)
 {
     if(m_verbose)
     {
@@ -279,10 +292,10 @@ int SourceMap::getMTime(const std::string &fileName)
         std::cout<<"File not found error: "<<fileName<<std::endl;
         return -1;
     }
-    return filePath.last_write_time().count();
+    return std::filesystem::last_write_time(filePath).time_since_epoch().count();
 }
 
-std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string &rel_fname)
+std::vector<Tag> SourceMap::get_tags(const std::string &fname, const std::string &rel_fname)
 {
     // Implementation pending
     return {};
