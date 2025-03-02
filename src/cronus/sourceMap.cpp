@@ -420,7 +420,36 @@ void SourceMap::loadTagsCache()
 
 void SourceMap::saveTagsCache()
 {
-    // Implementation pending
+    ensureCacheDirectory();
+    
+    for (const auto& [path, tags] : m_fileCache)
+    {
+        std::filesystem::path cachePath = getCachePath() / (tags.m_relativeFileName + ".cache");
+        
+        // Create subdirectories if needed
+        std::filesystem::create_directories(cachePath.parent_path());
+        
+        std::ofstream cache(cachePath);
+        if (!cache.is_open())
+        {
+            continue;
+        }
+
+        cache << tags.m_fileName << '|'
+              << tags.m_relativeFileName << '|'
+              << tags.m_time << ' '
+              << tags.m_isSource << ' '
+              << tags.m_tags.size();
+
+        for (const auto& tag : tags.m_tags)
+        {
+            cache << ' ' << tag.name << '|'
+                  << static_cast<int>(tag.type) << ' '
+                  << tag.start << ' '
+                  << tag.end;
+        }
+        cache << '\n';
+    }
 }
 
 int SourceMap::getMTime(const std::string &fileName)
