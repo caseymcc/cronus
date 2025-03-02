@@ -8,9 +8,25 @@
 #include <stack>
 
 // Tree-sitter language parsers
-extern "C" TSLanguage *tree_sitter_cpp();
-extern "C" TSLanguage *tree_sitter_python();
-extern "C" TSLanguage *tree_sitter_java();
+extern "C" 
+{
+TSLanguage *tree_sitter_c();
+TSLanguage *tree_sitter_cpp();
+TSLanguage *tree_sitter_c_sharp();
+TSLanguage *tree_sitter_css();
+TSLanguage *tree_sitter_go();
+TSLanguage *tree_sitter_html();
+TSLanguage *tree_sitter_java();
+TSLanguage *tree_sitter_javascript();
+TSLanguage *tree_sitter_json();
+TSLanguage *tree_sitter_php();
+TSLanguage *tree_sitter_python();
+TSLanguage *tree_sitter_ruby();
+TSLanguage *tree_sitter_rust();
+TSLanguage *tree_sitter_toml();
+TSLanguage *tree_sitter_typescript();
+TSLanguage *tree_sitter_yaml();
+}
 
 namespace cronus
 {
@@ -26,9 +42,22 @@ bool isSourceFile(const std::filesystem::path& path) {
 }
 
 TreeSitterParser treeSitterParsers[]={
+    { { ".c" }, tree_sitter_c() },
     { { ".cpp", ".h", ".cxx", ".hpp" }, tree_sitter_cpp() },
-    { { ".py" }, tree_sitter_python() },
-    { { ".java" }, tree_sitter_java() }
+    { { ".cs" }, tree_sitter_c_sharp() },
+    { { ".css" }, tree_sitter_css() },
+    { { ".go" }, tree_sitter_go() },
+    { { ".html" }, tree_sitter_html() },
+    { { ".java" }, tree_sitter_java() },
+    { { ".js", ".javascript" }, tree_sitter_javascript() },
+    { { ".json" }, tree_sitter_json() },
+    { { ".php" }, tree_sitter_php() },
+    { { ".py", ".python" }, tree_sitter_python() },
+    { { ".rb" }, tree_sitter_ruby() },
+    { { ".rs" }, tree_sitter_rust() },
+    { { ".toml" }, tree_sitter_toml() },
+    { { ".ts" }, tree_sitter_typescript() },
+    { { ".yml", ".yaml" }, tree_sitter_yaml() }
 };
 
 Tag::Type getTagType(std::string &nodeType)
@@ -76,27 +105,15 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
     std::filesystem::path path(fileName);
     std::string ext=path.extension().string();
     std::string content;
-    TSLanguage *language=nullptr;
 
-    // Map file extensions to Tree-sitter parsers
-    if(ext==".cpp"||ext==".h"||ext==".cxx"||ext==".hpp")
-    {
-        language=tree_sitter_cpp();
-    }
-    else if(ext==".py")
-    {
-        language=tree_sitter_python();
-    }
-    else if(ext==".java")
-    {
-        language=tree_sitter_java();
-    }
+    TSLanguage *language=getTreeSitterParser(ext);
 
     if(!language)
         return false;
 
     // Read file content
     std::ifstream file(path);
+
     if(!file.is_open())
     {
         return false;
@@ -158,11 +175,13 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
     return true;
 };
 
-void SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
+bool SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
 {
     if(canParseWithTreeSitter(fileName)) {
-        parseWithTreeSitter(fileTags, fileName);
+        return parseWithTreeSitter(fileTags, fileName);
     }
+
+    return false;
 }
 
 std::vector<std::string> SourceMap::locateSourceFiles()
