@@ -8,37 +8,38 @@
 #include <stack>
 
 // Tree-sitter language parsers
-extern "C" 
+extern "C"
 {
-TSLanguage *tree_sitter_c();
-TSLanguage *tree_sitter_cpp();
-TSLanguage *tree_sitter_c_sharp();
-TSLanguage *tree_sitter_css();
-TSLanguage *tree_sitter_go();
-TSLanguage *tree_sitter_html();
-TSLanguage *tree_sitter_java();
-TSLanguage *tree_sitter_javascript();
-TSLanguage *tree_sitter_json();
-TSLanguage *tree_sitter_php();
-TSLanguage *tree_sitter_python();
-TSLanguage *tree_sitter_ruby();
-TSLanguage *tree_sitter_rust();
-TSLanguage *tree_sitter_toml();
-TSLanguage *tree_sitter_typescript();
-TSLanguage *tree_sitter_yaml();
+    TSLanguage *tree_sitter_c();
+    TSLanguage *tree_sitter_cpp();
+    TSLanguage *tree_sitter_c_sharp();
+    TSLanguage *tree_sitter_css();
+    TSLanguage *tree_sitter_go();
+    TSLanguage *tree_sitter_html();
+    TSLanguage *tree_sitter_java();
+    TSLanguage *tree_sitter_javascript();
+    TSLanguage *tree_sitter_json();
+    TSLanguage *tree_sitter_php();
+    TSLanguage *tree_sitter_python();
+    TSLanguage *tree_sitter_ruby();
+    TSLanguage *tree_sitter_rust();
+    TSLanguage *tree_sitter_toml();
+    TSLanguage *tree_sitter_typescript();
+    TSLanguage *tree_sitter_yaml();
 }
 
 namespace cronus
 {
 
-bool isSourceFile(const std::filesystem::path& path) {
-    static const std::vector<std::string> sourceExts = {
-        ".cpp", ".h", ".hpp", ".cxx", ".cc", 
+bool isSourceFile(const std::filesystem::path &path)
+{
+    static const std::vector<std::string> sourceExts={
+        ".cpp", ".h", ".hpp", ".cxx", ".cc",
         ".py", ".java"
     };
-    
-    std::string ext = path.extension().string();
-    return std::find(sourceExts.begin(), sourceExts.end(), ext) != sourceExts.end();
+
+    std::string ext=path.extension().string();
+    return std::find(sourceExts.begin(), sourceExts.end(), ext)!=sourceExts.end();
 }
 
 TreeSitterParser treeSitterParsers[]={
@@ -96,8 +97,6 @@ SourceMap::SourceMap(std::string &workingDir)
     m_mapMulNoFiles=8;
     m_verbose=false;
     m_repoContentPrefix="";
-
-    update();
 }
 
 bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileName)
@@ -146,9 +145,9 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
         TSPoint endPoint=ts_node_end_point(node);
 
         std::string nodeTypeStr(nodeType);
-        Tag::Type type = getTagType(nodeTypeStr);
+        Tag::Type type=getTagType(nodeTypeStr);
         // Collect important identifiers (functions, classes, variables)
-        if(type != Tag::Type::Unset)
+        if(type!=Tag::Type::Unset)
         {
             uint32_t start=ts_node_start_byte(node);
             uint32_t end=ts_node_end_byte(node);
@@ -156,7 +155,7 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
             fileTags.m_tags.emplace_back(Tag{
                 content.substr(start, end-start),
                 type,
-                static_cast<int>(startPoint.row + 1),
+                static_cast<int>(startPoint.row+1),
                 static_cast<int>(endPoint.row)
                 });
         }
@@ -177,7 +176,8 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
 
 bool SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
 {
-    if(canParseWithTreeSitter(fileName)) {
+    if(canParseWithTreeSitter(fileName))
+    {
         return parseWithTreeSitter(fileTags, fileName);
     }
 
@@ -188,7 +188,7 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 {
     std::vector<std::string> sourceFiles;
     std::filesystem::path currentDir(m_workingDir);
-    
+
     // Traverse directory recursively
     for(const auto &entry:std::filesystem::directory_iterator(currentDir))
     {
@@ -202,9 +202,9 @@ std::vector<std::string> SourceMap::locateSourceFiles()
 void SourceMap::update()
 {
     std::filesystem::path currentDir(m_workingDir);
-    std::vector<std::string> cachedFiles;    
+    std::vector<std::string> cachedFiles;
 
-    for(const auto &fileEntry : m_fileCache)
+    for(const auto &fileEntry:m_fileCache)
     {
         cachedFiles.push_back(fileEntry.first);
     }
@@ -220,7 +220,7 @@ void SourceMap::update()
 
         if(iter!=m_fileCache.end())
         {
-            if(time != iter->second.m_time)
+            if(time!=iter->second.m_time)
             {
                 iter->second.m_time=time;
 
@@ -233,20 +233,20 @@ void SourceMap::update()
             bool isSource=isSourceFile(entry.path().string());
 
             FileTags newTags;
-            newTags.m_fileName = entry.path().string();
-            newTags.m_relativeFileName = getRelativeFname(entry.path().string());
-            newTags.m_time = time;
-            newTags.m_isSource = isSource;
-            auto [it, inserted] = m_fileCache.insert({entry.path().string(), std::move(newTags)});
-            iter = it;
-            
+            newTags.m_fileName=entry.path().string();
+            newTags.m_relativeFileName=getRelativeFname(entry.path().string());
+            newTags.m_time=time;
+            newTags.m_isSource=isSource;
+            auto [it, inserted]=m_fileCache.insert({ entry.path().string(), std::move(newTags) });
+            iter=it;
+
             if(isSource)
             {
                 parseFile(iter->second, entry.path().string());
             }
         }
 
-        auto fileIter = std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
+        auto fileIter=std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
 
         if(fileIter!=cachedFiles.end())
         {
@@ -254,9 +254,18 @@ void SourceMap::update()
         }
     }
 
-    for(const auto &file:cachedFiles)
+    if(!cachedFiles.empty())
     {
-        m_fileCache.erase(file);
+        for(const auto &file:cachedFiles)
+        {
+            m_fileCache.erase(file);
+        }
+        cacheModified=true;
+    }
+
+    if(cacheModified)
+    {
+        saveToCache();
     }
 }
 
@@ -265,10 +274,108 @@ SourceMap::~SourceMap()
     m_fileCache.clear();
 }
 
+void SourceMap::ensureCacheDirectory()
+{
+    std::filesystem::path cachePath=getCachePath();
+    if(!std::filesystem::exists(cachePath))
+    {
+        std::filesystem::create_directories(cachePath);
+    }
+}
+
+std::filesystem::path SourceMap::getCachePath() const
+{
+    return std::filesystem::path(".cronus")/"cache";
+}
+
+void SourceMap::loadFromCache()
+{
+    std::filesystem::path cachePath=getCachePath()/"sourcemap.cache";
+    if(!std::filesystem::exists(cachePath))
+    {
+        return;
+    }
+
+    std::ifstream cache(cachePath);
+    if(!cache.is_open())
+    {
+        return;
+    }
+
+    try
+    {
+        std::string line;
+        while(std::getline(cache, line))
+        {
+            std::istringstream iss(line);
+            FileTags tags;
+
+            std::getline(iss, tags.m_fileName, '|');
+            std::getline(iss, tags.m_relativeFileName, '|');
+            iss>>tags.m_time;
+            iss.ignore();
+            iss>>tags.m_isSource;
+
+            // Read tags                                                                                                                                          
+            size_t tagCount;
+            iss>>tagCount;
+
+            for(size_t i=0; i<tagCount; ++i)
+            {
+                Tag tag;
+                std::getline(iss, tag.name, '|');
+                int typeInt;
+                iss>>typeInt;
+                tag.type=static_cast<Tag::Type>(typeInt);
+                iss>>tag.start;
+                iss>>tag.end;
+                tags.m_tags.push_back(tag);
+            }
+
+            m_fileCache[tags.m_fileName]=std::move(tags);
+        }
+    }
+    catch(...)
+    {
+        // If there's any error reading the cache, we'll just rebuild it                                                                                          
+        m_fileCache.clear();
+    }
+}
+
+void SourceMap::saveToCache()
+{
+    ensureCacheDirectory();
+    std::filesystem::path cachePath=getCachePath()/"sourcemap.cache";
+
+    std::ofstream cache(cachePath);
+    if(!cache.is_open())
+    {
+        return;
+    }
+
+    for(const auto &[path, tags]:m_fileCache)
+    {
+        cache<<tags.m_fileName<<'|'
+            <<tags.m_relativeFileName<<'|'
+            <<tags.m_time<<' '
+            <<tags.m_isSource<<' '
+            <<tags.m_tags.size();
+
+        for(const auto &tag:tags.m_tags)
+        {
+            cache<<' '<<tag.name<<'|'
+                <<static_cast<int>(tag.type)<<' '
+                <<tag.start<<' '
+                <<tag.end;
+        }
+        cache<<'\n';
+    }
+}
+
 std::string SourceMap::getRelativeFname(const std::string &fileName)
 {
     std::error_code ec;
-    auto relPath = std::filesystem::relative(fileName, m_workingDir, ec);
+    auto relPath=std::filesystem::relative(fileName, m_workingDir, ec);
 
     if(ec)
     {

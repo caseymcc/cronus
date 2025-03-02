@@ -87,6 +87,11 @@ private:
 
     void update();
 
+    void ensureCacheDirectory();                                                                                                                                  
+    std::filesystem::path getCachePath() const;                                                                                                                   
+    void loadFromCache();                                                                                                                                         
+    void saveToCache();
+
     std::mutex m_cache_mutex;
     std::unordered_map<std::string, FileTags> m_fileCache;
     std::string m_workingDir;
