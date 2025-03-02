@@ -203,7 +203,7 @@ void SourceMap::update()
 {
     std::filesystem::path currentDir(m_workingDir);
     std::vector<std::string> cachedFiles;
-    bool tagsModified = false;
+    std::vector<std::string> updatedFiles;
 
     for(const auto &fileEntry : m_fileCache)
     {
@@ -222,20 +222,12 @@ void SourceMap::update()
         {
             if(time != iter->second.m_time)
             {
-                // Store old tags for comparison
-                std::vector<Tag> oldTags;
-                if(iter->second.m_isSource) {
-                    oldTags = iter->second.m_tags;
-                }
-                
                 iter->second.m_time = time;
 
-                if(iter->second.m_isSource) {
+                if(iter->second.m_isSource)
+                {
                     parseFile(iter->second, entry.path().string());
-                    // Check if tags actually changed
-                    if(oldTags != iter->second.m_tags) {
-                        tagsModified = true;
-                    }
+                    updatedFiles.push_back(entry.path().string());
                 }
             }
         }
@@ -254,9 +246,7 @@ void SourceMap::update()
             if(isSource)
             {
                 parseFile(iter->second, entry.path().string());
-                if(!iter->second.m_tags.empty()) {
-                    tagsModified = true;
-                }
+                updatedFiles.push_back(entry.path().string());
             }
         }
 
@@ -273,14 +263,13 @@ void SourceMap::update()
         for(const auto &file : cachedFiles)
         {
             auto iter = m_fileCache.find(file);
-            if(iter != m_fileCache.end() && !iter->second.m_tags.empty()) {
-                tagsModified = true;
-            }
+            
             m_fileCache.erase(file);
+            updatedFiles.push_back(file);
         }
     }
 
-    if(tagsModified)
+    if(!updatedFiles.empty())
     {
         saveToCache();
     }
@@ -359,33 +348,41 @@ void SourceMap::loadFromCache()
     }
 }
 
-void SourceMap::saveToCache()
+void SourceMap::updateCachedFile(std::string &updatedFile, FileTags &tags)
 {
-    ensureCacheDirectory();
-    std::filesystem::path cachePath=getCachePath()/"sourcemap.cache";
+    std::filesystem::path cachePath=getCachePath()/tags.m_relativeFileName+".cache";
 
     std::ofstream cache(cachePath);
+    
     if(!cache.is_open())
     {
         return;
     }
+    
+    cache<<tags.m_fileName<<'|'
+        <<tags.m_relativeFileName<<'|'
+        <<tags.m_time<<' '
+        <<tags.m_isSource<<' '
+        <<tags.m_tags.size();
 
-    for(const auto &[path, tags]:m_fileCache)
+    for(const auto &tag:tags.m_tags)
     {
-        cache<<tags.m_fileName<<'|'
-            <<tags.m_relativeFileName<<'|'
-            <<tags.m_time<<' '
-            <<tags.m_isSource<<' '
-            <<tags.m_tags.size();
+        cache<<' '<<tag.name<<'|'
+            <<static_cast<int>(tag.type)<<' '
+            <<tag.start<<' '
+            <<tag.end;
+    }
+    cache<<'\n';
+}
 
-        for(const auto &tag:tags.m_tags)
-        {
-            cache<<' '<<tag.name<<'|'
-                <<static_cast<int>(tag.type)<<' '
-                <<tag.start<<' '
-                <<tag.end;
-        }
-        cache<<'\n';
+void SourceMap::updateCachedFiles(std::vector<std::string> &updatedFiles)
+{
+    for(const auto &file : updatedFiles)
+    {
+        auto iter = m_fileCache.find(file);
+        
+        if(iter != m_fileCache.end())
+            updateCachedFile(file, iter->second);
     }
 }
 
