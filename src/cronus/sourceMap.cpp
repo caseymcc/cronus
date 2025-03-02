@@ -296,54 +296,61 @@ std::filesystem::path SourceMap::getCachePath() const
 
 void SourceMap::loadFromCache()
 {
-    std::filesystem::path cachePath=getCachePath()/"sourcemap.cache";
-    if(!std::filesystem::exists(cachePath))
-    {
-        return;
-    }
-
-    std::ifstream cache(cachePath);
-    if(!cache.is_open())
+    std::filesystem::path cacheDir = getCachePath();
+    if (!std::filesystem::exists(cacheDir))
     {
         return;
     }
 
     try
     {
-        std::string line;
-        while(std::getline(cache, line))
+        for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir))
         {
-            std::istringstream iss(line);
-            FileTags tags;
-
-            std::getline(iss, tags.m_fileName, '|');
-            std::getline(iss, tags.m_relativeFileName, '|');
-            iss>>tags.m_time;
-            iss.ignore();
-            iss>>tags.m_isSource;
-
-            // Read tags                                                                                                                                          
-            size_t tagCount;
-            iss>>tagCount;
-
-            for(size_t i=0; i<tagCount; ++i)
+            if (!entry.is_regular_file() || entry.path().extension() != ".cache")
             {
-                Tag tag;
-                std::getline(iss, tag.name, '|');
-                int typeInt;
-                iss>>typeInt;
-                tag.type=static_cast<Tag::Type>(typeInt);
-                iss>>tag.start;
-                iss>>tag.end;
-                tags.m_tags.push_back(tag);
+                continue;
             }
 
-            m_fileCache[tags.m_fileName]=std::move(tags);
+            std::ifstream cache(entry.path());
+            if (!cache.is_open())
+            {
+                continue;
+            }
+
+            std::string line;
+            if (std::getline(cache, line))
+            {
+                std::istringstream iss(line);
+                FileTags tags;
+
+                std::getline(iss, tags.m_fileName, '|');
+                std::getline(iss, tags.m_relativeFileName, '|');
+                iss >> tags.m_time;
+                iss.ignore();
+                iss >> tags.m_isSource;
+
+                size_t tagCount;
+                iss >> tagCount;
+
+                for (size_t i = 0; i < tagCount; ++i)
+                {
+                    Tag tag;
+                    std::getline(iss, tag.name, '|');
+                    int typeInt;
+                    iss >> typeInt;
+                    tag.type = static_cast<Tag::Type>(typeInt);
+                    iss >> tag.start;
+                    iss >> tag.end;
+                    tags.m_tags.push_back(tag);
+                }
+
+                m_fileCache[tags.m_fileName] = std::move(tags);
+            }
         }
     }
-    catch(...)
+    catch (...)
     {
-        // If there's any error reading the cache, we'll just rebuild it                                                                                          
+        // If there's any error reading the cache, we'll just rebuild it
         m_fileCache.clear();
     }
 }
