@@ -34,6 +34,13 @@ struct Tag
 
     int start;
     int end;
+
+    bool operator!=(const Tag& other) const {
+        return name != other.name ||
+               type != other.type ||
+               start != other.start ||
+               end != other.end;
+    }
 };
 
 Tag::Type getTagType(std::string &nodeType);

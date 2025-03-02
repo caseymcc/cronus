@@ -203,67 +203,84 @@ void SourceMap::update()
 {
     std::filesystem::path currentDir(m_workingDir);
     std::vector<std::string> cachedFiles;
+    bool tagsModified = false;
 
-    for(const auto &fileEntry:m_fileCache)
+    for(const auto &fileEntry : m_fileCache)
     {
         cachedFiles.push_back(fileEntry.first);
     }
 
-    for(const auto &entry:std::filesystem::directory_iterator(currentDir))
+    for(const auto &entry : std::filesystem::directory_iterator(currentDir))
     {
-        auto iter=m_fileCache.find(entry.path());
-
-        if(entry.is_regular_file())
+        if(!entry.is_regular_file())
             continue;
 
-        int time=getMTime(entry.path());
+        auto iter = m_fileCache.find(entry.path().string());
+        int time = getMTime(entry.path().string());
 
-        if(iter!=m_fileCache.end())
+        if(iter != m_fileCache.end())
         {
-            if(time!=iter->second.m_time)
+            if(time != iter->second.m_time)
             {
-                iter->second.m_time=time;
+                // Store old tags for comparison
+                std::vector<Tag> oldTags;
+                if(iter->second.m_isSource) {
+                    oldTags = iter->second.m_tags;
+                }
+                
+                iter->second.m_time = time;
 
-                if(iter->second.m_isSource)
+                if(iter->second.m_isSource) {
                     parseFile(iter->second, entry.path().string());
+                    // Check if tags actually changed
+                    if(oldTags != iter->second.m_tags) {
+                        tagsModified = true;
+                    }
+                }
             }
         }
         else
         {
-            bool isSource=isSourceFile(entry.path().string());
+            bool isSource = isSourceFile(entry.path());
 
             FileTags newTags;
-            newTags.m_fileName=entry.path().string();
-            newTags.m_relativeFileName=getRelativeFname(entry.path().string());
-            newTags.m_time=time;
-            newTags.m_isSource=isSource;
-            auto [it, inserted]=m_fileCache.insert({ entry.path().string(), std::move(newTags) });
-            iter=it;
+            newTags.m_fileName = entry.path().string();
+            newTags.m_relativeFileName = getRelativeFname(entry.path().string());
+            newTags.m_time = time;
+            newTags.m_isSource = isSource;
+            auto [it, inserted] = m_fileCache.insert({entry.path().string(), std::move(newTags)});
+            iter = it;
 
             if(isSource)
             {
                 parseFile(iter->second, entry.path().string());
+                if(!iter->second.m_tags.empty()) {
+                    tagsModified = true;
+                }
             }
         }
 
-        auto fileIter=std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
-
-        if(fileIter!=cachedFiles.end())
+        auto fileIter = std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
+        if(fileIter != cachedFiles.end())
         {
             cachedFiles.erase(fileIter);
         }
     }
 
+    // Handle deleted files
     if(!cachedFiles.empty())
     {
-        for(const auto &file:cachedFiles)
+        for(const auto &file : cachedFiles)
         {
+            auto iter = m_fileCache.find(file);
+            if(iter != m_fileCache.end() && !iter->second.m_tags.empty()) {
+                tagsModified = true;
+            }
             m_fileCache.erase(file);
         }
-        cacheModified=true;
     }
 
-    if(cacheModified)
+    if(tagsModified)
     {
         saveToCache();
     }
