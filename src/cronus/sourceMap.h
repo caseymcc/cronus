@@ -91,16 +91,17 @@ private:
     std::vector<std::string> locateSourceFiles();
 
     bool parseWithTreeSitter(FileTags &fileTags, const std::string &path);
-    void parseFile(FileTags &fileTags, const std::string &fileName);
+    bool parseFile(FileTags &fileTags, const std::string &fileName);
 
     void update();
 
     void ensureCacheDirectory();
     std::filesystem::path getCachePath() const;
     void loadFromCache();
-    void updateCachedFile(std::vector<std::string> &updatedFiles);
+    void updateCachedFile(std::string &updatedFile, FileTags &tags);
     void updateCachedFiles(std::vector<std::string> &updatedFiles);
     void saveToCache();
+    void saveToCache() { saveTagsCache(); }
 
     std::mutex m_cache_mutex;
     std::unordered_map<std::string, FileTags> m_fileCache;
