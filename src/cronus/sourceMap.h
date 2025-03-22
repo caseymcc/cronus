@@ -35,11 +35,12 @@ struct Tag
     int start;
     int end;
 
-    bool operator!=(const Tag& other) const {
-        return name != other.name ||
-               type != other.type ||
-               start != other.start ||
-               end != other.end;
+    bool operator!=(const Tag &other) const
+    {
+        return name!=other.name||
+            type!=other.type||
+            start!=other.start||
+            end!=other.end;
     }
 };
 
@@ -67,23 +68,23 @@ public:
     ~SourceMap();
 
     std::string getRelativeFname(const std::string &fname);
-    
-    void tagsCacheError(const std::string &error = "");
-    
+
+    void tagsCacheError(const std::string &error="");
+
     void loadTagsCache();
-    
+
     void saveTagsCache();
-    
+
     int getMTime(const std::string &fname);
-    
+
     std::vector<Tag> get_tags(const std::string &fname, const std::string &rel_fname);
-    
+
     std::vector<std::pair<std::string, std::vector<Tag>>> get_ranked_tags_map(
         const std::vector<std::string> &chat_fnames,
         const std::vector<std::string> &other_fnames,
         const std::vector<std::string> &mentioned_fnames,
         const std::vector<std::string> &mentioned_idents,
-        bool force_refresh = false
+        bool force_refresh=false
     );
 
 private:
@@ -94,9 +95,11 @@ private:
 
     void update();
 
-    void ensureCacheDirectory();                                                                                                                                  
-    std::filesystem::path getCachePath() const;                                                                                                                   
-    void loadFromCache();                                                                                                                                         
+    void ensureCacheDirectory();
+    std::filesystem::path getCachePath() const;
+    void loadFromCache();
+    void updateCachedFile(std::vector<std::string> &updatedFiles);
+    void updateCachedFiles(std::vector<std::string> &updatedFiles);
     void saveToCache();
 
     std::mutex m_cache_mutex;
