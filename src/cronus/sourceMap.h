@@ -87,6 +87,8 @@ public:
         bool force_refresh=false
     );
 
+    void update();
+
 private:
     std::vector<std::string> locateSourceFiles();
 
