@@ -3,6 +3,7 @@
 
 #include "cronus/logger.h"
 #include "cronus/sourceMap.h"
+#include "cronus/inputParser.h"
 
 #include "hermes/hermes.h"
 
@@ -71,7 +72,8 @@ private:
     bool m_running{ false };
     
     // Source map for code analysis
-    std::unique_ptr<SourceMap> m_sourceMap;
+    std::shared_ptr<SourceMap> m_sourceMap;
+    std::shared_ptr<InputParser> m_inputParser;
 };
 
 } // namespace cronus

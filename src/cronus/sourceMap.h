@@ -92,8 +92,8 @@ public:
 private:
     std::vector<std::string> locateSourceFiles();
 
-    bool parseWithTreeSitter(FileTags &fileTags, const std::string &path);
-    bool parseFile(FileTags &fileTags, const std::string &fileName);
+    bool parseWithTreeSitter(const std::string &path, FileTags &fileTags);
+    bool parseFile(const std::string &fileName, FileTags &fileTags);
 
     void ensureCacheDirectory();
     std::filesystem::path getCachePath() const;
@@ -102,7 +102,7 @@ private:
     void updateCachedFiles(const std::vector<std::string> &updatedFiles);
     void saveToCache();
 
-    std::mutex m_cache_mutex;
+    std::mutex m_cacheMutex;
     std::unordered_map<std::string, FileTags> m_fileCache;
     std::string m_workingDir;
     int m_maxMapTokens;
