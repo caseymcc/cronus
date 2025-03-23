@@ -181,9 +181,7 @@ bool SourceMap::parseWithTreeSitter(const std::string &fileName, FileTags &fileT
 
 bool SourceMap::parseFile(const std::string &fileName, FileTags &fileTags)
 {
-    // Update the file's modification time
     fileTags.m_time = getMTime(fileName);
-    
     if(canParseWithTreeSitter(fileName))
     {
         return parseWithTreeSitter(fileTags, fileName);
@@ -416,11 +414,8 @@ void SourceMap::loadTagsCache()
     loadFromCache();
     
     if(m_fileCache.empty())
-    {
         std::cout<<"Cache not found or empty. Generating source map..."<<std::endl;
-        update();
-        std::cout<<"Source map generated and saved to cache."<<std::endl;
-    }
+    update();
 }
 
 void SourceMap::saveTagsCache()
