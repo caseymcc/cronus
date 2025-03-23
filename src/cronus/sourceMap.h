@@ -93,8 +93,6 @@ private:
     bool parseWithTreeSitter(FileTags &fileTags, const std::string &path);
     bool parseFile(FileTags &fileTags, const std::string &fileName);
 
-    void update();
-
     void ensureCacheDirectory();
     std::filesystem::path getCachePath() const;
     void loadFromCache();

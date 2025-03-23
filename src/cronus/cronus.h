@@ -2,6 +2,7 @@
 #define _cronus_client_logic_h_
 
 #include "cronus/logger.h"
+#include "cronus/sourceMap.h"
 
 #include "hermes/hermes.h"
 
@@ -64,6 +65,9 @@ private:
     std::condition_variable m_condition;
     std::thread m_workerThread;
     bool m_running{ false };
+    
+    // Source map for code analysis
+    std::unique_ptr<SourceMap> m_sourceMap;
 };
 
 } // namespace cronus
