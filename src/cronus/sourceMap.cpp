@@ -466,7 +466,22 @@ int SourceMap::getMTime(const std::string &fileName)
 
 std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string &rel_fname)
 {
-    // Implementation pending
+    // First try to find by full path
+    auto it = m_fileCache.find(fname);
+    if (it != m_fileCache.end()) {
+        return it->second.m_tags;
+    }
+    
+    // If not found and relative path is provided, try to find by relative path
+    if (!rel_fname.empty()) {
+        for (const auto& [path, tags] : m_fileCache) {
+            if (tags.m_relativeFileName == rel_fname) {
+                return tags.m_tags;
+            }
+        }
+    }
+    
+    // If still not found, return empty vector
     return {};
 }
 
