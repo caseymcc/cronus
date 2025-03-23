@@ -14,16 +14,7 @@ Cronus::Cronus() :
     
     // Try to load the source map cache
     logInfo("Loading source map cache...");
-    m_sourceMap->loadFromCache();
-    
-    // If cache doesn't exist or is empty, generate it
-    if (m_sourceMap->getTags("", "").empty()) {
-        logInfo("Source map cache not found or empty. Generating...");
-        m_sourceMap->update();
-        logInfo("Source map cache generated and saved.");
-    } else {
-        logInfo("Source map cache loaded successfully.");
-    }
+    m_sourceMap->loadTagsCache();
 }
 
 Cronus::~Cronus()=default;
