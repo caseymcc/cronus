@@ -181,6 +181,9 @@ bool SourceMap::parseWithTreeSitter(const std::string &fileName, FileTags &fileT
 
 bool SourceMap::parseFile(const std::string &fileName, FileTags &fileTags)
 {
+    // Update the file's modification time
+    fileTags.m_time = getMTime(fileName);
+    
     if(canParseWithTreeSitter(fileName))
     {
         return parseWithTreeSitter(fileTags, fileName);
