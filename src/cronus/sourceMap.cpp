@@ -104,7 +104,7 @@ SourceMap::~SourceMap()
     m_fileCache.clear();
 }
 
-bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileName)
+bool SourceMap::parseWithTreeSitter(const std::string &fileName, FileTags &fileTags)
 {
     std::filesystem::path path(fileName);
     std::string ext=path.extension().string();
@@ -179,7 +179,7 @@ bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileN
     return true;
 };
 
-bool SourceMap::parseFile(FileTags &fileTags, const std::string &fileName)
+bool SourceMap::parseFile(const std::string &fileName, FileTags &fileTags)
 {
     if(canParseWithTreeSitter(fileName))
     {
@@ -406,22 +406,18 @@ void SourceMap::tagsCacheError(const std::string &error)
     {
         std::cout<<"Tags cache error: "<<error<<std::endl;
     }
-    
-    // Try to load the cache first
-    loadTagsCache();
-    
-    // If cache is empty or failed to load, generate it
-    if (m_fileCache.empty())
-    {
-        std::cout<<"Cache not found or empty. Generating source map..."<<std::endl;
-        update();
-        std::cout<<"Source map generated and saved to cache."<<std::endl;
-    }
 }
 
 void SourceMap::loadTagsCache()
 {
     loadFromCache();
+    
+    if(m_fileCache.empty())
+    {
+        std::cout<<"Cache not found or empty. Generating source map..."<<std::endl;
+        update();
+        std::cout<<"Source map generated and saved to cache."<<std::endl;
+    }
 }
 
 void SourceMap::saveTagsCache()
