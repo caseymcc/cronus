@@ -77,9 +77,9 @@ public:
 
     int getMTime(const std::string &fname);
 
-    std::vector<Tag> get_tags(const std::string &fname, const std::string &rel_fname);
+    std::vector<Tag> getTags(const std::string &fname, const std::string &rel_fname);
 
-    std::vector<std::pair<std::string, std::vector<Tag>>> get_ranked_tags_map(
+    std::vector<std::pair<std::string, std::vector<Tag>>> getRankedTagsMap(
         const std::vector<std::string> &chat_fnames,
         const std::vector<std::string> &other_fnames,
         const std::vector<std::string> &mentioned_fnames,
@@ -98,10 +98,9 @@ private:
     void ensureCacheDirectory();
     std::filesystem::path getCachePath() const;
     void loadFromCache();
-    void updateCachedFile(std::string &updatedFile, FileTags &tags);
-    void updateCachedFiles(std::vector<std::string> &updatedFiles);
+    void updateCachedFile(const std::string &updatedFile, FileTags &tags);
+    void updateCachedFiles(const std::vector<std::string> &updatedFiles);
     void saveToCache();
-    void saveToCache() { saveTagsCache(); }
 
     std::mutex m_cache_mutex;
     std::unordered_map<std::string, FileTags> m_fileCache;
