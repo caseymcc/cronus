@@ -78,6 +78,9 @@ public:
     int getMTime(const std::string &fname);
 
     std::vector<Tag> getTags(const std::string &fname, const std::string &rel_fname);
+    
+    // Get access to the file cache
+    const std::unordered_map<std::string, FileTags>& getFileCache() const { return m_fileCache; }
 
     std::vector<std::pair<std::string, std::vector<Tag>>> getRankedTagsMap(
         const std::vector<std::string> &chat_fnames,
