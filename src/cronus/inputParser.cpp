@@ -1,3 +1,7 @@
+#include "cronus/inputParser.h"
+
+#include <algorithm>
+
 std::vector<std::string> InputParser::extractFileReferences(const std::string &input) const
 {
     std::vector<std::string> fileReferences;

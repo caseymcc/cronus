@@ -184,7 +184,7 @@ bool SourceMap::parseFile(const std::string &fileName, FileTags &fileTags)
     fileTags.m_time = getMTime(fileName);
     if(canParseWithTreeSitter(fileName))
     {
-        return parseWithTreeSitter(fileTags, fileName);
+        return parseWithTreeSitter(fileName, fileTags);
     }
 
     return false;
@@ -232,7 +232,7 @@ void SourceMap::update()
 
                 if(iter->second.m_isSource)
                 {
-                    parseFile(iter->second, entry.path().string());
+                    parseFile(entry.path().string(), iter->second);
                     updatedFiles.push_back(entry.path().string());
                 }
             }
@@ -251,7 +251,7 @@ void SourceMap::update()
 
             if(isSource)
             {
-                parseFile(iter->second, entry.path().string());
+                parseFile(entry.path().string(), iter->second);
                 updatedFiles.push_back(entry.path().string());
             }
         }
