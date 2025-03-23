@@ -22,32 +22,25 @@ std::vector<std::string> InputParser::extractFileReferences(const std::string &i
     // Check if any of the words match files in the source map
     for(const auto& word : words)
     {
-        // Try as a full path
-        if(m_sourceMap->getTags(word, "").size() > 0)
-        {
-            fileReferences.push_back(word);
+        // Use the new findFilesByPartialName function
+        std::vector<std::string> matchingFiles = m_sourceMap->findFilesByPartialName(word);
+        if (!matchingFiles.empty()) {
+            // Add all matching files to the references
+            fileReferences.insert(fileReferences.end(), matchingFiles.begin(), matchingFiles.end());
             continue;
         }
         
-        // Try as a relative path
-        std::string relativePath = m_sourceMap->getRelativeFname(word);
-        if(m_sourceMap->getTags("", relativePath).size() > 0)
-        {
-            fileReferences.push_back(word);
-            continue;
-        }
-        
-        // Try as a filename only
-        std::filesystem::path wordPath(word);
-        std::string filename = wordPath.filename().string();
-        
-        // Check if it exists in the current directory
-        std::filesystem::path potentialPath = m_currentPath / filename;
+        // If no matches found, check if it exists in the current directory
+        std::filesystem::path potentialPath = m_currentPath / word;
         if(std::filesystem::exists(potentialPath) && !std::filesystem::is_directory(potentialPath))
         {
             fileReferences.push_back(potentialPath.string());
         }
     }
+    
+    // Remove duplicates
+    std::sort(fileReferences.begin(), fileReferences.end());
+    fileReferences.erase(std::unique(fileReferences.begin(), fileReferences.end()), fileReferences.end());
     
     return fileReferences;
 }

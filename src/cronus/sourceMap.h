@@ -81,6 +81,9 @@ public:
     
     // Get access to the file cache
     const std::unordered_map<std::string, FileTags>& getFileCache() const { return m_fileCache; }
+    
+    // Search for files containing part of the filename
+    std::vector<std::string> findFilesByPartialName(const std::string &partialName) const;
 
     std::vector<std::pair<std::string, std::vector<Tag>>> getRankedTagsMap(
         const std::vector<std::string> &chat_fnames,

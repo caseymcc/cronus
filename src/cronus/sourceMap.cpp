@@ -485,6 +485,56 @@ std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string 
     return {};
 }
 
+std::vector<std::string> SourceMap::findFilesByPartialName(const std::string &partialName) const
+{
+    std::vector<std::string> matchingFiles;
+    
+    if (partialName.empty()) {
+        return matchingFiles;
+    }
+    
+    // Convert to lowercase for case-insensitive search
+    std::string lowerPartialName = partialName;
+    std::transform(lowerPartialName.begin(), lowerPartialName.end(), lowerPartialName.begin(), 
+                   [](unsigned char c){ return std::tolower(c); });
+    
+    for (const auto& [path, fileTags] : m_fileCache) {
+        // Check full path
+        std::string lowerPath = path;
+        std::transform(lowerPath.begin(), lowerPath.end(), lowerPath.begin(), 
+                       [](unsigned char c){ return std::tolower(c); });
+        
+        if (lowerPath.find(lowerPartialName) != std::string::npos) {
+            matchingFiles.push_back(path);
+            continue;
+        }
+        
+        // Check filename only
+        std::filesystem::path fsPath(path);
+        std::string filename = fsPath.filename().string();
+        std::string lowerFilename = filename;
+        std::transform(lowerFilename.begin(), lowerFilename.end(), lowerFilename.begin(), 
+                       [](unsigned char c){ return std::tolower(c); });
+        
+        if (lowerFilename.find(lowerPartialName) != std::string::npos) {
+            matchingFiles.push_back(path);
+            continue;
+        }
+        
+        // Check relative path
+        std::string relativePath = fileTags.m_relativeFileName;
+        std::string lowerRelativePath = relativePath;
+        std::transform(lowerRelativePath.begin(), lowerRelativePath.end(), lowerRelativePath.begin(), 
+                       [](unsigned char c){ return std::tolower(c); });
+        
+        if (lowerRelativePath.find(lowerPartialName) != std::string::npos) {
+            matchingFiles.push_back(path);
+        }
+    }
+    
+    return matchingFiles;
+}
+
 std::vector<std::pair<std::string, std::vector<Tag>>> SourceMap::getRankedTagsMap(
     const std::vector<std::string> &chat_fnames,
     const std::vector<std::string> &other_fnames,
