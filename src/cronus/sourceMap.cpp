@@ -99,6 +99,11 @@ SourceMap::SourceMap(std::string &workingDir)
     m_repoContentPrefix="";
 }
 
+SourceMap::~SourceMap()
+{
+    m_fileCache.clear();
+}
+
 bool SourceMap::parseWithTreeSitter(FileTags &fileTags, const std::string &fileName)
 {
     std::filesystem::path path(fileName);
@@ -205,24 +210,24 @@ void SourceMap::update()
     std::vector<std::string> cachedFiles;
     std::vector<std::string> updatedFiles;
 
-    for(const auto &fileEntry : m_fileCache)
+    for(const auto &fileEntry:m_fileCache)
     {
         cachedFiles.push_back(fileEntry.first);
     }
 
-    for(const auto &entry : std::filesystem::directory_iterator(currentDir))
+    for(const auto &entry:std::filesystem::directory_iterator(currentDir))
     {
         if(!entry.is_regular_file())
             continue;
 
-        auto iter = m_fileCache.find(entry.path().string());
-        int time = getMTime(entry.path().string());
+        auto iter=m_fileCache.find(entry.path().string());
+        int time=getMTime(entry.path().string());
 
-        if(iter != m_fileCache.end())
+        if(iter!=m_fileCache.end())
         {
-            if(time != iter->second.m_time)
+            if(time!=iter->second.m_time)
             {
-                iter->second.m_time = time;
+                iter->second.m_time=time;
 
                 if(iter->second.m_isSource)
                 {
@@ -233,15 +238,15 @@ void SourceMap::update()
         }
         else
         {
-            bool isSource = isSourceFile(entry.path());
+            bool isSource=isSourceFile(entry.path());
 
             FileTags newTags;
-            newTags.m_fileName = entry.path().string();
-            newTags.m_relativeFileName = getRelativeFname(entry.path().string());
-            newTags.m_time = time;
-            newTags.m_isSource = isSource;
-            auto [it, inserted] = m_fileCache.insert({entry.path().string(), std::move(newTags)});
-            iter = it;
+            newTags.m_fileName=entry.path().string();
+            newTags.m_relativeFileName=getRelativeFname(entry.path().string());
+            newTags.m_time=time;
+            newTags.m_isSource=isSource;
+            auto [it, inserted]=m_fileCache.insert({ entry.path().string(), std::move(newTags) });
+            iter=it;
 
             if(isSource)
             {
@@ -250,8 +255,8 @@ void SourceMap::update()
             }
         }
 
-        auto fileIter = std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
-        if(fileIter != cachedFiles.end())
+        auto fileIter=std::find(cachedFiles.begin(), cachedFiles.end(), entry.path().string());
+        if(fileIter!=cachedFiles.end())
         {
             cachedFiles.erase(fileIter);
         }
@@ -260,10 +265,10 @@ void SourceMap::update()
     // Handle deleted files
     if(!cachedFiles.empty())
     {
-        for(const auto &file : cachedFiles)
+        for(const auto &file:cachedFiles)
         {
-            auto iter = m_fileCache.find(file);
-            
+            auto iter=m_fileCache.find(file);
+
             m_fileCache.erase(file);
             updatedFiles.push_back(file);
         }
@@ -275,10 +280,11 @@ void SourceMap::update()
     }
 }
 
-SourceMap::~SourceMap()
+void SourceMap::saveToCache()
 {
-    m_fileCache.clear();
+    saveTagsCache();
 }
+
 
 void SourceMap::ensureCacheDirectory()
 {
@@ -296,76 +302,65 @@ std::filesystem::path SourceMap::getCachePath() const
 
 void SourceMap::loadFromCache()
 {
-    std::filesystem::path cacheDir = getCachePath();
-    if (!std::filesystem::exists(cacheDir))
-    {
+    std::filesystem::path cacheDir=getCachePath();
+
+    if(!std::filesystem::exists(cacheDir))
         return;
-    }
 
-    try
+    for(const auto &entry:std::filesystem::recursive_directory_iterator(cacheDir))
     {
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(cacheDir))
+        if(!entry.is_regular_file()||entry.path().extension()!=".cache")
+            continue;
+
+        std::ifstream cache(entry.path());
+        
+        if(!cache.is_open())
+            continue;
+
+        std::string line;
+
+        if(std::getline(cache, line))
         {
-            if (!entry.is_regular_file() || entry.path().extension() != ".cache")
+            std::istringstream iss(line);
+            FileTags tags;
+
+            std::getline(iss, tags.m_fileName, '|');
+            std::getline(iss, tags.m_relativeFileName, '|');
+            iss>>tags.m_time;
+            iss.ignore();
+            iss>>tags.m_isSource;
+
+            size_t tagCount;
+            iss>>tagCount;
+
+            for(size_t i=0; i<tagCount; ++i)
             {
-                continue;
+                Tag tag;
+                std::getline(iss, tag.name, '|');
+                int typeInt;
+                iss>>typeInt;
+                tag.type=static_cast<Tag::Type>(typeInt);
+                iss>>tag.start;
+                iss>>tag.end;
+                tags.m_tags.push_back(tag);
             }
 
-            std::ifstream cache(entry.path());
-            if (!cache.is_open())
-            {
-                continue;
-            }
-
-            std::string line;
-            if (std::getline(cache, line))
-            {
-                std::istringstream iss(line);
-                FileTags tags;
-
-                std::getline(iss, tags.m_fileName, '|');
-                std::getline(iss, tags.m_relativeFileName, '|');
-                iss >> tags.m_time;
-                iss.ignore();
-                iss >> tags.m_isSource;
-
-                size_t tagCount;
-                iss >> tagCount;
-
-                for (size_t i = 0; i < tagCount; ++i)
-                {
-                    Tag tag;
-                    std::getline(iss, tag.name, '|');
-                    int typeInt;
-                    iss >> typeInt;
-                    tag.type = static_cast<Tag::Type>(typeInt);
-                    iss >> tag.start;
-                    iss >> tag.end;
-                    tags.m_tags.push_back(tag);
-                }
-
-                m_fileCache[tags.m_fileName] = std::move(tags);
-            }
+            m_fileCache[tags.m_fileName]=std::move(tags);
         }
-    }
-    catch (...)
-    {
-        // If there's any error reading the cache, we'll just rebuild it
-        m_fileCache.clear();
     }
 }
 
-void SourceMap::updateCachedFile(std::string &updatedFile, FileTags &tags)
+void SourceMap::updateCachedFile(const std::string &updatedFile, FileTags &tags)
 {
-    std::filesystem::path cachePath=getCachePath()/tags.m_relativeFileName+".cache";
+    std::filesystem::path cachePath=getCachePath()/(tags.m_relativeFileName+".cache");
 
     std::ofstream cache(cachePath);
-    
+
     if(!cache.is_open())
     {
         return;
     }
-    
+
     cache<<tags.m_fileName<<'|'
         <<tags.m_relativeFileName<<'|'
         <<tags.m_time<<' '
@@ -382,13 +377,13 @@ void SourceMap::updateCachedFile(std::string &updatedFile, FileTags &tags)
     cache<<'\n';
 }
 
-void SourceMap::updateCachedFiles(std::vector<std::string> &updatedFiles)
+void SourceMap::updateCachedFiles(const std::vector<std::string> &updatedFiles)
 {
-    for(const auto &file : updatedFiles)
+    for(const auto &file:updatedFiles)
     {
-        auto iter = m_fileCache.find(file);
-        
-        if(iter != m_fileCache.end())
+        auto iter=m_fileCache.find(file);
+
+        if(iter!=m_fileCache.end())
             updateCachedFile(file, iter->second);
     }
 }
@@ -415,40 +410,40 @@ void SourceMap::tagsCacheError(const std::string &error)
 
 void SourceMap::loadTagsCache()
 {
-    // Default initialization already done in constructor
+    loadFromCache();
 }
 
 void SourceMap::saveTagsCache()
 {
     ensureCacheDirectory();
-    
-    for (const auto& [path, tags] : m_fileCache)
+
+    for(const auto &[path, tags]:m_fileCache)
     {
-        std::filesystem::path cachePath = getCachePath() / (tags.m_relativeFileName + ".cache");
-        
+        std::filesystem::path cachePath=getCachePath()/(tags.m_relativeFileName+".cache");
+
         // Create subdirectories if needed
         std::filesystem::create_directories(cachePath.parent_path());
-        
+
         std::ofstream cache(cachePath);
-        if (!cache.is_open())
+        if(!cache.is_open())
         {
             continue;
         }
 
-        cache << tags.m_fileName << '|'
-              << tags.m_relativeFileName << '|'
-              << tags.m_time << ' '
-              << tags.m_isSource << ' '
-              << tags.m_tags.size();
+        cache<<tags.m_fileName<<'|'
+            <<tags.m_relativeFileName<<'|'
+            <<tags.m_time<<' '
+            <<tags.m_isSource<<' '
+            <<tags.m_tags.size();
 
-        for (const auto& tag : tags.m_tags)
+        for(const auto &tag:tags.m_tags)
         {
-            cache << ' ' << tag.name << '|'
-                  << static_cast<int>(tag.type) << ' '
-                  << tag.start << ' '
-                  << tag.end;
+            cache<<' '<<tag.name<<'|'
+                <<static_cast<int>(tag.type)<<' '
+                <<tag.start<<' '
+                <<tag.end;
         }
-        cache << '\n';
+        cache<<'\n';
     }
 }
 
@@ -464,13 +459,13 @@ int SourceMap::getMTime(const std::string &fileName)
     return std::filesystem::last_write_time(filePath).time_since_epoch().count();
 }
 
-std::vector<Tag> SourceMap::get_tags(const std::string &fname, const std::string &rel_fname)
+std::vector<Tag> SourceMap::getTags(const std::string &fname, const std::string &rel_fname)
 {
     // Implementation pending
     return {};
 }
 
-std::vector<std::pair<std::string, std::vector<Tag>>> SourceMap::get_ranked_tags_map(
+std::vector<std::pair<std::string, std::vector<Tag>>> SourceMap::getRankedTagsMap(
     const std::vector<std::string> &chat_fnames,
     const std::vector<std::string> &other_fnames,
     const std::vector<std::string> &mentioned_fnames,
