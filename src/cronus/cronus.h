@@ -39,6 +39,10 @@ public:
     void run();
     void stop();
     std::future<int> processInput(const std::string &input);
+    
+    // Helper methods for input processing
+    std::vector<std::string> extractFileReferences(const std::string &input) const;
+    std::vector<std::string> extractTagReferences(const std::string &input) const;
     std::vector<std::pair<bool, std::string>> getCurrentDirectoryContents() const;
 
     // Callback setters
