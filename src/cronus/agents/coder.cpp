@@ -39,6 +39,30 @@ std::string Coder::generateCode(const std::string &description,
         contextToUse=extractContext(description);
     }
 
+    // Build context string from files
+    std::stringstream contextStr;
+    for(const auto &ctx:contextToUse)
+    {
+        std::filesystem::path filePath(ctx);
+        if (std::filesystem::exists(filePath)) {
+            std::ifstream file(filePath);
+            if (file) {
+                contextStr << "File: " << filePath.filename().string() << "\n";
+                contextStr << "```\n";
+                contextStr << std::string(std::istreambuf_iterator<char>(file), 
+                                         std::istreambuf_iterator<char>());
+                contextStr << "\n```\n\n";
+            }
+        }
+    }
+    
+    // Add user request to history
+    std::string userMessage = "Generate code for: " + description;
+    if (!contextToUse.empty()) {
+        userMessage += "\n\nContext:\n" + contextStr.str();
+    }
+    addToHistory("user", userMessage);
+
     // TODO: Implement actual code generation using LLM
     // This is a placeholder implementation
     std::stringstream result;
@@ -55,20 +79,34 @@ std::string Coder::generateCode(const std::string &description,
     result<<"void generatedFunction() {\n";
     result<<"    // Implementation pending\n";
     result<<"}\n";
+    
+    // Add assistant response to history
+    addToHistory("assistant", result.str());
 
     return result.str();
 }
 
 std::string Coder::explainCode(const std::string &code)
 {
+    // Add user request to history
+    addToHistory("user", "Explain this code:\n```\n" + code + "\n```");
+    
     // TODO: Implement code explanation using LLM
     // This is a placeholder implementation
-    return "This code appears to be a function definition. It declares a function "
+    std::string explanation = "This code appears to be a function definition. It declares a function "
         "that doesn't return a value and has no parameters.";
+    
+    // Add assistant response to history
+    addToHistory("assistant", explanation);
+    
+    return explanation;
 }
 
 std::string Coder::suggestRefactoring(const std::string &code, const std::string &goal)
 {
+    // Add user request to history
+    addToHistory("user", "Suggest refactoring for this code with the goal of " + goal + ":\n```\n" + code + "\n```");
+    
     // TODO: Implement refactoring suggestions using LLM
     // This is a placeholder implementation
     std::stringstream result;
@@ -79,21 +117,39 @@ std::string Coder::suggestRefactoring(const std::string &code, const std::string
     result<<code<<"\n\n";
     result<<"// Explanation of changes:\n";
     result<<"// No changes made yet. This is a placeholder implementation.";
+    
+    // Add assistant response to history
+    addToHistory("assistant", result.str());
 
     return result.str();
 }
 
 std::vector<std::string> Coder::identifyBugs(const std::string &code)
 {
+    // Add user request to history
+    addToHistory("user", "Identify bugs in this code:\n```\n" + code + "\n```");
+    
     // TODO: Implement bug identification using LLM
     // This is a placeholder implementation
     std::vector<std::string> bugs;
     bugs.push_back("No bugs identified yet. This is a placeholder implementation.");
+    
+    // Add assistant response to history
+    std::stringstream result;
+    result << "Bugs found:\n";
+    for (const auto& bug : bugs) {
+        result << "- " << bug << "\n";
+    }
+    addToHistory("assistant", result.str());
+    
     return bugs;
 }
 
 std::string Coder::generateTests(const std::string &code, const std::string &framework)
 {
+    // Add user request to history
+    addToHistory("user", "Generate tests for this code using " + framework + " framework:\n```\n" + code + "\n```");
+    
     // TODO: Implement test generation using LLM
     // This is a placeholder implementation
     std::stringstream result;
@@ -104,6 +160,9 @@ std::string Coder::generateTests(const std::string &code, const std::string &fra
     result<<"    // TODO: Implement test\n";
     result<<"    EXPECT_TRUE(true);\n";
     result<<"}\n";
+    
+    // Add assistant response to history
+    addToHistory("assistant", result.str());
 
     return result.str();
 }
@@ -157,6 +216,44 @@ std::string Coder::formatCode(const std::string &code, const std::string &langua
     // TODO: Implement code formatting based on project standards
     // This is a placeholder implementation
     return code;
+}
+
+void Coder::addToHistory(const std::string& role, const std::string& content)
+{
+    // Estimate token count for this message
+    size_t tokenCount = estimateTokenCount(content);
+    
+    // Add to history
+    m_chatHistory.push_back({role, content, tokenCount});
+    m_totalTokens += tokenCount;
+    
+    // Trim history if it exceeds max tokens
+    while (m_totalTokens > m_maxTokens && m_chatHistory.size() > 1) {
+        m_totalTokens -= m_chatHistory.front().tokenCount;
+        m_chatHistory.pop_front();
+    }
+    
+    logInfo("Chat history updated. Current token count: " + std::to_string(m_totalTokens));
+}
+
+size_t Coder::estimateTokenCount(const std::string& text) const
+{
+    // Simple estimation: ~4 characters per token on average
+    // This is a rough approximation, actual tokenization depends on the model
+    constexpr double CHARS_PER_TOKEN = 4.0;
+    return static_cast<size_t>(std::ceil(text.length() / CHARS_PER_TOKEN));
+}
+
+std::vector<hermes::Message> Coder::getChatHistoryForLLM() const
+{
+    std::vector<hermes::Message> messages;
+    
+    // Convert our internal chat history to the format expected by Hermes
+    for (const auto& msg : m_chatHistory) {
+        messages.push_back({msg.role, msg.content});
+    }
+    
+    return messages;
 }
 
 } // namespace agents
