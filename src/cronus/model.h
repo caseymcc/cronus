@@ -21,8 +21,11 @@ class Model {
 public:
     /**
      * @brief Constructor
+     * @param modelName The name of the model to use
+     * @param provider The provider of the model
+     * @param maxTokens The maximum number of tokens the model can handle
      */
-    Model();
+    Model(const std::string& modelName, const std::string& provider, size_t maxTokens);
 
     /**
      * @brief Generate a completion from the model
@@ -52,11 +55,6 @@ private:
     std::string m_currentModel;
     std::string m_currentProvider;
     size_t m_maxTokens;
-    
-    /**
-     * @brief Load model configuration from Config
-     */
-    void loadModelConfig();
 };
 
 } // namespace cronus

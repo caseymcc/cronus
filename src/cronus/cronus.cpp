@@ -52,7 +52,21 @@ void Cronus::workerLoop()
 
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
-    m_model=std::make_shared<Model>();
+    
+    // Get model configuration from Config
+    const auto& config = Config::instance();
+    auto modelConfig = config.getModelConfig(config.getModel());
+    size_t maxTokens = 4096; // Default fallback
+    
+    if (modelConfig) {
+        maxTokens = modelConfig->max_input_tokens > 0 ? 
+                    modelConfig->max_input_tokens : 4096;
+    } else {
+        logWarning("Model config not found for: " + config.getModel() + 
+                  ". Using default max tokens: " + std::to_string(maxTokens));
+    }
+    
+    m_model=std::make_shared<Model>(config.getModel(), config.getProvider(), maxTokens);
     m_coder=std::make_shared<agents::Coder>(m_sourceMap, m_model);
     m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap, m_addedFiles);
 

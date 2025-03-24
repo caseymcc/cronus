@@ -5,31 +5,11 @@
 namespace cronus
 {
 
-Model::Model()
+Model::Model(const std::string& modelName, const std::string& provider, size_t maxTokens)
+    : m_currentModel(modelName), m_currentProvider(provider), m_maxTokens(maxTokens)
 {
-    loadModelConfig();
-}
-
-void Model::loadModelConfig()
-{
-    const auto &config=Config::instance();
-    m_currentModel=config.getModel();
-    m_currentProvider=config.getProvider();
-
-    auto modelConfig=config.getModelConfig(m_currentModel);
-    if(modelConfig)
-    {
-        m_maxTokens=modelConfig->max_input_tokens>0?
-            modelConfig->max_input_tokens:4096;
-        logInfo("Model initialized: "+m_currentModel+
-            " with max tokens: "+std::to_string(m_maxTokens));
-    }
-    else
-    {
-        m_maxTokens=4096; // Default fallback
-        logWarning("Model config not found for: "+m_currentModel+
-            ". Using default max tokens: "+std::to_string(m_maxTokens));
-    }
+    logInfo("Model initialized: " + m_currentModel + 
+            " with max tokens: " + std::to_string(m_maxTokens));
 }
 
 std::string Model::generate(
@@ -47,7 +27,7 @@ std::string Model::generate(
     }
 
     hermes::CompletionRequest request{
-        .model=modelConfig->model,
+        .model=m_currentModel,
         .messages=messages
     };
 
