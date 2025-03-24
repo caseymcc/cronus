@@ -52,6 +52,7 @@ void Cronus::workerLoop()
 
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
+    m_coder=std::make_shared<agents::Coder>(m_sourceMap);
 
     // Try to load the source map cache
     logInfo("Loading source map cache...");
@@ -138,7 +139,25 @@ int Cronus::processCompletion(const std::string &input)
     const auto &config=Config::instance();
     log("Processing completion request...");
 
-    // Get model config
+    // Extract file references for context
+    std::vector<std::string> fileRefs = m_inputParser->extractFileReferences(input);
+    
+    // Check if the input appears to be a code generation request
+    bool isCodeRequest = input.find("generate") != std::string::npos || 
+                         input.find("create") != std::string::npos ||
+                         input.find("implement") != std::string::npos ||
+                         input.find("write") != std::string::npos;
+                         
+    // Use the Coder agent for code-related requests
+    if (isCodeRequest && m_coder) {
+        log("Using Coder agent for code generation request");
+        std::string generatedCode = m_coder->generateCode(input, fileRefs);
+        handleResponse("Coder", generatedCode);
+        log("Code generation completed successfully");
+        return 0;
+    }
+    
+    // Get model config for regular LLM requests
     auto modelConfig=config.getModelConfig(config.getModel());
 
     if(!modelConfig)
@@ -147,8 +166,9 @@ int Cronus::processCompletion(const std::string &input)
         return 1;
     }
 
-    std::vector<std::string> buildMessage(input);
-
+    // Build context-aware messages
+    std::vector<std::string> contextMessages = buildMessage(input);
+    
     hermes::CompletionRequest request{
         .model=modelConfig->model,
         .messages={

@@ -19,7 +19,7 @@ std::string Coder::generateCode(const std::string &description,
     const std::vector<std::string> &context)
 {
     // Extract context if not provided
-    std::vector<std::string> contextToUse=context;s
+    std::vector<std::string> contextToUse=context;
     if(contextToUse.empty())
     {
         contextToUse=extractContext(description);
