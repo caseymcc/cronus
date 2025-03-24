@@ -6,6 +6,7 @@
 #include "cronus/inputParser.h"
 #include "cronus/agents/coder.h"
 #include "cronus/commandHandler.h"
+#include "cronus/model.h"
 
 #include "hermes/hermes.h"
 
@@ -78,6 +79,7 @@ private:
     //Used only in the worker thread
     std::shared_ptr<SourceMap> m_sourceMap;
     std::shared_ptr<InputParser> m_inputParser;
+    std::shared_ptr<Model> m_model;
     std::shared_ptr<agents::Coder> m_coder;
     std::shared_ptr<CommandHandler> m_commandHandler;
     

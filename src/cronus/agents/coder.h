@@ -30,8 +30,9 @@ public:
     /**
      * @brief Constructor
      * @param sourceMap Shared pointer to the source map
+     * @param model Shared pointer to the model
      */
-    explicit Coder(std::shared_ptr<SourceMap> sourceMap);
+    Coder(std::shared_ptr<SourceMap> sourceMap, std::shared_ptr<Model> model);
 
     /**
      * @brief Generate code based on a natural language description
@@ -76,6 +77,7 @@ public:
 
 private:
     std::shared_ptr<SourceMap> m_sourceMap;
+    std::shared_ptr<Model> m_model;
     
     // Chat history
     struct ChatMessage {

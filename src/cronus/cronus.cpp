@@ -52,7 +52,8 @@ void Cronus::workerLoop()
 
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
-    m_coder=std::make_shared<agents::Coder>(m_sourceMap);
+    m_model=std::make_shared<Model>();
+    m_coder=std::make_shared<agents::Coder>(m_sourceMap, m_model);
     m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap, m_addedFiles);
 
     // Try to load the source map cache
@@ -167,50 +168,27 @@ int Cronus::processCompletion(const std::string &input)
         return 0;
     }
     
-    // Get model config for regular LLM requests
-    auto modelConfig=config.getModelConfig(config.getModel());
-
-    if(!modelConfig)
-    {
-        handleError("Model configuration not found for: "+config.getModel());
-        return 1;
-    }
-
     // Build context-aware messages
     std::vector<std::string> contextMessages = buildMessage(input);
     
-    hermes::CompletionRequest request{
-        .model=modelConfig->model,
-        .messages={
-            {"user", input}
+    // Use the Model class for generation
+    std::string response = m_model->generate(
+        {{"user", input}},
+        config.getModelConfig(config.getModel())->streaming,
+        [this](const std::string &content) {
+            handleResponse("streaming", content);
         }
-    };
-
-    hermes::ErrorCode result;
-
-    if(modelConfig->streaming)
-    {
-        result=hermes::streamingCompletion(request,
-            [this](const std::string &content)
-            {
-                handleResponse("streaming", content);
-            });
-    }
-    else
-    {
-        hermes::CompletionResponse response;
-        result=hermes::completion(request, response);
-        if(result==hermes::ErrorCode::Success)
-        {
-            handleResponse(response.provider, response.text);
-        }
-    }
-
-    if(result!=hermes::ErrorCode::Success)
-    {
-        handleError(request.model+" completion failed with error code: "+
-            std::to_string(static_cast<int>(result)));
+    );
+    
+    // Check if there was an error (error responses start with "Error:")
+    if (response.substr(0, 6) == "Error:") {
+        handleError(response);
         return 1;
+    }
+    
+    // For non-streaming responses, handle the response here
+    if (!config.getModelConfig(config.getModel())->streaming) {
+        handleResponse(config.getProvider(), response);
     }
 
     log("Completion processed successfully");
