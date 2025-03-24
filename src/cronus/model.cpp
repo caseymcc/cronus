@@ -2,6 +2,9 @@
 #include "cronus/config.h"
 #include "cronus/logger.h"
 
+#include "hermes/hermes.h"
+#include "hermes/modelManager.h"
+
 namespace cronus
 {
 
