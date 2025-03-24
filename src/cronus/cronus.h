@@ -5,6 +5,7 @@
 #include "cronus/sourceMap.h"
 #include "cronus/inputParser.h"
 #include "cronus/agents/coder.h"
+#include "cronus/commandHandler.h"
 
 #include "hermes/hermes.h"
 
@@ -78,6 +79,7 @@ private:
     std::shared_ptr<SourceMap> m_sourceMap;
     std::shared_ptr<InputParser> m_inputParser;
     std::shared_ptr<agents::Coder> m_coder;
+    std::shared_ptr<CommandHandler> m_commandHandler;
 };
 
 } // namespace cronus
