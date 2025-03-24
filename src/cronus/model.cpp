@@ -30,9 +30,9 @@ bool Model::setModel(const std::string &modelName, const std::string &provider)
     m_currentProvider = provider;
     
     // Set token limits based on model info
-    m_maxInputTokens = modelInfo->max_input_tokens;
-    m_maxOutputTokens = modelInfo->max_output_tokens;
-    m_maxTokens = modelInfo->context_window;
+    m_maxInputTokens = modelInfo->maxInputTokens;
+    m_maxOutputTokens = modelInfo->maxOutputTokens;
+    m_maxTokens = modelInfo->contextWindow;
     
     logInfo("Model changed to: " + m_currentModel + 
             " with max tokens: " + std::to_string(m_maxTokens) +
