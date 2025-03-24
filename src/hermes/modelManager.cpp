@@ -69,28 +69,28 @@ bool ModelManager::loadModelFile(const std::filesystem::path& filePath)
                 info.mode = modelJson["mode"].get<std::string>();
             }
             if (modelJson.contains("api_base")) {
-                info.api_base = modelJson["api_base"].get<std::string>();
+                info.apiBase = modelJson["api_base"].get<std::string>();
             }
             if (modelJson.contains("examples_as_sys_msg")) {
-                info.examples_as_sys_msg = modelJson["examples_as_sys_msg"].get<bool>();
+                info.examplesAsSysMsg = modelJson["examples_as_sys_msg"].get<bool>();
             }
             if (modelJson.contains("context_window")) {
-                info.context_window = modelJson["context_window"].get<int>();
+                info.contextWindow = modelJson["context_window"].get<int>();
             }
             if (modelJson.contains("max_tokens")) {
-                info.max_tokens = modelJson["max_tokens"].get<int>();
+                info.maxTokens = modelJson["max_tokens"].get<int>();
             }
             if (modelJson.contains("max_input_tokens")) {
-                info.max_input_tokens = modelJson["max_input_tokens"].get<int>();
+                info.maxInputTokens = modelJson["max_input_tokens"].get<int>();
             }
             if (modelJson.contains("max_output_tokens")) {
-                info.max_output_tokens = modelJson["max_output_tokens"].get<int>();
+                info.maxOutputTokens = modelJson["max_output_tokens"].get<int>();
             }
             if (modelJson.contains("input_cost_per_token")) {
-                info.input_cost_per_token = modelJson["input_cost_per_token"].get<double>();
+                info.inputCostPerToken = modelJson["input_cost_per_token"].get<double>();
             }
             if (modelJson.contains("output_cost_per_token")) {
-                info.output_cost_per_token = modelJson["output_cost_per_token"].get<double>();
+                info.outputCostPerToken = modelJson["output_cost_per_token"].get<double>();
             }
 
             // Find existing model to update
@@ -103,28 +103,28 @@ bool ModelManager::loadModelFile(const std::filesystem::path& filePath)
                     it->mode = info.mode;
                 }
                 if (modelJson.contains("api_base")) {
-                    it->api_base = info.api_base;
+                    it->apiBase = info.apiBase;
                 }
                 if (modelJson.contains("examples_as_sys_msg")) {
-                    it->examples_as_sys_msg = info.examples_as_sys_msg;
+                    it->examplesAsSysMsg = info.examplesAsSysMsg;
                 }
                 if (modelJson.contains("context_window")) {
-                    it->context_window = info.context_window;
+                    it->contextWindow = info.contextWindow;
                 }
                 if (modelJson.contains("max_tokens")) {
-                    it->max_tokens = info.max_tokens;
+                    it->maxTokens = info.maxTokens;
                 }
                 if (modelJson.contains("max_input_tokens")) {
-                    it->max_input_tokens = info.max_input_tokens;
+                    it->maxInputTokens = info.maxInputTokens;
                 }
                 if (modelJson.contains("max_output_tokens")) {
-                    it->max_output_tokens = info.max_output_tokens;
+                    it->maxOutputTokens = info.maxOutputTokens;
                 }
                 if (modelJson.contains("input_cost_per_token")) {
-                    it->input_cost_per_token = info.input_cost_per_token;
+                    it->inputCostPerToken = info.inputCostPerToken;
                 }
                 if (modelJson.contains("output_cost_per_token")) {
-                    it->output_cost_per_token = info.output_cost_per_token;
+                    it->outputCostPerToken = info.outputCostPerToken;
                 }
             } else {
                 // Add new model
