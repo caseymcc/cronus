@@ -2,9 +2,11 @@
 #define _cronus_agents_coder_h_
 
 #include "cronus/sourceMap.h"
+#include "hermes/hermes.h"
 #include <memory>
 #include <string>
 #include <vector>
+#include <deque>
 
 namespace cronus
 {
@@ -72,6 +74,37 @@ public:
 
 private:
     std::shared_ptr<SourceMap> m_sourceMap;
+    
+    // Chat history
+    struct ChatMessage {
+        std::string role;
+        std::string content;
+        size_t tokenCount;
+    };
+    
+    std::deque<ChatMessage> m_chatHistory;
+    size_t m_totalTokens = 0;
+    size_t m_maxTokens = 4096; // Default, will be updated based on model
+    
+    /**
+     * @brief Add a message to the chat history
+     * @param role The role of the message sender (user/assistant)
+     * @param content The message content
+     */
+    void addToHistory(const std::string& role, const std::string& content);
+    
+    /**
+     * @brief Estimate token count for a string
+     * @param text The text to estimate tokens for
+     * @return Estimated token count
+     */
+    size_t estimateTokenCount(const std::string& text) const;
+    
+    /**
+     * @brief Get the current chat history formatted for the LLM
+     * @return Vector of messages in the format expected by the LLM
+     */
+    std::vector<hermes::Message> getChatHistoryForLLM() const;
 
     /**
      * @brief Extract relevant context from the source map

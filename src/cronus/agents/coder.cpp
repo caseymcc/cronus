@@ -1,8 +1,10 @@
 #include "cronus/agents/coder.h"
 #include "cronus/logger.h"
+#include "cronus/config.h"
 #include <algorithm>
 #include <filesystem>
 #include <sstream>
+#include <cmath>
 
 namespace cronus
 {
@@ -12,7 +14,19 @@ namespace agents
 Coder::Coder(std::shared_ptr<SourceMap> sourceMap)
     : m_sourceMap(sourceMap)
 {
-    logInfo("Coder agent initialized");
+    // Get the model info to set the max tokens
+    const auto& config = Config::instance();
+    auto modelConfig = config.getModelConfig(config.getModel());
+    
+    if (modelConfig) {
+        // Set max tokens based on the model's context window
+        m_maxTokens = modelConfig->max_input_tokens > 0 ? 
+                      modelConfig->max_input_tokens : 4096;
+        
+        logInfo("Coder agent initialized with max tokens: " + std::to_string(m_maxTokens));
+    } else {
+        logInfo("Coder agent initialized with default max tokens: " + std::to_string(m_maxTokens));
+    }
 }
 
 std::string Coder::generateCode(const std::string &description,
