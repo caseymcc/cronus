@@ -37,10 +37,12 @@ public:
      * @brief Generate code based on a natural language description
      * @param description The description of what code to generate
      * @param context Additional context like file references or tags
+     * @param addedFiles List of files explicitly added by the user
      * @return The generated code
      */
     std::string generateCode(const std::string &description,
-        const std::vector<std::string> &context={});
+        const std::vector<std::string> &context={},
+        const std::vector<std::string> &addedFiles={});
 
     /**
      * @brief Analyze and explain a piece of code

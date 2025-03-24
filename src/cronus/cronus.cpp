@@ -53,7 +53,7 @@ void Cronus::workerLoop()
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
     m_coder=std::make_shared<agents::Coder>(m_sourceMap);
-    m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap);
+    m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap, m_addedFiles);
 
     // Try to load the source map cache
     logInfo("Loading source map cache...");
@@ -161,7 +161,7 @@ int Cronus::processCompletion(const std::string &input)
     // Use the Coder agent for code-related requests
     if (isCodeRequest && m_coder) {
         log("Using Coder agent for code generation request");
-        std::string generatedCode = m_coder->generateCode(input, fileRefs);
+        std::string generatedCode = m_coder->generateCode(input, fileRefs, m_addedFiles);
         handleResponse("Coder", generatedCode);
         log("Code generation completed successfully");
         return 0;

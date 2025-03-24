@@ -8,8 +8,8 @@
 namespace cronus
 {
 
-CommandHandler::CommandHandler(std::shared_ptr<SourceMap> sourceMap)
-    : m_sourceMap(sourceMap)
+CommandHandler::CommandHandler(std::shared_ptr<SourceMap> sourceMap, std::vector<std::string>& addedFiles)
+    : m_sourceMap(sourceMap), m_addedFiles(addedFiles)
 {
     // Register command handlers
     m_commandMap["/add"]=[this](const auto &args) { return handleAddCommand(args); };
@@ -93,8 +93,12 @@ std::string CommandHandler::handleAddCommand(const std::vector<std::string> &arg
         }
     }
 
-    // Update the source map with this file
-    m_sourceMap->update();
+    // Add the file to the list of added files
+    m_addedFiles.push_back(filePath.string());
+    
+    // Remove duplicates
+    std::sort(m_addedFiles.begin(), m_addedFiles.end());
+    m_addedFiles.erase(std::unique(m_addedFiles.begin(), m_addedFiles.end()), m_addedFiles.end());
 
     return "Added file to context: "+filePath.string();
 }
@@ -125,9 +129,14 @@ std::string CommandHandler::handleRemoveCommand(const std::vector<std::string> &
         return ss.str();
     }
 
-    // One match found - we don't actually remove it from the source map,
-    // but we can acknowledge the command
-    return "Removed file from context: "+matchingFiles[0];
+    // Remove the file from the list of added files
+    auto it = std::find(m_addedFiles.begin(), m_addedFiles.end(), matchingFiles[0]);
+    if (it != m_addedFiles.end()) {
+        m_addedFiles.erase(it);
+        return "Removed file from context: "+matchingFiles[0];
+    }
+    
+    return "File was not in the active context: "+matchingFiles[0];
 }
 
 std::string CommandHandler::handleHelpCommand(const std::vector<std::string> &args)

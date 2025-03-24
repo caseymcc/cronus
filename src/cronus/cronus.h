@@ -80,6 +80,9 @@ private:
     std::shared_ptr<InputParser> m_inputParser;
     std::shared_ptr<agents::Coder> m_coder;
     std::shared_ptr<CommandHandler> m_commandHandler;
+    
+    // List of files explicitly added by the user
+    std::vector<std::string> m_addedFiles;
 };
 
 } // namespace cronus

@@ -30,13 +30,21 @@ Coder::Coder(std::shared_ptr<SourceMap> sourceMap)
 }
 
 std::string Coder::generateCode(const std::string &description,
-    const std::vector<std::string> &context)
+    const std::vector<std::string> &context,
+    const std::vector<std::string> &addedFiles)
 {
     // Extract context if not provided
     std::vector<std::string> contextToUse=context;
     if(contextToUse.empty())
     {
         contextToUse=extractContext(description);
+    }
+    
+    // Add explicitly added files to the context
+    for (const auto& file : addedFiles) {
+        if (std::find(contextToUse.begin(), contextToUse.end(), file) == contextToUse.end()) {
+            contextToUse.push_back(file);
+        }
     }
 
     // Build context string from files

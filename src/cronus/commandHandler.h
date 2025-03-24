@@ -23,8 +23,9 @@ public:
     /**
      * @brief Constructor
      * @param sourceMap Shared pointer to the source map
+     * @param addedFiles Reference to the vector of added files
      */
-    explicit CommandHandler(std::shared_ptr<SourceMap> sourceMap);
+    CommandHandler(std::shared_ptr<SourceMap> sourceMap, std::vector<std::string>& addedFiles);
 
     /**
      * @brief Check if a string is a command
@@ -42,6 +43,7 @@ public:
 
 private:
     std::shared_ptr<SourceMap> m_sourceMap;
+    std::vector<std::string>& m_addedFiles;
     
     // Command handlers
     std::string handleAddCommand(const std::vector<std::string>& args);
