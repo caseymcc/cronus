@@ -6,12 +6,37 @@ namespace cronus
 {
 
 Model::Model(const std::string &modelName, const std::string &provider)
-    : m_currentModel(modelName), m_currentProvider(provider))
-    {
-        logInfo("Model initialized: "+m_currentModel+
-            " with max tokens: "+std::to_string(m_maxTokens));
+    : m_currentModel(""), m_currentProvider(""), m_maxTokens(0), 
+      m_maxInputTokens(0), m_maxOutputTokens(0)
+{
+    setModel(modelName, provider);
+}
 
-
+bool Model::setModel(const std::string &modelName, const std::string &provider)
+{
+    // Get model info from ModelManager
+    auto &modelManager = hermes::ModelManager::instance();
+    auto modelInfo = modelManager.getModelInfo(modelName);
+    
+    if (!modelInfo) {
+        logError("Model not found: " + modelName);
+        return false;
+    }
+    
+    m_currentModel = modelName;
+    m_currentProvider = provider;
+    
+    // Set token limits based on model info
+    m_maxInputTokens = modelInfo->max_input_tokens;
+    m_maxOutputTokens = modelInfo->max_output_tokens;
+    m_maxTokens = modelInfo->context_window;
+    
+    logInfo("Model changed to: " + m_currentModel + 
+            " with max tokens: " + std::to_string(m_maxTokens) +
+            " (input: " + std::to_string(m_maxInputTokens) + 
+            ", output: " + std::to_string(m_maxOutputTokens) + ")");
+    
+    return true;
 }
 
 std::string Model::generate(

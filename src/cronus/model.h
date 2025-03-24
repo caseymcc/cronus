@@ -52,11 +52,21 @@ public:
      * @return Model name
      */
     std::string getModelName() const;
+    
+    /**
+     * @brief Change the model and provider
+     * @param modelName The name of the new model to use
+     * @param provider The provider of the new model
+     * @return True if successful, false otherwise
+     */
+    bool setModel(const std::string &modelName, const std::string &provider);
 
 private:
     std::string m_currentModel;
     std::string m_currentProvider;
     size_t m_maxTokens;
+    size_t m_maxInputTokens;
+    size_t m_maxOutputTokens;
 };
 
 } // namespace cronus
