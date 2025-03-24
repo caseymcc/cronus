@@ -8,7 +8,6 @@ namespace cronus
 Cronus::Cronus() :
     m_currentPath(std::filesystem::current_path())
 {
-    std::string workingDir=m_currentPath.string();
 }
 
 Cronus::~Cronus()=default;
@@ -49,6 +48,8 @@ void Cronus::handleError(const std::string &error) const
 
 void Cronus::workerLoop()
 {
+    std::string workingDir=m_currentPath.string();
+
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
 
@@ -105,8 +106,8 @@ std::vector<std::string> Cronus::buildMessage(const std::string &input)
     std::vector<std::string> messages;
 
     // Parse input for file and tag references
-    std::vector<std::string> fileRefs=extractFileReferences(input);
-    std::vector<std::string> tagRefs=extractTagReferences(input);
+    std::vector<std::string> fileRefs=m_inputParser->extractFileReferences(input);
+    std::vector<std::string> tagRefs=m_inputParser->extractTagReferences(input);
 
     // Log what we found
     if(!fileRefs.empty())
@@ -145,6 +146,8 @@ int Cronus::processCompletion(const std::string &input)
         handleError("Model configuration not found for: "+config.getModel());
         return 1;
     }
+
+    std::vector<std::string> buildMessage(input);
 
     hermes::CompletionRequest request{
         .model=modelConfig->model,

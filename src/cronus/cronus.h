@@ -55,6 +55,8 @@ public:
 
     int processCompletion(const std::string &input);
 private:
+    std::vector<std::string> buildMessage(const std::string &input);
+
     void log(const std::string &message) const;
     void handleResponse(const std::string &provider, const std::string &response) const;
     void handleError(const std::string &error) const;
@@ -71,7 +73,7 @@ private:
     std::thread m_workerThread;
     bool m_running{ false };
     
-    // Source map for code analysis
+    //Used only in the worker thread
     std::shared_ptr<SourceMap> m_sourceMap;
     std::shared_ptr<InputParser> m_inputParser;
 };
