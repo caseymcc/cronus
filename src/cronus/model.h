@@ -7,17 +7,19 @@
 #include <memory>
 #include <vector>
 
-namespace cronus {
+namespace cronus
+{
 
 /**
  * @class Model
  * @brief Handles interactions with language models through Hermes
- * 
+ *
  * This class provides a unified interface for interacting with various
  * language models through the Hermes library, handling model selection,
  * API key management, and request formatting.
  */
-class Model {
+class Model
+{
 public:
     /**
      * @brief Constructor
@@ -25,7 +27,7 @@ public:
      * @param provider The provider of the model
      * @param maxTokens The maximum number of tokens the model can handle
      */
-    Model(const std::string& modelName, const std::string& provider, size_t maxTokens);
+    Model(const std::string &modelName, const std::string &provider);
 
     /**
      * @brief Generate a completion from the model
@@ -35,9 +37,9 @@ public:
      * @return Generated text response
      */
     std::string generate(
-        const std::vector<hermes::Message>& messages,
-        bool streaming = false,
-        std::function<void(const std::string&)> callback = nullptr);
+        const std::vector<hermes::Message> &messages,
+        bool streaming=false,
+        std::function<void(const std::string &)> callback=nullptr);
 
     /**
      * @brief Get the maximum token limit for the current model

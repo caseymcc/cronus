@@ -5,11 +5,13 @@
 namespace cronus
 {
 
-Model::Model(const std::string& modelName, const std::string& provider, size_t maxTokens)
-    : m_currentModel(modelName), m_currentProvider(provider), m_maxTokens(maxTokens)
-{
-    logInfo("Model initialized: " + m_currentModel + 
-            " with max tokens: " + std::to_string(m_maxTokens));
+Model::Model(const std::string &modelName, const std::string &provider)
+    : m_currentModel(modelName), m_currentProvider(provider))
+    {
+        logInfo("Model initialized: "+m_currentModel+
+            " with max tokens: "+std::to_string(m_maxTokens));
+
+
 }
 
 std::string Model::generate(
