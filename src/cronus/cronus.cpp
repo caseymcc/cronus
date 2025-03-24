@@ -142,52 +142,51 @@ int Cronus::processCompletion(const std::string &input)
     log("Processing completion request...");
 
     // Check if the input is a command
-    if (m_commandHandler && m_commandHandler->isCommand(input)) {
-        log("Processing command: " + input);
-        std::string response = m_commandHandler->processCommand(input);
+    if(m_commandHandler&&m_commandHandler->isCommand(input))
+    {
+        log("Processing command: "+input);
+        std::string response=m_commandHandler->processCommand(input);
         handleResponse("Command", response);
         log("Command processed successfully");
         return 0;
     }
 
     // Extract file references for context
-    std::vector<std::string> fileRefs = m_inputParser->extractFileReferences(input);
-    
-    // Check if the input appears to be a code generation request
-    bool isCodeRequest = input.find("generate") != std::string::npos || 
-                         input.find("create") != std::string::npos ||
-                         input.find("implement") != std::string::npos ||
-                         input.find("write") != std::string::npos;
-                         
-    // Use the Coder agent for code-related requests
-    if (isCodeRequest && m_coder) {
+    std::vector<std::string> fileRefs=m_inputParser->extractFileReferences(input);
+
+    if(m_coder)
+    {
         log("Using Coder agent for code generation request");
-        std::string generatedCode = m_coder->generateCode(input, fileRefs, m_addedFiles);
+        std::string generatedCode=m_coder->generateCode(input, fileRefs, m_addedFiles);
         handleResponse("Coder", generatedCode);
         log("Code generation completed successfully");
+        
         return 0;
     }
-    
+
     // Build context-aware messages
-    std::vector<std::string> contextMessages = buildMessage(input);
-    
+    std::vector<std::string> contextMessages=buildMessage(input);
+
     // Use the Model class for generation
-    std::string response = m_model->generate(
-        {{"user", input}},
+    std::string response=m_model->generate(
+        { {"user", input} },
         config.getModelConfig(config.getModel())->streaming,
-        [this](const std::string &content) {
+        [this](const std::string &content)
+        {
             handleResponse("streaming", content);
         }
     );
-    
+
     // Check if there was an error (error responses start with "Error:")
-    if (response.substr(0, 6) == "Error:") {
+    if(response.substr(0, 6)=="Error:")
+    {
         handleError(response);
         return 1;
     }
-    
+
     // For non-streaming responses, handle the response here
-    if (!config.getModelConfig(config.getModel())->streaming) {
+    if(!config.getModelConfig(config.getModel())->streaming)
+    {
         handleResponse(config.getProvider(), response);
     }
 
