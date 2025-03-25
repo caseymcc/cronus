@@ -1,15 +1,16 @@
-#ifndef _cronus_agents_promptManager_h_
-#define _cronus_agents_promptManager_h_
+#ifndef _cronus_utils_promptManager_h_
+#define _cronus_utils_promptManager_h_
 
 #include <string>
 #include <map>
 #include <optional>
 #include <filesystem>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 namespace cronus
 {
-namespace agents
+namespace utils
 {
 
 /**
@@ -59,19 +60,18 @@ private:
      */
     bool loadPromptsFile(const std::filesystem::path& filePath);
 
-    // Structure: agent -> prompt_name -> {default, model_specific, provider_specific, model_provider_specific}
-    struct PromptVariants {
-        std::string defaultPrompt;
-        std::map<std::string, std::string> modelSpecific;
-        std::map<std::string, std::string> providerSpecific;
-        std::map<std::string, std::map<std::string, std::string>> modelProviderSpecific;
+    // Structure to store prompt configuration for a specific model/provider set
+    struct PromptConfig {
+        std::vector<std::string> models;
+        std::vector<std::string> providers;
+        std::map<std::string, std::map<std::string, std::string>> agentPrompts; // agent -> prompt_name -> prompt_text
     };
 
-    std::map<std::string, std::map<std::string, PromptVariants>> m_prompts;
+    std::vector<PromptConfig> m_promptConfigs;
     bool m_initialized{false};
 };
 
-} // namespace agents
+} // namespace utils
 } // namespace cronus
 
-#endif // _cronus_agents_promptManager_h_
+#endif // _cronus_utils_promptManager_h_
