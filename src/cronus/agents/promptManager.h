@@ -1,5 +1,5 @@
-#ifndef _cronus_utils_promptManager_h_
-#define _cronus_utils_promptManager_h_
+#ifndef _cronus_agents_promptManager_h_
+#define _cronus_agents_promptManager_h_
 
 #include <string>
 #include <map>
@@ -9,7 +9,7 @@
 
 namespace cronus
 {
-namespace utils
+namespace agents
 {
 
 /**
@@ -71,7 +71,7 @@ private:
     bool m_initialized{false};
 };
 
-} // namespace utils
+} // namespace agents
 } // namespace cronus
 
-#endif // _cronus_utils_promptManager_h_
+#endif // _cronus_agents_promptManager_h_

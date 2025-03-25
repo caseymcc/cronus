@@ -22,7 +22,7 @@ struct Task
 {
     enum class Type
     {
-        Completion,
+        Input,
         DirectoryContents
     };
 
@@ -56,7 +56,7 @@ public:
     // Worker thread
     void workerLoop();
 
-    int processCompletion(const std::string &input);
+    int handleInput(const std::string &input);
 private:
     std::vector<std::string> buildMessage(const std::string &input);
 

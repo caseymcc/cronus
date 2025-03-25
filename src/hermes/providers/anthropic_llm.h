@@ -2,7 +2,7 @@
 #define _hermes_providers_anthropic_llm_h_
 
 #include "hermes/providers/base_llm.h"
-#include "hermes/model_manager.h"
+#include "hermes/modelManager.h"
 
 namespace hermes
 {

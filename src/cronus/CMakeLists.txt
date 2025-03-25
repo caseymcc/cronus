@@ -7,17 +7,34 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Find required packages
 find_package(yaml-cpp CONFIG REQUIRED)
 find_package(ftxui CONFIG REQUIRED)
+find_package(unofficial-tree-sitter CONFIG REQUIRED)
+
+#include(${CMAKE_CURRENT_LIST_DIR}/../external/tree-sitter/CMakeLists.txt)
 
 set(cronus_src
     ./cronus.h
     ./cronus.cpp
+    ./commandHandler.h
+    ./commandHandler.cpp
     ./config.h
     ./config.cpp
+    ./inputParser.h
+    ./inputParser.cpp
     ./logger.h
     ./logger.cpp
+    ./main.cpp
+    ./model.h
+    ./model.cpp
+    ./sourceMap.h
+    ./sourceMap.cpp
     ./terminal_ui.h
     ./terminal_ui.cpp
-    ./main.cpp
+    agents/coder.h
+    agents/coder.cpp
+    agents/promptManager.h
+    agents/promptManager.cpp
+    utils/diffHandler.h
+    utils/diffHandler.cpp
 )
 
 # Add executable
@@ -28,9 +45,6 @@ add_executable(cronus
 target_include_directories(cronus 
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/..
-    PRIVATE
-        ${VCPKG_INSTALLED_DIR}/tree-sitter-c/include
-        ${VCPKG_INSTALLED_DIR}/tree-sitter-python/include
 )
 target_link_libraries(cronus PRIVATE
     hermes
@@ -38,6 +52,10 @@ target_link_libraries(cronus PRIVATE
     ftxui::screen
     ftxui::dom
     ftxui::component
-    tree-sitter-c::tree-sitter-c
-    tree-sitter-python::tree-sitter-python
+    unofficial::tree-sitter::tree-sitter
+)
+
+set_target_properties(cronus PROPERTIES
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "\$ORIGIN:\$ORIGIN/../hermes"
 )

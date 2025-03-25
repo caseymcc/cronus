@@ -1,5 +1,5 @@
 #include "hermes/hermes.h"
-#include "hermes/model_manager.h"
+#include "hermes/modelManager.h"
 #include "hermes/providers/openai_llm.h"
 #include "hermes/providers/anthropic_llm.h"
 #include "hermes/providers/deepseek_llm.h"

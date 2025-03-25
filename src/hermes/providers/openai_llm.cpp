@@ -5,14 +5,14 @@ namespace hermes
 OpenAILLM::OpenAILLM(const ModelInfo &modelInfo):
     m_modelInfo(modelInfo)
 {
-    if(m_modelInfo.api_base.has_value())
+    if(m_modelInfo.apiBase.has_value())
     {
-        m_apiUrl=m_modelInfo.api_base.value();
+        m_apiUrl=m_modelInfo.apiBase.value();
     }
 
-    if(m_modelInfo.api_key.has_value())
+    if(m_modelInfo.apiKey.has_value())
     {
-        m_apiKey=m_modelInfo.api_key.value();
+        m_apiKey=m_modelInfo.apiKey.value();
     }
 };
 

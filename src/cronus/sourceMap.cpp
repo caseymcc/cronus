@@ -91,7 +91,7 @@ bool canParseWithTreeSitter(const std::string &ext)
 
 SourceMap::SourceMap(std::string &workingDir)
 {
-    // Nothing to load yet
+    m_workingDir=workingDir;
     m_maxMapTokens=1024;
     m_maxContextWindow=0;
     m_mapMulNoFiles=8;

@@ -6,15 +6,9 @@
         "nlohmann-json",
         "yaml-cpp",
         "ftxui",
-        "tree-sitter-cli",
-        "tree-sitter-python",
-        "tree-sitter-c"
-    ],
-    "buildOptions": {
-        "cmake": {
-            "args": [
-                "-DTREE_SITTER_DIR=${VCPKG_INSTALLED_DIR}/tree-sitter-c"
-            ]
+        {
+            "name": "tree-sitter",
+            "features": ["c", "cpp", "csharp", "css", "go", "html", "java", "javascript", "json", "php", "python", "ruby", "rust", "toml", "typescript", "yaml"]
         }
-    }
+    ]
 }

@@ -2,7 +2,7 @@
 #define _hermes_providers_openai_llm_h_
 
 #include "hermes/providers/base_llm.h"
-#include "hermes/model_manager.h"
+#include "hermes/modelManager.h"
 
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
