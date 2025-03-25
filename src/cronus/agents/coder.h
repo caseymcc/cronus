@@ -2,7 +2,11 @@
 #define _cronus_agents_coder_h_
 
 #include "cronus/sourceMap.h"
+
+#include "cronus/model.h"
+
 #include "hermes/hermes.h"
+
 #include <memory>
 #include <string>
 #include <vector>

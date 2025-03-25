@@ -52,21 +52,12 @@ void Cronus::workerLoop()
 
     m_sourceMap=std::make_shared<SourceMap>(workingDir);
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
-    
+
     // Get model configuration from Config
-    const auto& config = Config::instance();
-    auto modelConfig = config.getModelConfig(config.getModel());
-    size_t maxTokens = 4096; // Default fallback
+    const auto &config=Config::instance();
+    auto modelConfig=config.getModelConfig(config.getModel());
     
-    if (modelConfig) {
-        maxTokens = modelConfig->max_input_tokens > 0 ? 
-                    modelConfig->max_input_tokens : 4096;
-    } else {
-        logWarning("Model config not found for: " + config.getModel() + 
-                  ". Using default max tokens: " + std::to_string(maxTokens));
-    }
-    
-    m_model=std::make_shared<Model>(config.getModel(), config.getProvider(), maxTokens);
+    m_model=std::make_shared<Model>(config.getModel(), config.getProvider());
     m_coder=std::make_shared<agents::Coder>(m_sourceMap, m_model);
     m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap, m_addedFiles);
 
@@ -94,8 +85,8 @@ void Cronus::workerLoop()
         }
         switch(task.type)
         {
-        case Task::Type::Completion:
-            processCompletion(task.input);
+        case Task::Type::Input:
+            handleInput(task.input);
             break;
         case Task::Type::DirectoryContents:
             break;
@@ -105,7 +96,7 @@ void Cronus::workerLoop()
 
 std::future<int> Cronus::processInput(const std::string &input)
 {
-    Task task{ Task::Type::Completion, 0, input, Config::instance().getProvider() };
+    Task task{ Task::Type::Input, 0, input, Config::instance().getProvider() };
     std::promise<int> promise;
     auto future=promise.get_future();
 
@@ -150,7 +141,7 @@ std::vector<std::string> Cronus::buildMessage(const std::string &input)
     return messages;
 }
 
-int Cronus::processCompletion(const std::string &input)
+int Cronus::handleInput(const std::string &input)
 {
     const auto &config=Config::instance();
     log("Processing completion request...");
@@ -174,7 +165,7 @@ int Cronus::processCompletion(const std::string &input)
         std::string generatedCode=m_coder->generateCode(input, fileRefs, m_addedFiles);
         handleResponse("Coder", generatedCode);
         log("Code generation completed successfully");
-        
+
         return 0;
     }
 
