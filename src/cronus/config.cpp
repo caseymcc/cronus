@@ -219,6 +219,26 @@ std::optional<ModelConfig> Config::getModelConfig(const std::string &model_name)
     return std::nullopt;
 }
 
+std::vector<std::filesystem::path> Config::getConfigPaths() const
+{
+    std::vector<std::filesystem::path> configPaths;
+    
+    // Add resource directory
+    configPaths.push_back(std::filesystem::path(m_resourceDirectory));
+    
+    // Add home directory config
+    const char *home = std::getenv("HOME");
+    if(home)
+    {
+        configPaths.push_back(std::filesystem::path(home)/".cronus");
+    }
+    
+    // Add current directory config
+    configPaths.push_back(std::filesystem::path(".cronus"));
+    
+    return configPaths;
+}
+
 void Config::load(const std::string &resourceDir)
 {
     std::filesystem::path resourcePath=resourceDir;

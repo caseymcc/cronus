@@ -34,6 +34,12 @@ public:
 
     std::optional<ModelConfig> getModelConfig(const std::string &model_name) const;
     const std::vector<ModelConfig> &getAvailableModels() const { return m_modelConfigs; }
+    
+    /**
+     * @brief Get the configuration paths used by the system
+     * @return Vector of filesystem paths to configuration directories
+     */
+    std::vector<std::filesystem::path> getConfigPaths() const;
 
 private:
     Config()=default;

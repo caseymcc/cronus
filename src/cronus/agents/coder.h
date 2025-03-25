@@ -128,6 +128,22 @@ private:
      * @return Formatted code
      */
     std::string formatCode(const std::string &code, const std::string &language);
+    
+    /**
+     * @brief Get a prompt for a specific task
+     * @param promptName The name of the prompt to retrieve
+     * @return The prompt string or a default if not found
+     */
+    std::string getPrompt(const std::string& promptName) const;
+    
+    /**
+     * @brief Replace placeholders in a prompt template
+     * @param promptTemplate The template with placeholders
+     * @param replacements Map of placeholder names to replacement values
+     * @return The prompt with placeholders replaced
+     */
+    std::string fillPromptTemplate(const std::string& promptTemplate, 
+                                  const std::map<std::string, std::string>& replacements) const;
 };
 
 } // namespace agents

@@ -1,6 +1,9 @@
 #include "cronus/agents/coder.h"
 #include "cronus/logger.h"
 #include "cronus/config.h"
+#include "cronus/utils/promptManager.h"
+
+#include <regex>
 
 #include <algorithm>
 #include <filesystem>
@@ -57,19 +60,24 @@ std::string Coder::generateCode(const std::string &description,
         }
     }
     
+    // Get the code generation prompt and fill in the template
+    std::string promptTemplate = getPrompt("code_generation");
+    std::map<std::string, std::string> replacements = {
+        {"description", description},
+        {"context", contextStr.str()}
+    };
+    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
+    
     // Add user request to history
-    std::string userMessage = "Generate code for: " + description;
-    if (!contextToUse.empty()) {
-        userMessage += "\n\nContext:\n" + contextStr.str();
-    }
     addToHistory("user", userMessage);
 
     // Use the model to generate code
     std::vector<hermes::Message> messages = getChatHistoryForLLM();
     
     // If chat history is empty, add a system message
-    if (messages.empty()) {
-        messages.push_back({"system", "You are a coding assistant that helps generate high-quality code based on descriptions and context."});
+    if (messages.empty() || messages[0].role != "system") {
+        std::string systemMessage = getPrompt("system_message");
+        messages.insert(messages.begin(), {"system", systemMessage});
     }
     
     // Generate code using the model
@@ -99,8 +107,15 @@ std::string Coder::generateCode(const std::string &description,
 
 std::string Coder::explainCode(const std::string &code)
 {
+    // Get the code explanation prompt and fill in the template
+    std::string promptTemplate = getPrompt("code_explanation");
+    std::map<std::string, std::string> replacements = {
+        {"code", code}
+    };
+    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
+    
     // Add user request to history
-    addToHistory("user", "Explain this code:\n```\n" + code + "\n```");
+    addToHistory("user", userMessage);
     
     // Use the model to explain the code
     std::vector<hermes::Message> messages = getChatHistoryForLLM();
@@ -127,8 +142,16 @@ std::string Coder::explainCode(const std::string &code)
 
 std::string Coder::suggestRefactoring(const std::string &code, const std::string &goal)
 {
+    // Get the refactoring prompt and fill in the template
+    std::string promptTemplate = getPrompt("refactoring");
+    std::map<std::string, std::string> replacements = {
+        {"code", code},
+        {"goal", goal}
+    };
+    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
+    
     // Add user request to history
-    addToHistory("user", "Suggest refactoring for this code with the goal of " + goal + ":\n```\n" + code + "\n```");
+    addToHistory("user", userMessage);
     
     // Use the model to suggest refactoring
     std::vector<hermes::Message> messages = getChatHistoryForLLM();
@@ -164,8 +187,15 @@ std::string Coder::suggestRefactoring(const std::string &code, const std::string
 
 std::vector<std::string> Coder::identifyBugs(const std::string &code)
 {
+    // Get the bug identification prompt and fill in the template
+    std::string promptTemplate = getPrompt("bug_identification");
+    std::map<std::string, std::string> replacements = {
+        {"code", code}
+    };
+    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
+    
     // Add user request to history
-    addToHistory("user", "Identify bugs in this code:\n```\n" + code + "\n```");
+    addToHistory("user", userMessage);
     
     // Use the model to identify bugs
     std::vector<hermes::Message> messages = getChatHistoryForLLM();
@@ -214,8 +244,16 @@ std::vector<std::string> Coder::identifyBugs(const std::string &code)
 
 std::string Coder::generateTests(const std::string &code, const std::string &framework)
 {
+    // Get the test generation prompt and fill in the template
+    std::string promptTemplate = getPrompt("test_generation");
+    std::map<std::string, std::string> replacements = {
+        {"code", code},
+        {"framework", framework}
+    };
+    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
+    
     // Add user request to history
-    addToHistory("user", "Generate tests for this code using " + framework + " framework:\n```\n" + code + "\n```");
+    addToHistory("user", userMessage);
     
     // Use the model to generate tests
     std::vector<hermes::Message> messages = getChatHistoryForLLM();
@@ -339,6 +377,57 @@ std::vector<hermes::Message> Coder::getChatHistoryForLLM() const
     }
     
     return messages;
+}
+
+std::string Coder::getPrompt(const std::string& promptName) const
+{
+    // Get the model name and provider
+    std::string modelName = m_model->getModelName();
+    
+    // Get provider from config
+    std::string providerName = Config::instance().getProvider();
+    
+    // Try to get the prompt from the PromptManager
+    auto& promptManager = utils::PromptManager::instance();
+    auto prompt = promptManager.getPrompt("coder", promptName, modelName, providerName);
+    
+    if (prompt) {
+        return *prompt;
+    }
+    
+    // If no prompt is found, return a default prompt
+    if (promptName == "system_message") {
+        return "You are a coding assistant that helps generate high-quality code based on descriptions and context.";
+    } else if (promptName == "code_generation") {
+        return "Generate code that implements the following functionality: {{description}}\n\nContext from the codebase:\n{{context}}";
+    } else if (promptName == "code_explanation") {
+        return "Please explain the following code in detail:\n\n```\n{{code}}\n```";
+    } else if (promptName == "refactoring") {
+        return "Refactor the following code to {{goal}}:\n\n```\n{{code}}\n```";
+    } else if (promptName == "bug_identification") {
+        return "Identify potential bugs or issues in the following code:\n\n```\n{{code}}\n```";
+    } else if (promptName == "test_generation") {
+        return "Generate comprehensive unit tests for the following code using the {{framework}} framework:\n\n```\n{{code}}\n```";
+    }
+    
+    // Generic fallback
+    return "Please help with the following task: {{task}}";
+}
+
+std::string Coder::fillPromptTemplate(const std::string& promptTemplate, 
+                                     const std::map<std::string, std::string>& replacements) const
+{
+    std::string result = promptTemplate;
+    
+    // Replace each placeholder with its value
+    for (const auto& [placeholder, value] : replacements) {
+        std::string pattern = "{{" + placeholder + "}}";
+        
+        // Use regex to replace all occurrences
+        result = std::regex_replace(result, std::regex(pattern), value);
+    }
+    
+    return result;
 }
 
 } // namespace agents

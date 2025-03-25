@@ -1,6 +1,7 @@
 #include "cronus/cronus.h"
 
 #include "cronus/config.h"
+#include "cronus/utils/promptManager.h"
 
 namespace cronus
 {
@@ -58,6 +59,10 @@ void Cronus::workerLoop()
     auto modelConfig=config.getModelConfig(config.getModel());
     
     m_model=std::make_shared<Model>(config.getModel(), config.getProvider());
+    
+    // Initialize PromptManager with the same paths used for configuration
+    utils::PromptManager::instance().initialize(config.getConfigPaths());
+    
     m_coder=std::make_shared<agents::Coder>(m_sourceMap, m_model);
     m_commandHandler=std::make_shared<CommandHandler>(m_sourceMap, m_addedFiles);
 
