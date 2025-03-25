@@ -1,7 +1,8 @@
 #include "cronus/agents/coder.h"
 #include "cronus/logger.h"
 #include "cronus/config.h"
-#include "cronus/utils/promptManager.h"
+
+#include "cronus/agents/promptManager.h"
 
 #include <regex>
 
@@ -20,9 +21,9 @@ Coder::Coder(std::shared_ptr<SourceMap> sourceMap, std::shared_ptr<Model> model)
     : m_sourceMap(sourceMap), m_model(model)
 {
     // Set max tokens based on the model's context window
-    m_maxTokens = m_model->getMaxTokens();
-    
-    logInfo("Coder agent initialized with max tokens: " + std::to_string(m_maxTokens));
+    m_maxTokens=m_model->getMaxTokens();
+
+    logInfo("Coder agent initialized with max tokens: "+std::to_string(m_maxTokens));
 }
 
 std::string Coder::generateCode(const std::string &description,
@@ -35,10 +36,12 @@ std::string Coder::generateCode(const std::string &description,
     {
         contextToUse=extractContext(description);
     }
-    
+
     // Add explicitly added files to the context
-    for (const auto& file : addedFiles) {
-        if (std::find(contextToUse.begin(), contextToUse.end(), file) == contextToUse.end()) {
+    for(const auto &file:addedFiles)
+    {
+        if(std::find(contextToUse.begin(), contextToUse.end(), file)==contextToUse.end())
+        {
             contextToUse.push_back(file);
         }
     }
@@ -48,57 +51,61 @@ std::string Coder::generateCode(const std::string &description,
     for(const auto &ctx:contextToUse)
     {
         std::filesystem::path filePath(ctx);
-        if (std::filesystem::exists(filePath)) {
+        if(std::filesystem::exists(filePath))
+        {
             std::ifstream file(filePath);
-            if (file) {
-                contextStr << "File: " << filePath.filename().string() << "\n";
-                contextStr << "```\n";
-                contextStr << std::string(std::istreambuf_iterator<char>(file), 
-                                         std::istreambuf_iterator<char>());
-                contextStr << "\n```\n\n";
+            if(file)
+            {
+                contextStr<<"File: "<<filePath.filename().string()<<"\n";
+                contextStr<<"```\n";
+                contextStr<<std::string(std::istreambuf_iterator<char>(file),
+                    std::istreambuf_iterator<char>());
+                contextStr<<"\n```\n\n";
             }
         }
     }
-    
+
     // Get the code generation prompt and fill in the template
-    std::string promptTemplate = getPrompt("code_generation");
-    std::map<std::string, std::string> replacements = {
+    std::string promptTemplate=getPrompt("code_generation");
+    std::map<std::string, std::string> replacements={
         {"description", description},
         {"context", contextStr.str()}
     };
-    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
-    
+    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+
     // Add user request to history
     addToHistory("user", userMessage);
 
     // Use the model to generate code
-    std::vector<hermes::Message> messages = getChatHistoryForLLM();
-    
+    std::vector<hermes::Message> messages=getChatHistoryForLLM();
+
     // If chat history is empty, add a system message
-    if (messages.empty() || messages[0].role != "system") {
-        std::string systemMessage = getPrompt("system_message");
-        messages.insert(messages.begin(), {"system", systemMessage});
+    if(messages.empty()||messages[0].role!="system")
+    {
+        std::string systemMessage=getPrompt("system_message");
+        messages.insert(messages.begin(), { "system", systemMessage });
     }
-    
+
     // Generate code using the model
-    std::string generatedCode = m_model->generate(messages);
-    
+    std::string generatedCode=m_model->generate(messages);
+
     // If there was an error, return a placeholder
-    if (generatedCode.substr(0, 6) == "Error:") {
-        logError("Code generation failed: " + generatedCode);
-        
+    if(generatedCode.substr(0, 6)=="Error:")
+    {
+        logError("Code generation failed: "+generatedCode);
+
         std::stringstream result;
         result<<"// Code generation failed\n";
-        result<<"// " << generatedCode << "\n";
+        result<<"// "<<generatedCode<<"\n";
         result<<"// Falling back to placeholder implementation\n\n";
         result<<"// TODO: Implement the actual functionality\n";
         result<<"void generatedFunction() {\n";
         result<<"    // Implementation pending\n";
         result<<"}\n";
-        
-        generatedCode = result.str();
+
+        generatedCode=result.str();
     }
-    
+
     // Add assistant response to history
     addToHistory("assistant", generatedCode);
 
@@ -108,77 +115,81 @@ std::string Coder::generateCode(const std::string &description,
 std::string Coder::explainCode(const std::string &code)
 {
     // Get the code explanation prompt and fill in the template
-    std::string promptTemplate = getPrompt("code_explanation");
-    std::map<std::string, std::string> replacements = {
+    std::string promptTemplate=getPrompt("code_explanation");
+    std::map<std::string, std::string> replacements={
         {"code", code}
     };
-    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
-    
+    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+
     // Add user request to history
     addToHistory("user", userMessage);
-    
+
     // Use the model to explain the code
-    std::vector<hermes::Message> messages = getChatHistoryForLLM();
-    
+    std::vector<hermes::Message> messages=getChatHistoryForLLM();
+
     // If chat history is empty, add a system message
-    if (messages.empty()) {
-        messages.push_back({"system", "You are a coding assistant that helps explain code clearly and concisely."});
+    if(messages.empty())
+    {
+        messages.push_back({ "system", "You are a coding assistant that helps explain code clearly and concisely." });
     }
-    
+
     // Generate explanation using the model
-    std::string explanation = m_model->generate(messages);
-    
+    std::string explanation=m_model->generate(messages);
+
     // If there was an error, return a placeholder
-    if (explanation.substr(0, 6) == "Error:") {
-        logError("Code explanation failed: " + explanation);
-        explanation = "I couldn't analyze this code due to a technical issue. Please try again later.";
+    if(explanation.substr(0, 6)=="Error:")
+    {
+        logError("Code explanation failed: "+explanation);
+        explanation="I couldn't analyze this code due to a technical issue. Please try again later.";
     }
-    
+
     // Add assistant response to history
     addToHistory("assistant", explanation);
-    
+
     return explanation;
 }
 
 std::string Coder::suggestRefactoring(const std::string &code, const std::string &goal)
 {
     // Get the refactoring prompt and fill in the template
-    std::string promptTemplate = getPrompt("refactoring");
-    std::map<std::string, std::string> replacements = {
+    std::string promptTemplate=getPrompt("refactoring");
+    std::map<std::string, std::string> replacements={
         {"code", code},
         {"goal", goal}
     };
-    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
-    
+    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+
     // Add user request to history
     addToHistory("user", userMessage);
-    
+
     // Use the model to suggest refactoring
-    std::vector<hermes::Message> messages = getChatHistoryForLLM();
-    
+    std::vector<hermes::Message> messages=getChatHistoryForLLM();
+
     // If chat history is empty, add a system message
-    if (messages.empty()) {
-        messages.push_back({"system", "You are a coding assistant that helps refactor code to improve quality and meet specific goals."});
+    if(messages.empty())
+    {
+        messages.push_back({ "system", "You are a coding assistant that helps refactor code to improve quality and meet specific goals." });
     }
-    
+
     // Generate refactoring using the model
-    std::string refactoring = m_model->generate(messages);
-    
+    std::string refactoring=m_model->generate(messages);
+
     // If there was an error, return a placeholder
-    if (refactoring.substr(0, 6) == "Error:") {
-        logError("Code refactoring failed: " + refactoring);
-        
+    if(refactoring.substr(0, 6)=="Error:")
+    {
+        logError("Code refactoring failed: "+refactoring);
+
         std::stringstream result;
         result<<"// Original code:\n";
         result<<code<<"\n\n";
         result<<"// Refactoring failed due to a technical issue\n";
-        result<<"// " << refactoring << "\n";
+        result<<"// "<<refactoring<<"\n";
         result<<"// Explanation of changes:\n";
         result<<"// No changes made due to error.";
-        
-        refactoring = result.str();
+
+        refactoring=result.str();
     }
-    
+
     // Add assistant response to history
     addToHistory("assistant", refactoring);
 
@@ -188,91 +199,101 @@ std::string Coder::suggestRefactoring(const std::string &code, const std::string
 std::vector<std::string> Coder::identifyBugs(const std::string &code)
 {
     // Get the bug identification prompt and fill in the template
-    std::string promptTemplate = getPrompt("bug_identification");
-    std::map<std::string, std::string> replacements = {
+    std::string promptTemplate=getPrompt("bug_identification");
+    std::map<std::string, std::string> replacements={
         {"code", code}
     };
-    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
-    
+    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+
     // Add user request to history
     addToHistory("user", userMessage);
-    
+
     // Use the model to identify bugs
-    std::vector<hermes::Message> messages = getChatHistoryForLLM();
-    
+    std::vector<hermes::Message> messages=getChatHistoryForLLM();
+
     // If chat history is empty, add a system message
-    if (messages.empty()) {
-        messages.push_back({"system", "You are a coding assistant that helps identify bugs and issues in code. List each bug on a separate line starting with '- '."});
+    if(messages.empty())
+    {
+        messages.push_back({ "system", "You are a coding assistant that helps identify bugs and issues in code. List each bug on a separate line starting with '- '." });
     }
-    
+
     // Generate bug list using the model
-    std::string bugResponse = m_model->generate(messages);
-    
+    std::string bugResponse=m_model->generate(messages);
+
     // Parse the response into individual bugs
     std::vector<std::string> bugs;
-    
-    if (bugResponse.substr(0, 6) == "Error:") {
-        logError("Bug identification failed: " + bugResponse);
+
+    if(bugResponse.substr(0, 6)=="Error:")
+    {
+        logError("Bug identification failed: "+bugResponse);
         bugs.push_back("Bug identification failed due to a technical issue.");
-    } else {
+    }
+    else
+    {
         std::istringstream iss(bugResponse);
         std::string line;
-        
-        while (std::getline(iss, line)) {
+
+        while(std::getline(iss, line))
+        {
             // Look for lines that start with "- " which indicate a bug
-            if (line.size() > 2 && line[0] == '-' && line[1] == ' ') {
+            if(line.size()>2&&line[0]=='-'&&line[1]==' ')
+            {
                 bugs.push_back(line.substr(2));
             }
         }
-        
+
         // If no bugs were found in the expected format, add the whole response
-        if (bugs.empty() && !bugResponse.empty()) {
-            bugs.push_back("Analysis: " + bugResponse);
+        if(bugs.empty()&&!bugResponse.empty())
+        {
+            bugs.push_back("Analysis: "+bugResponse);
         }
     }
-    
+
     // Add assistant response to history
     std::stringstream result;
-    result << "Bugs found:\n";
-    for (const auto& bug : bugs) {
-        result << "- " << bug << "\n";
+    result<<"Bugs found:\n";
+    for(const auto &bug:bugs)
+    {
+        result<<"- "<<bug<<"\n";
     }
     addToHistory("assistant", result.str());
-    
+
     return bugs;
 }
 
 std::string Coder::generateTests(const std::string &code, const std::string &framework)
 {
     // Get the test generation prompt and fill in the template
-    std::string promptTemplate = getPrompt("test_generation");
-    std::map<std::string, std::string> replacements = {
+    std::string promptTemplate=getPrompt("test_generation");
+    std::map<std::string, std::string> replacements={
         {"code", code},
         {"framework", framework}
     };
-    std::string userMessage = fillPromptTemplate(promptTemplate, replacements);
-    
+    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+
     // Add user request to history
     addToHistory("user", userMessage);
-    
+
     // Use the model to generate tests
-    std::vector<hermes::Message> messages = getChatHistoryForLLM();
-    
+    std::vector<hermes::Message> messages=getChatHistoryForLLM();
+
     // If chat history is empty, add a system message
-    if (messages.empty()) {
-        messages.push_back({"system", "You are a coding assistant that helps generate comprehensive unit tests for code."});
+    if(messages.empty())
+    {
+        messages.push_back({ "system", "You are a coding assistant that helps generate comprehensive unit tests for code." });
     }
-    
+
     // Generate tests using the model
-    std::string tests = m_model->generate(messages);
-    
+    std::string tests=m_model->generate(messages);
+
     // If there was an error, return a placeholder
-    if (tests.substr(0, 6) == "Error:") {
-        logError("Test generation failed: " + tests);
-        
+    if(tests.substr(0, 6)=="Error:")
+    {
+        logError("Test generation failed: "+tests);
+
         std::stringstream result;
         result<<"// Test generation failed due to a technical issue\n";
-        result<<"// " << tests << "\n";
+        result<<"// "<<tests<<"\n";
         result<<"// Falling back to placeholder implementation\n\n";
         result<<"// Generated tests for code using framework: "<<framework<<"\n";
         result<<"#include <gtest/gtest.h>\n\n";
@@ -280,10 +301,10 @@ std::string Coder::generateTests(const std::string &code, const std::string &fra
         result<<"    // TODO: Implement test\n";
         result<<"    EXPECT_TRUE(true);\n";
         result<<"}\n";
-        
-        tests = result.str();
+
+        tests=result.str();
     }
-    
+
     // Add assistant response to history
     addToHistory("assistant", tests);
 
@@ -341,92 +362,107 @@ std::string Coder::formatCode(const std::string &code, const std::string &langua
     return code;
 }
 
-void Coder::addToHistory(const std::string& role, const std::string& content)
+void Coder::addToHistory(const std::string &role, const std::string &content)
 {
     // Estimate token count for this message
-    size_t tokenCount = estimateTokenCount(content);
-    
+    size_t tokenCount=estimateTokenCount(content);
+
     // Add to history
-    m_chatHistory.push_back({role, content, tokenCount});
-    m_totalTokens += tokenCount;
-    
+    m_chatHistory.push_back({ role, content, tokenCount });
+    m_totalTokens+=tokenCount;
+
     // Trim history if it exceeds max tokens
-    while (m_totalTokens > m_maxTokens && m_chatHistory.size() > 1) {
-        m_totalTokens -= m_chatHistory.front().tokenCount;
+    while(m_totalTokens>m_maxTokens&&m_chatHistory.size()>1)
+    {
+        m_totalTokens-=m_chatHistory.front().tokenCount;
         m_chatHistory.pop_front();
     }
-    
-    logInfo("Chat history updated. Current token count: " + std::to_string(m_totalTokens));
+
+    logInfo("Chat history updated. Current token count: "+std::to_string(m_totalTokens));
 }
 
-size_t Coder::estimateTokenCount(const std::string& text) const
+size_t Coder::estimateTokenCount(const std::string &text) const
 {
     // Simple estimation: ~4 characters per token on average
     // This is a rough approximation, actual tokenization depends on the model
-    constexpr double CHARS_PER_TOKEN = 4.0;
-    return static_cast<size_t>(std::ceil(text.length() / CHARS_PER_TOKEN));
+    constexpr double CHARS_PER_TOKEN=4.0;
+    return static_cast<size_t>(std::ceil(text.length()/CHARS_PER_TOKEN));
 }
 
 std::vector<hermes::Message> Coder::getChatHistoryForLLM() const
 {
     std::vector<hermes::Message> messages;
-    
+
     // Convert our internal chat history to the format expected by Hermes
-    for (const auto& msg : m_chatHistory) {
-        messages.push_back({msg.role, msg.content});
+    for(const auto &msg:m_chatHistory)
+    {
+        messages.push_back({ msg.role, msg.content });
     }
-    
+
     return messages;
 }
 
-std::string Coder::getPrompt(const std::string& promptName) const
+std::string Coder::getPrompt(const std::string &promptName) const
 {
     // Get the model name and provider
-    std::string modelName = m_model->getModelName();
-    
+    std::string modelName=m_model->getModelName();
+
     // Get provider from config
-    std::string providerName = Config::instance().getProvider();
-    
+    std::string providerName=Config::instance().getProvider();
+
     // Try to get the prompt from the PromptManager
-    auto& promptManager = utils::PromptManager::instance();
-    auto prompt = promptManager.getPrompt("coder", promptName, modelName, providerName);
-    
-    if (prompt) {
+    auto &promptManager=agents::PromptManager::instance();
+    auto prompt=promptManager.getPrompt("coder", promptName, modelName, providerName);
+
+    if(prompt)
+    {
         return *prompt;
     }
-    
+
     // If no prompt is found, return a default prompt
-    if (promptName == "system_message") {
+    if(promptName=="system_message")
+    {
         return "You are a coding assistant that helps generate high-quality code based on descriptions and context.";
-    } else if (promptName == "code_generation") {
+    }
+    else if(promptName=="code_generation")
+    {
         return "Generate code that implements the following functionality: {{description}}\n\nContext from the codebase:\n{{context}}";
-    } else if (promptName == "code_explanation") {
+    }
+    else if(promptName=="code_explanation")
+    {
         return "Please explain the following code in detail:\n\n```\n{{code}}\n```";
-    } else if (promptName == "refactoring") {
+    }
+    else if(promptName=="refactoring")
+    {
         return "Refactor the following code to {{goal}}:\n\n```\n{{code}}\n```";
-    } else if (promptName == "bug_identification") {
+    }
+    else if(promptName=="bug_identification")
+    {
         return "Identify potential bugs or issues in the following code:\n\n```\n{{code}}\n```";
-    } else if (promptName == "test_generation") {
+    }
+    else if(promptName=="test_generation")
+    {
         return "Generate comprehensive unit tests for the following code using the {{framework}} framework:\n\n```\n{{code}}\n```";
     }
-    
+
     // Generic fallback
     return "Please help with the following task: {{task}}";
 }
 
-std::string Coder::fillPromptTemplate(const std::string& promptTemplate, 
-                                     const std::map<std::string, std::string>& replacements) const
+std::string Coder::fillPromptTemplate(const std::string &promptTemplate,
+    const std::map<std::string, std::string> &replacements) const
 {
-    std::string result = promptTemplate;
-    
+    std::string result=promptTemplate;
+
     // Replace each placeholder with its value
-    for (const auto& [placeholder, value] : replacements) {
-        std::string pattern = "{{" + placeholder + "}}";
-        
+    for(const auto &[placeholder, value]:replacements)
+    {
+        std::string pattern="{{"+placeholder+"}}";
+
         // Use regex to replace all occurrences
-        result = std::regex_replace(result, std::regex(pattern), value);
+        result=std::regex_replace(result, std::regex(pattern), value);
     }
-    
+
     return result;
 }
 
