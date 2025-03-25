@@ -2,7 +2,7 @@
 #include "cronus/logger.h"
 #include "cronus/config.h"
 
-#include "cronus/agents/promptManager.h"
+#include "cronus/utils/promptManager.h"
 
 #include <regex>
 
@@ -411,7 +411,7 @@ std::string Coder::getPrompt(const std::string &promptName) const
     std::string providerName=Config::instance().getProvider();
 
     // Try to get the prompt from the PromptManager
-    auto &promptManager=agents::PromptManager::instance();
+    auto &promptManager=utils::PromptManager::instance();
     auto prompt=promptManager.getPrompt("coder", promptName, modelName, providerName);
 
     if(prompt)
