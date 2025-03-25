@@ -1,49 +1,46 @@
 {
-  "prompts": {
-    "coder": {
-      "system_message": {
-        "default": "You are a coding assistant that helps generate high-quality code based on descriptions and context. Follow these guidelines:\n1. Write clean, efficient, and well-documented code\n2. Follow best practices for the target language\n3. Consider edge cases and error handling\n4. Provide explanations for complex logic\n5. Ensure your code is secure and follows modern standards",
-        "models": {
-          "gpt-4": "You are an expert software developer with deep knowledge of software architecture, design patterns, and best practices. Your task is to generate high-quality, production-ready code that is:\n- Well-structured and organized\n- Efficient and optimized\n- Thoroughly documented with clear comments\n- Secure and robust against common vulnerabilities\n- Maintainable and follows SOLID principles\n\nConsider the context of the existing codebase and ensure your code integrates seamlessly with it.",
-          "claude-3-opus-20240229": "You are Claude, an AI assistant with expertise in software development. When writing code, you prioritize:\n1. Correctness and reliability\n2. Readability and maintainability\n3. Performance and efficiency\n4. Security and safety\n5. Compatibility with existing systems\n\nYou write code that is well-tested, properly documented, and follows the established patterns in the codebase."
-        },
-        "providers": {
-          "anthropic": "You are an AI coding assistant from Anthropic. Your goal is to write code that is not only functional but also elegant, maintainable, and follows best practices. Consider the broader architecture and design implications of your code.",
-          "openai": "You are an AI coding assistant from OpenAI. Your goal is to write code that solves problems effectively while being readable, maintainable, and efficient. Always consider security implications and edge cases."
-        }
-      },
-      "code_generation": {
-        "default": "Generate code that implements the following functionality: {{description}}\n\nContext from the codebase:\n{{context}}\n\nPlease write clean, well-documented code that integrates well with the existing codebase.",
-        "models": {
-          "gpt-4": "Based on the following description and context, generate production-quality code:\n\nRequirement: {{description}}\n\nRelevant code context:\n{{context}}\n\nEnsure your implementation is robust, well-tested, and follows the patterns established in the existing codebase."
-        }
-      },
-      "code_explanation": {
-        "default": "Please explain the following code in detail:\n\n```\n{{code}}\n```\n\nInclude information about:\n1. What the code does\n2. How it works\n3. Any important patterns or techniques used\n4. Potential issues or improvements",
-        "providers": {
-          "anthropic": "Analyze and explain this code in detail:\n\n```\n{{code}}\n```\n\nYour explanation should cover:\n- The purpose and functionality of the code\n- The control flow and key algorithms\n- Any design patterns or architectural choices\n- Potential edge cases, bugs, or performance concerns\n- Suggestions for improvements or alternatives"
-        }
-      },
-      "refactoring": {
-        "default": "Refactor the following code to {{goal}}:\n\n```\n{{code}}\n```\n\nProvide both the refactored code and an explanation of the changes made.",
-        "models": {
-          "claude-3-opus-20240229": "I need you to refactor this code with the goal of {{goal}}:\n\n```\n{{code}}\n```\n\nPlease provide:\n1. The refactored code in a code block\n2. A detailed explanation of what changes you made and why\n3. How your changes achieve the stated goal\n4. Any trade-offs or considerations in your approach"
-        }
-      },
-      "bug_identification": {
-        "default": "Identify potential bugs or issues in the following code:\n\n```\n{{code}}\n```\n\nList each issue separately with an explanation of the problem and how to fix it.",
-        "model_providers": {
-          "gpt-4": {
-            "openai": "Perform a thorough code review to identify bugs, edge cases, and potential issues in this code:\n\n```\n{{code}}\n```\n\nFor each issue you find:\n1. Describe the problem clearly\n2. Explain why it's problematic\n3. Suggest a specific fix\n4. Rate the severity (Critical, High, Medium, Low)\n\nConsider issues related to correctness, security, performance, and maintainability."
-          }
-        }
-      },
-      "test_generation": {
-        "default": "Generate comprehensive unit tests for the following code using the {{framework}} framework:\n\n```\n{{code}}\n```\n\nEnsure the tests cover normal operation, edge cases, and error conditions.",
-        "providers": {
-          "anthropic": "Create thorough unit tests for this code using {{framework}}:\n\n```\n{{code}}\n```\n\nYour tests should:\n- Cover all public methods and functions\n- Test both happy paths and edge cases\n- Verify error handling and exception cases\n- Use appropriate assertions and test fixtures\n- Follow testing best practices"
-        }
+  "prompts": [
+    {
+      "models": ["default"],
+      "coder": {
+        "system_message": "You are a coding assistant that helps generate high-quality code based on descriptions and context. Follow these guidelines:\n1. Write clean, efficient, and well-documented code\n2. Follow best practices for the target language\n3. Consider edge cases and error handling\n4. Provide explanations for complex logic\n5. Ensure your code is secure and follows modern standards",
+        "code_generation": "Generate code that implements the following functionality: {{description}}\n\nContext from the codebase:\n{{context}}\n\nPlease write clean, well-documented code that integrates well with the existing codebase.",
+        "code_explanation": "Please explain the following code in detail:\n\n```\n{{code}}\n```\n\nInclude information about:\n1. What the code does\n2. How it works\n3. Any important patterns or techniques used\n4. Potential issues or improvements",
+        "refactoring": "Refactor the following code to {{goal}}:\n\n```\n{{code}}\n```\n\nProvide both the refactored code and an explanation of the changes made.",
+        "bug_identification": "Identify potential bugs or issues in the following code:\n\n```\n{{code}}\n```\n\nList each issue separately with an explanation of the problem and how to fix it.",
+        "test_generation": "Generate comprehensive unit tests for the following code using the {{framework}} framework:\n\n```\n{{code}}\n```\n\nEnsure the tests cover normal operation, edge cases, and error conditions."
+      }
+    },
+    {
+      "models": ["gpt-4", "gpt-4-turbo"],
+      "coder": {
+        "system_message": "You are an expert software developer with deep knowledge of software architecture, design patterns, and best practices. Your task is to generate high-quality, production-ready code that is:\n- Well-structured and organized\n- Efficient and optimized\n- Thoroughly documented with clear comments\n- Secure and robust against common vulnerabilities\n- Maintainable and follows SOLID principles\n\nConsider the context of the existing codebase and ensure your code integrates seamlessly with it.",
+        "code_generation": "Based on the following description and context, generate production-quality code:\n\nRequirement: {{description}}\n\nRelevant code context:\n{{context}}\n\nEnsure your implementation is robust, well-tested, and follows the patterns established in the existing codebase.",
+        "bug_identification": "Perform a thorough code review to identify bugs, edge cases, and potential issues in this code:\n\n```\n{{code}}\n```\n\nFor each issue you find:\n1. Describe the problem clearly\n2. Explain why it's problematic\n3. Suggest a specific fix\n4. Rate the severity (Critical, High, Medium, Low)\n\nConsider issues related to correctness, security, performance, and maintainability."
+      }
+    },
+    {
+      "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229"],
+      "coder": {
+        "system_message": "You are Claude, an AI assistant with expertise in software development. When writing code, you prioritize:\n1. Correctness and reliability\n2. Readability and maintainability\n3. Performance and efficiency\n4. Security and safety\n5. Compatibility with existing systems\n\nYou write code that is well-tested, properly documented, and follows the established patterns in the codebase.",
+        "refactoring": "I need you to refactor this code with the goal of {{goal}}:\n\n```\n{{code}}\n```\n\nPlease provide:\n1. The refactored code in a code block\n2. A detailed explanation of what changes you made and why\n3. How your changes achieve the stated goal\n4. Any trade-offs or considerations in your approach"
+      }
+    },
+    {
+      "models": [],
+      "providers": ["anthropic"],
+      "coder": {
+        "system_message": "You are an AI coding assistant from Anthropic. Your goal is to write code that is not only functional but also elegant, maintainable, and follows best practices. Consider the broader architecture and design implications of your code.",
+        "code_explanation": "Analyze and explain this code in detail:\n\n```\n{{code}}\n```\n\nYour explanation should cover:\n- The purpose and functionality of the code\n- The control flow and key algorithms\n- Any design patterns or architectural choices\n- Potential edge cases, bugs, or performance concerns\n- Suggestions for improvements or alternatives",
+        "test_generation": "Create thorough unit tests for this code using {{framework}}:\n\n```\n{{code}}\n```\n\nYour tests should:\n- Cover all public methods and functions\n- Test both happy paths and edge cases\n- Verify error handling and exception cases\n- Use appropriate assertions and test fixtures\n- Follow testing best practices"
+      }
+    },
+    {
+      "models": [],
+      "providers": ["openai"],
+      "coder": {
+        "system_message": "You are an AI coding assistant from OpenAI. Your goal is to write code that solves problems effectively while being readable, maintainable, and efficient. Always consider security implications and edge cases."
       }
     }
-  }
+  ]
 }
