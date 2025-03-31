@@ -25,6 +25,8 @@ set(cronus_src
     ./main.cpp
     ./model.h
     ./model.cpp
+    ./restApi.h
+    ./restApi.cpp
     ./sourceMap.h
     ./sourceMap.cpp
     ./terminal_ui.h
@@ -52,6 +54,7 @@ target_link_libraries(cronus PRIVATE
     ftxui::screen
     ftxui::dom
     ftxui::component
+    httplib::httplib
     unofficial::tree-sitter::tree-sitter
 )
 
