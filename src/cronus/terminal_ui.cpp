@@ -6,10 +6,13 @@
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <nlohmann/json.hpp>
 
 #include <filesystem>
+#include <chrono>
 
 using namespace ftxui;
+using json = nlohmann::json;
 
 namespace cronus
 {
@@ -18,18 +21,31 @@ TerminalUI::TerminalUI(Cronus &cronus) :
     m_cronus(cronus),
     m_screen(ScreenInteractive::Fullscreen())
 {
-    // Set up callbacks
+    // Start the REST API if not already running
+    if (!m_cronus.isApiRunning()) {
+        m_cronus.startRestApi();
+    }
+    
+    // Get the API base URL
+    m_apiBaseUrl = m_cronus.getApiBaseUrl();
+    m_apiClient = std::make_unique<httplib::Client>(m_apiBaseUrl.c_str());
+    
     // Set up logging callback
-    m_cronus.setResponseCallback([this](const std::string &provider, const std::string &response)
-        {
-            addResponse(provider, response);
-        });
-
     m_cronus.setLogCallback([this](LogLevel logLevel, const std::string &message)
         {
             addLog(logLevel, message);
         });
+    
+    // Fetch initial directory contents
+    fetchDirectoryContents();
+    
+    // Start response polling
+    startResponsePolling();
+}
 
+TerminalUI::~TerminalUI()
+{
+    stopResponsePolling();
 }
 
 void TerminalUI::addResponse(const std::string &provider, const std::string &response)
@@ -140,11 +156,14 @@ void TerminalUI::handleInput(Event event)
         m_screen.RequestAnimationFrame();
 
         m_chatMessages.emplace_back(ChatType::Message, Role::User, input);
-        m_cronus.processInput(input);
+        sendInputToApi(input);
     }
     else if(event==Event::F2)
     {
         m_showDirTree=!m_showDirTree;
+        if (m_showDirTree) {
+            fetchDirectoryContents();
+        }
     }
     else if(event==Event::F3)
     {
@@ -152,6 +171,7 @@ void TerminalUI::handleInput(Event event)
     }
     else if(event==Event::Character("Event::CtrlD")) // Ctrl-D
     {
+        stopResponsePolling();
         m_screen.Exit();
     }
     else if(event==Event::Character("Event::CtrlC")) // Ctrl-C
@@ -252,6 +272,81 @@ Element TerminalUI::renderMainLayout()
     }
 
     return mainContent; // If toolbar is hidden, only show chat and input
+}
+
+void TerminalUI::fetchDirectoryContents()
+{
+    if (!m_apiClient) {
+        addLog(LogLevel::Error, "API client not initialized");
+        return;
+    }
+    
+    auto res = m_apiClient->Get("/api/directory");
+    if (res && res->status == 200) {
+        try {
+            auto jsonResponse = json::parse(res->body);
+            m_dirContents.clear();
+            
+            for (const auto& item : jsonResponse["contents"]) {
+                m_dirContents.emplace_back(
+                    item["isDirectory"].get<bool>(),
+                    item["name"].get<std::string>()
+                );
+            }
+            
+            // Reinitialize the directory tree with new contents
+            initializeDirTree();
+            m_screen.RequestAnimationFrame();
+            
+        } catch (const std::exception& e) {
+            addLog(LogLevel::Error, std::string("Error parsing directory contents: ") + e.what());
+        }
+    } else {
+        addLog(LogLevel::Error, "Failed to fetch directory contents from API");
+    }
+}
+
+void TerminalUI::sendInputToApi(const std::string& input)
+{
+    if (!m_apiClient) {
+        addLog(LogLevel::Error, "API client not initialized");
+        return;
+    }
+    
+    json requestBody = {
+        {"input", input}
+    };
+    
+    auto res = m_apiClient->Post("/api/input", requestBody.dump(), "application/json");
+    if (!res || res->status != 200) {
+        addLog(LogLevel::Error, "Failed to send input to API");
+    }
+}
+
+void TerminalUI::startResponsePolling()
+{
+    m_pollingActive = true;
+    m_pollingThread = std::thread([this]() {
+        // This is a simplified polling mechanism
+        // In a real implementation, you would use WebSockets or SSE for streaming responses
+        while (m_pollingActive) {
+            // Sleep to avoid hammering the API
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            
+            // In a real implementation, you would poll an endpoint that returns new responses
+            // For now, we're just simulating this since we don't have a real endpoint
+            
+            // This would be replaced with actual API calls in a real implementation
+        }
+    });
+}
+
+void TerminalUI::stopResponsePolling()
+{
+    m_pollingActive = false;
+    if (m_pollingThread.joinable()) {
+        m_pollingThread.join();
+    }
 }
 
 } // namespace cronus

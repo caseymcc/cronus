@@ -14,9 +14,14 @@
 #include <future>
 #include <queue>
 #include <thread>
+#include <functional>
+#include <atomic>
 
 namespace cronus
 {
+
+// Forward declaration
+class RestApi;
 
 struct Task
 {
@@ -53,6 +58,12 @@ public:
     void setLogCallback(Logger::LogCallback callback) { Logger::instance().setCallback(callback); }
     void setResponseCallback(ResponseCallback callback) { m_responseCallback=callback; }
 
+    // API related methods
+    void startRestApi(int port = 8080);
+    void stopRestApi();
+    bool isApiRunning() const;
+    std::string getApiBaseUrl() const;
+
     // Worker thread
     void workerLoop();
 
@@ -74,7 +85,7 @@ private:
     std::mutex m_mutex;
     std::condition_variable m_condition;
     std::thread m_workerThread;
-    bool m_running{ false };
+    std::atomic<bool> m_running{ false };
     
     //Used only in the worker thread
     std::shared_ptr<SourceMap> m_sourceMap;
@@ -82,6 +93,9 @@ private:
     std::shared_ptr<Model> m_model;
     std::shared_ptr<agents::Coder> m_coder;
     std::shared_ptr<CommandHandler> m_commandHandler;
+    
+    // REST API
+    std::unique_ptr<RestApi> m_restApi;
     
     // List of files explicitly added by the user
     std::vector<std::string> m_addedFiles;

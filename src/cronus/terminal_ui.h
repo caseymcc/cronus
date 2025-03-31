@@ -7,9 +7,14 @@
 #include <ftxui/screen/screen.hpp>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
+#include <httplib.h>
+#include <nlohmann/json.hpp>
 
 #include <string>
 #include <vector>
+#include <thread>
+#include <atomic>
+#include <mutex>
 
 namespace cronus
 {
@@ -50,6 +55,7 @@ class TerminalUI
 public:
     TerminalUI();
     explicit TerminalUI(class Cronus &cronus);
+    ~TerminalUI();
 
     void updateDirectoryTree(const std::vector<std::pair<bool, std::string>> &contents);
 
@@ -64,6 +70,10 @@ private:
     // Helper methods
     void initializeDirTree();
     void setupUI();
+    void fetchDirectoryContents();
+    void sendInputToApi(const std::string& input);
+    void startResponsePolling();
+    void stopResponsePolling();
 
     ftxui::Element renderDirTree();
     ftxui::Element renderDebugArea();
@@ -73,6 +83,8 @@ private:
 
     Cronus &m_cronus;
     ftxui::ScreenInteractive m_screen;
+    std::string m_apiBaseUrl;
+    std::unique_ptr<httplib::Client> m_apiClient;
 
     // Directory tree state
     ftxui::Component m_dirTree;
@@ -89,6 +101,11 @@ private:
     bool m_isStreaming{false};
     bool m_showDebug{false};
     ftxui::Component m_renderer;
+    
+    // Response polling
+    std::thread m_pollingThread;
+    std::atomic<bool> m_pollingActive{false};
+    std::mutex m_chatMutex;
 };
 
 } // namespace cronus

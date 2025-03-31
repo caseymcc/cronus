@@ -1,5 +1,5 @@
 #include "cronus/cronus.h"
-
+#include "cronus/rest_api.h"
 #include "cronus/config.h"
 #include "cronus/agents/promptManager.h"
 
@@ -11,7 +11,10 @@ Cronus::Cronus() :
 {
 }
 
-Cronus::~Cronus()=default;
+Cronus::~Cronus()
+{
+    stop();
+}
 
 void Cronus::run()
 {
@@ -21,6 +24,9 @@ void Cronus::run()
 
 void Cronus::stop()
 {
+    // Stop the REST API if it's running
+    stopRestApi();
+    
     m_running=false;
     m_condition.notify_one();
     if(m_workerThread.joinable())
@@ -28,7 +34,6 @@ void Cronus::stop()
         m_workerThread.join();
     }
 }
-w
 void Cronus::log(const std::string &message) const
 {
     logInfo(message);
@@ -215,6 +220,41 @@ std::vector<std::pair<bool, std::string>> Cronus::getCurrentDirectoryContents() 
         );
     }
     return contents;
+}
+
+void Cronus::startRestApi(int port)
+{
+    if (!m_restApi) {
+        m_restApi = std::make_unique<RestApi>(*this, port);
+    }
+    
+    if (!m_restApi->isRunning()) {
+        m_restApi->start();
+        logInfo("REST API started on " + m_restApi->getBaseUrl());
+    } else {
+        logWarning("REST API is already running");
+    }
+}
+
+void Cronus::stopRestApi()
+{
+    if (m_restApi && m_restApi->isRunning()) {
+        m_restApi->stop();
+        logInfo("REST API stopped");
+    }
+}
+
+bool Cronus::isApiRunning() const
+{
+    return m_restApi && m_restApi->isRunning();
+}
+
+std::string Cronus::getApiBaseUrl() const
+{
+    if (m_restApi) {
+        return m_restApi->getBaseUrl();
+    }
+    return "";
 }
 
 } // namespace cronus
