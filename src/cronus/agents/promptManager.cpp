@@ -74,75 +74,136 @@ bool PromptManager::loadPromptsFile(const std::filesystem::path &filePath)
 
         nlohmann::json config=nlohmann::json::parse(file);
 
-        if(!config.contains("prompts"))
+        // Handle both formats: "prompts" array (coder_prompts.json) and "entries" array (language_prompts.json)
+        if(config.contains("prompts") && config["prompts"].is_array())
         {
-            logError("Invalid prompt file format (missing 'prompts' key): "+filePath.string());
-            return false;
-        }
-
-        if(!config["prompts"].is_array())
-        {
-            logError("Invalid prompt file format (prompts is neither array nor object): "+filePath.string());
-            return false;
-        }
-
-        for(const auto &promptConfig:config["prompts"])
-        {
-            PromptConfig newConfig;
-
-            // Get models list
-            if(promptConfig.contains("models")&&promptConfig["models"].is_array())
+            // Standard format (coder_prompts.json)
+            for(const auto &promptConfig:config["prompts"])
             {
-                for(const auto &model:promptConfig["models"])
+                PromptConfig newConfig;
+
+                // Get models list
+                if(promptConfig.contains("models")&&promptConfig["models"].is_array())
                 {
-                    if(model.is_string())
+                    for(const auto &model:promptConfig["models"])
                     {
-                        newConfig.models.push_back(model.get<std::string>());
+                        if(model.is_string())
+                        {
+                            newConfig.models.push_back(model.get<std::string>());
+                        }
                     }
                 }
-            }
 
-            // Get providers list
-            if(promptConfig.contains("providers")&&promptConfig["providers"].is_array())
-            {
-                for(const auto &provider:promptConfig["providers"])
+                // Get providers list
+                if(promptConfig.contains("providers")&&promptConfig["providers"].is_array())
                 {
-                    if(provider.is_string())
+                    for(const auto &provider:promptConfig["providers"])
                     {
-                        newConfig.providers.push_back(provider.get<std::string>());
+                        if(provider.is_string())
+                        {
+                            newConfig.providers.push_back(provider.get<std::string>());
+                        }
                     }
                 }
-            }
 
-            // Process each agent's prompts
-            for(const auto &[agentName, agentPrompts]:promptConfig.items())
+                // Process each agent's prompts
+                for(const auto &[agentName, agentPrompts]:promptConfig.items())
+                {
+                    // Skip the models and providers keys
+                    if(agentName=="models"||agentName=="providers")
+                    {
+                        continue;
+                    }
+
+                    if(!agentPrompts.is_object())
+                    {
+                        continue;
+                    }
+
+                    // Process each prompt for this agent
+                    for(const auto &[promptName, promptText]:agentPrompts.items())
+                    {
+                        if(promptText.is_string())
+                        {
+                            newConfig.agentPrompts[agentName][promptName]=promptText.get<std::string>();
+                        }
+                    }
+                }
+
+                // Add the config if it has any prompts
+                if(!newConfig.agentPrompts.empty())
+                {
+                    m_promptConfigs.push_back(newConfig);
+                }
+            }
+        }
+        else if(config.contains("entries") && config["entries"].is_array())
+        {
+            // Language prompts format (language_prompts.json)
+            for(const auto &entry:config["entries"])
             {
-                // Skip the models and providers keys
-                if(agentName=="models"||agentName=="providers")
+                if(!entry.contains("models") || !entry.contains("prompts") || !entry["prompts"].is_array())
                 {
                     continue;
                 }
 
-                if(!agentPrompts.is_object())
-                {
-                    continue;
-                }
+                PromptConfig newConfig;
 
-                // Process each prompt for this agent
-                for(const auto &[promptName, promptText]:agentPrompts.items())
+                // Get models list
+                if(entry["models"].is_array())
                 {
-                    if(promptText.is_string())
+                    for(const auto &model:entry["models"])
                     {
-                        newConfig.agentPrompts[agentName][promptName]=promptText.get<std::string>();
+                        if(model.is_string())
+                        {
+                            newConfig.models.push_back(model.get<std::string>());
+                        }
                     }
                 }
-            }
 
-            // Add the config if it has any prompts
-            if(!newConfig.agentPrompts.empty())
-            {
-                m_promptConfigs.push_back(newConfig);
+                // Get providers list if present
+                if(entry.contains("providers") && entry["providers"].is_array())
+                {
+                    for(const auto &provider:entry["providers"])
+                    {
+                        if(provider.is_string())
+                        {
+                            newConfig.providers.push_back(provider.get<std::string>());
+                        }
+                    }
+                }
+
+                // Process each language prompt
+                for(const auto &prompt:entry["prompts"])
+                {
+                    if(!prompt.contains("name") || !prompt["name"].is_string())
+                    {
+                        continue;
+                    }
+
+                    std::string languageName = prompt["name"].get<std::string>();
+
+                    // Process each prompt for this language
+                    for(const auto &[promptName, promptText]:prompt.items())
+                    {
+                        if(promptName != "name" && promptText.is_string())
+                        {
+                            newConfig.agentPrompts[languageName][promptName]=promptText.get<std::string>();
+                        }
+                    }
+                }
+
+                // Add the config if it has any prompts
+                if(!newConfig.agentPrompts.empty())
+                {
+                    m_promptConfigs.push_back(newConfig);
+                }
             }
+        }
+        else
+        {
+            logError("Invalid prompt file format (missing 'prompts' or 'entries' key): "+filePath.string());
+            return false;
         }
         logInfo("Loaded prompts from: "+filePath.string());
         return true;
