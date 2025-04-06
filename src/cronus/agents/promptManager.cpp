@@ -80,149 +80,70 @@ bool PromptManager::loadPromptsFile(const std::filesystem::path &filePath)
             return false;
         }
 
-        // Check if prompts is an array (new format) or object (old format)
-        if(config["prompts"].is_array())
+        if(!config["prompts"].is_array())
         {
-            // New format: array of model-specific prompt objects
-            for(const auto &promptConfig:config["prompts"])
+            logError("Invalid prompt file format (prompts is neither array nor object): "+filePath.string());
+            return false;
+        }
+
+        for(const auto &promptConfig:config["prompts"])
+        {
+            PromptConfig newConfig;
+
+            // Get models list
+            if(promptConfig.contains("models")&&promptConfig["models"].is_array())
             {
-                PromptConfig newConfig;
-
-                // Get models list
-                if(promptConfig.contains("models")&&promptConfig["models"].is_array())
+                for(const auto &model:promptConfig["models"])
                 {
-                    for(const auto &model:promptConfig["models"])
+                    if(model.is_string())
                     {
-                        if(model.is_string())
-                        {
-                            newConfig.models.push_back(model.get<std::string>());
-                        }
+                        newConfig.models.push_back(model.get<std::string>());
                     }
-                }
-
-                // Get providers list
-                if(promptConfig.contains("providers")&&promptConfig["providers"].is_array())
-                {
-                    for(const auto &provider:promptConfig["providers"])
-                    {
-                        if(provider.is_string())
-                        {
-                            newConfig.providers.push_back(provider.get<std::string>());
-                        }
-                    }
-                }
-
-                // Process each agent's prompts
-                for(const auto &[agentName, agentPrompts]:promptConfig.items())
-                {
-                    // Skip the models and providers keys
-                    if(agentName=="models"||agentName=="providers")
-                    {
-                        continue;
-                    }
-
-                    if(!agentPrompts.is_object())
-                    {
-                        continue;
-                    }
-
-                    // Process each prompt for this agent
-                    for(const auto &[promptName, promptText]:agentPrompts.items())
-                    {
-                        if(promptText.is_string())
-                        {
-                            newConfig.agentPrompts[agentName][promptName]=promptText.get<std::string>();
-                        }
-                    }
-                }
-
-                // Add the config if it has any prompts
-                if(!newConfig.agentPrompts.empty())
-                {
-                    m_promptConfigs.push_back(newConfig);
                 }
             }
-        }
-        else if(config["prompts"].is_object())
-        {
-            // Old format: convert to new format
-            logWarning("Using legacy prompt format in: "+filePath.string());
 
-            // Create a default config for backward compatibility
-            PromptConfig defaultConfig;
-            defaultConfig.models.push_back("default");
+            // Get providers list
+            if(promptConfig.contains("providers")&&promptConfig["providers"].is_array())
+            {
+                for(const auto &provider:promptConfig["providers"])
+                {
+                    if(provider.is_string())
+                    {
+                        newConfig.providers.push_back(provider.get<std::string>());
+                    }
+                }
+            }
 
             // Process each agent's prompts
-            for(const auto &[agentName, agentPrompts]:config["prompts"].items())
+            for(const auto &[agentName, agentPrompts]:promptConfig.items())
             {
+                // Skip the models and providers keys
+                if(agentName=="models"||agentName=="providers")
+                {
+                    continue;
+                }
+
                 if(!agentPrompts.is_object())
                 {
                     continue;
                 }
 
                 // Process each prompt for this agent
-                for(const auto &[promptName, promptVariants]:agentPrompts.items())
+                for(const auto &[promptName, promptText]:agentPrompts.items())
                 {
-                    if(!promptVariants.is_object())
+                    if(promptText.is_string())
                     {
-                        continue;
-                    }
-
-                    // Process default prompt
-                    if(promptVariants.contains("default")&&promptVariants["default"].is_string())
-                    {
-                        defaultConfig.agentPrompts[agentName][promptName]=
-                            promptVariants["default"].get<std::string>();
-                    }
-
-                    // Process model-specific prompts
-                    if(promptVariants.contains("models")&&promptVariants["models"].is_object())
-                    {
-                        for(const auto &[modelName, modelPrompt]:promptVariants["models"].items())
-                        {
-                            if(modelPrompt.is_string())
-                            {
-                                // Create a model-specific config
-                                PromptConfig modelConfig;
-                                modelConfig.models.push_back(modelName);
-                                modelConfig.agentPrompts[agentName][promptName]=
-                                    modelPrompt.get<std::string>();
-                                m_promptConfigs.push_back(modelConfig);
-                            }
-                        }
-                    }
-
-                    // Process provider-specific prompts
-                    if(promptVariants.contains("providers")&&promptVariants["providers"].is_object())
-                    {
-                        for(const auto &[providerName, providerPrompt]:promptVariants["providers"].items())
-                        {
-                            if(providerPrompt.is_string())
-                            {
-                                // Create a provider-specific config
-                                PromptConfig providerConfig;
-                                providerConfig.providers.push_back(providerName);
-                                providerConfig.agentPrompts[agentName][promptName]=
-                                    providerPrompt.get<std::string>();
-                                m_promptConfigs.push_back(providerConfig);
-                            }
-                        }
+                        newConfig.agentPrompts[agentName][promptName]=promptText.get<std::string>();
                     }
                 }
             }
 
-            // Add the default config if it has any prompts
-            if(!defaultConfig.agentPrompts.empty())
+            // Add the config if it has any prompts
+            if(!newConfig.agentPrompts.empty())
             {
-                m_promptConfigs.push_back(defaultConfig);
+                m_promptConfigs.push_back(newConfig);
             }
         }
-        else
-        {
-            logError("Invalid prompt file format (prompts is neither array nor object): "+filePath.string());
-            return false;
-        }
-
         logInfo("Loaded prompts from: "+filePath.string());
         return true;
     }
