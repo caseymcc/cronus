@@ -146,9 +146,6 @@ private:
      * @param replacements Map of placeholder names to replacement values
      * @return The prompt with placeholders replaced
      */
-    std::string fillPromptTemplate(const std::string& promptTemplate, 
-                                  const std::map<std::string, std::string>& replacements) const;
-                                  
     /**
      * @brief Replace placeholders in a prompt template and write directly to a buffer
      * @param promptTemplate The template with placeholders

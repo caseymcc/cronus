@@ -144,7 +144,11 @@ std::string Coder::explainCode(const std::string &code)
     std::map<std::string, std::string> replacements={
         {"code", code}
     };
-    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+    
+    // Clear buffer and fill the template
+    m_promptBuffer.clear();
+    fillPromptTemplateIntoBuffer(promptTemplate, replacements, m_promptBuffer);
+    std::string userMessage = m_promptBuffer;
 
     // Add user request to history
     addToHistory("user", userMessage);
@@ -182,7 +186,11 @@ std::string Coder::suggestRefactoring(const std::string &code, const std::string
         {"code", code},
         {"goal", goal}
     };
-    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+    
+    // Clear buffer and fill the template
+    m_promptBuffer.clear();
+    fillPromptTemplateIntoBuffer(promptTemplate, replacements, m_promptBuffer);
+    std::string userMessage = m_promptBuffer;
 
     // Add user request to history
     addToHistory("user", userMessage);
@@ -228,7 +236,11 @@ std::vector<std::string> Coder::identifyBugs(const std::string &code)
     std::map<std::string, std::string> replacements={
         {"code", code}
     };
-    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+    
+    // Clear buffer and fill the template
+    m_promptBuffer.clear();
+    fillPromptTemplateIntoBuffer(promptTemplate, replacements, m_promptBuffer);
+    std::string userMessage = m_promptBuffer;
 
     // Add user request to history
     addToHistory("user", userMessage);
@@ -294,7 +306,11 @@ std::string Coder::generateTests(const std::string &code, const std::string &fra
         {"code", code},
         {"framework", framework}
     };
-    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+    
+    // Clear buffer and fill the template
+    m_promptBuffer.clear();
+    fillPromptTemplateIntoBuffer(promptTemplate, replacements, m_promptBuffer);
+    std::string userMessage = m_promptBuffer;
 
     // Add user request to history
     addToHistory("user", userMessage);
@@ -474,22 +490,6 @@ std::string Coder::getPrompt(const std::string &promptName) const
     return "Please help with the following task: {{task}}";
 }
 
-std::string Coder::fillPromptTemplate(const std::string &promptTemplate,
-    const std::map<std::string, std::string> &replacements) const
-{
-    std::string result=promptTemplate;
-
-    // Replace each placeholder with its value
-    for(const auto &[placeholder, value]:replacements)
-    {
-        std::string pattern="{{"+placeholder+"}}";
-
-        // Use regex to replace all occurrences
-        result=std::regex_replace(result, std::regex(pattern), value);
-    }
-
-    return result;
-}
 
 void Coder::fillPromptTemplateIntoBuffer(const std::string &promptTemplate,
     const std::map<std::string, std::string> &replacements,
