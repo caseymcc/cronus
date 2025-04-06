@@ -21,9 +21,15 @@ Coder::Coder(std::shared_ptr<SourceMap> sourceMap, std::shared_ptr<Model> model)
     : m_sourceMap(sourceMap), m_model(model)
 {
     // Set max tokens based on the model's context window
-    m_maxTokens=m_model->getMaxTokens();
-
-    logInfo("Coder agent initialized with max tokens: "+std::to_string(m_maxTokens));
+    m_maxTokens = m_model->getMaxTokens();
+    
+    // Pre-allocate the prompt buffer based on estimated character count
+    // Use a conservative estimate (80% of max) to avoid potential overflows
+    size_t estimatedChars = static_cast<size_t>(m_maxTokens * CHARS_PER_TOKEN * 0.8);
+    m_promptBuffer.reserve(estimatedChars);
+    
+    logInfo("Coder agent initialized with max tokens: " + std::to_string(m_maxTokens) + 
+            ", buffer size: " + std::to_string(estimatedChars) + " chars");
 }
 
 std::string Coder::generateCode(const std::string &description,
@@ -46,8 +52,10 @@ std::string Coder::generateCode(const std::string &description,
         }
     }
 
-    // Build context string from files
-    std::stringstream contextStr;
+    // Clear and reuse the pre-allocated buffer for context building
+    m_promptBuffer.clear();
+    
+    // Build context string from files directly into the buffer
     for(const auto &ctx:contextToUse)
     {
         std::filesystem::path filePath(ctx);
@@ -56,22 +64,39 @@ std::string Coder::generateCode(const std::string &description,
             std::ifstream file(filePath);
             if(file)
             {
-                contextStr<<"File: "<<filePath.filename().string()<<"\n";
-                contextStr<<"```\n";
-                contextStr<<std::string(std::istreambuf_iterator<char>(file),
-                    std::istreambuf_iterator<char>());
-                contextStr<<"\n```\n\n";
+                m_promptBuffer.append("File: ");
+                m_promptBuffer.append(filePath.filename().string());
+                m_promptBuffer.append("\n```\n");
+                
+                // Read file content directly into the buffer
+                m_promptBuffer.append(std::istreambuf_iterator<char>(file), 
+                                     std::istreambuf_iterator<char>());
+                
+                m_promptBuffer.append("\n```\n\n");
             }
         }
     }
-
-    // Get the code generation prompt and fill in the template
-    std::string promptTemplate=getPrompt("code_generation");
-    std::map<std::string, std::string> replacements={
+    
+    // Store context in a string for the replacements map
+    std::string contextStr = m_promptBuffer;
+    
+    // Clear buffer for reuse with the template
+    m_promptBuffer.clear();
+    
+    // Get the code generation prompt template
+    std::string promptTemplate = getPrompt("code_generation");
+    
+    // Create replacements map
+    std::map<std::string, std::string> replacements = {
         {"description", description},
-        {"context", contextStr.str()}
+        {"context", contextStr}
     };
-    std::string userMessage=fillPromptTemplate(promptTemplate, replacements);
+    
+    // Fill the template directly into the pre-allocated buffer
+    fillPromptTemplateIntoBuffer(promptTemplate, replacements, m_promptBuffer);
+    
+    // Use the filled buffer as the user message
+    std::string userMessage = m_promptBuffer;
 
     // Add user request to history
     addToHistory("user", userMessage);
@@ -464,6 +489,27 @@ std::string Coder::fillPromptTemplate(const std::string &promptTemplate,
     }
 
     return result;
+}
+
+void Coder::fillPromptTemplateIntoBuffer(const std::string &promptTemplate,
+    const std::map<std::string, std::string> &replacements,
+    std::string &buffer) const
+{
+    // Start with the template
+    buffer = promptTemplate;
+    
+    // Replace each placeholder with its value
+    for(const auto &[placeholder, value]:replacements)
+    {
+        std::string pattern = "{{" + placeholder + "}}";
+        
+        // Use a more efficient string replacement approach for large buffers
+        size_t pos = 0;
+        while((pos = buffer.find(pattern, pos)) != std::string::npos) {
+            buffer.replace(pos, pattern.length(), value);
+            pos += value.length();
+        }
+    }
 }
 
 } // namespace agents

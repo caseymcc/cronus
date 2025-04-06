@@ -94,6 +94,10 @@ private:
     size_t m_totalTokens = 0;
     size_t m_maxTokens = 4096; // Default, will be updated based on model
     
+    // Pre-allocated buffer for prompt generation
+    std::string m_promptBuffer;
+    static constexpr double CHARS_PER_TOKEN = 4.0; // Estimation ratio for tokens to characters
+    
     /**
      * @brief Add a message to the chat history
      * @param role The role of the message sender (user/assistant)
@@ -144,6 +148,16 @@ private:
      */
     std::string fillPromptTemplate(const std::string& promptTemplate, 
                                   const std::map<std::string, std::string>& replacements) const;
+                                  
+    /**
+     * @brief Replace placeholders in a prompt template and write directly to a buffer
+     * @param promptTemplate The template with placeholders
+     * @param replacements Map of placeholder names to replacement values
+     * @param buffer The pre-allocated string buffer to write to
+     */
+    void fillPromptTemplateIntoBuffer(const std::string& promptTemplate,
+                                     const std::map<std::string, std::string>& replacements,
+                                     std::string& buffer) const;
 };
 
 } // namespace agents
