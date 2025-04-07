@@ -17,10 +17,11 @@ Cronus::~Cronus()
     stop();
 }
 
-void Cronus::run()
+void Cronus::run(const std::string& resourcePath)
 {
-    m_running=true;
-    m_workerThread=std::thread(&Cronus::workerLoop, this);
+    m_running = true;
+    m_resourcePath = resourcePath;
+    m_workerThread = std::thread(&Cronus::workerLoop, this);
 }
 
 void Cronus::stop()
@@ -61,10 +62,16 @@ void Cronus::workerLoop()
     m_inputParser=std::make_shared<InputParser>(m_sourceMap, m_currentPath);
 
     // Get model configuration from Config
-    const auto &config=Config::instance();
-    auto modelConfig=config.getModelConfig(config.getModel());
+    const auto &config = Config::instance();
     
-    m_model=std::make_shared<Model>(config.getModel(), config.getProvider());
+    // Load model definitions if resource path is provided
+    if (!m_resourcePath.empty()) {
+        config.loadModelDefinitions(m_resourcePath);
+    }
+    
+    auto modelConfig = config.getModelConfig(config.getModel());
+    
+    m_model = std::make_shared<Model>(config.getModel(), config.getProvider());
     
     // Initialize PromptManager with the same paths used for configuration
     agents::PromptManager::instance().initialize(config.getConfigPaths());

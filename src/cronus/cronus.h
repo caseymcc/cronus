@@ -45,7 +45,7 @@ public:
     explicit Cronus();
     ~Cronus();
 
-    void run();
+    void run(const std::string& resourcePath = "");
     void stop();
     std::future<int> processInput(const std::string &input);
     
@@ -76,6 +76,7 @@ private:
     void handleError(const std::string &error) const;
 
     std::filesystem::path m_currentPath;
+    std::string m_resourcePath;
 
     // Callbacks
     ResponseCallback m_responseCallback;
