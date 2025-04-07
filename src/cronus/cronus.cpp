@@ -1,5 +1,6 @@
 #include "cronus/cronus.h"
-#include "cronus/rest_api.h"
+
+#include "cronus/restApi.h"
 #include "cronus/config.h"
 #include "cronus/agents/promptManager.h"
 
