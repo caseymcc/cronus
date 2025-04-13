@@ -10,6 +10,8 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <unordered_set>
+#include <functional>
 
 namespace cronus
 {
@@ -27,12 +29,23 @@ public:
     int getPort() const { return m_port; }
     std::string getBaseUrl() const { return "http://localhost:" + std::to_string(m_port); }
 
+    // WebSocket related methods
+    void broadcastMessage(const std::string& message);
+    void broadcastDirectoryUpdate();
+    void addWebSocketHandler();
+
 private:
     void setupRoutes();
     
     // API endpoints
     void handleProcessInput(const httplib::Request& req, httplib::Response& res);
     void handleGetDirectoryContents(const httplib::Request& req, httplib::Response& res);
+    void handleGetSourceMap(const httplib::Request& req, httplib::Response& res);
+    
+    // WebSocket management
+    void handleWebSocketConnection(const httplib::Request& req, httplib::Response& res);
+    std::mutex m_webSocketMutex;
+    std::unordered_set<httplib::WebSocket*> m_webSocketConnections;
     
     Cronus& m_cronus;
     int m_port;
