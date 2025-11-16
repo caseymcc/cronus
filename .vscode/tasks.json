@@ -1,0 +1,33 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "open-browser",
+            "type": "shell",
+            "command": "google-chrome --new-tab http://localhost:8080",
+            "windows": {
+                "command": "start http://localhost:8080"
+            },
+            "osx": {
+                "command": "open http://localhost:8080"
+            },
+            "presentation": {
+                "reveal": "never"
+            },
+            "problemMatcher": [],
+            "isBackground": true,
+            "dependsOn": ["wait-for-server"]
+        },
+        {
+            "label": "wait-for-server",
+            "type": "shell",
+            "command": "bash",
+            "args": ["-c", "until curl -s http://localhost:8080 > /dev/null; do sleep 1; done"],
+            "presentation": {
+                "reveal": "never"
+            },
+            "problemMatcher": [],
+            "isBackground": true
+        }
+    ]
+}

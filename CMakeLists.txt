@@ -6,24 +6,29 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
 
-# Find or fetch cpp-httplib
+# Include FetchContent module for external dependencies
 include(FetchContent)
-FetchContent_Declare(
-    httplib
-    GIT_REPOSITORY https://github.com/yhirose/cpp-httplib.git
-    GIT_TAG v0.14.1
-)
-FetchContent_MakeAvailable(httplib)
 
-# Find or fetch nlohmann_json
+# Fetch arbiterAI library
 FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.2
+    arbiterAI
+    GIT_REPOSITORY https://github.com/caseymcc/arbiterAI
+    GIT_TAG main
 )
-FetchContent_MakeAvailable(nlohmann_json)
 
-# Add the LLM library
-add_subdirectory(src/cronus)
-add_subdirectory(src/hermes)
+# Fetch loreforge library (which also depends on arbiterAI)
+FetchContent_Declare(
+    loreforge
+    GIT_REPOSITORY https://github.com/caseymcc/loreforge
+    GIT_TAG main
+)
+
+# Make the content available
+FetchContent_MakeAvailable(arbiterAI loreforge)
+
+# Add the cronus server
+add_subdirectory(server/cronus)
+add_subdirectory(server/arbiterAI)
+add_subdirectory(server/loreforge)
+#add_subdirectory(web)
 

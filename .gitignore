@@ -1,5 +1,6 @@
-.aider*
-aider*
 .env
-build_*
+build
 vcpkg_installed/
+clients/web/build/
+clients/web/node_modules/
+old/

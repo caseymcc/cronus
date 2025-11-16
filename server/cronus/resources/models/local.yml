@@ -1,0 +1,8 @@
+# Default model configurations following litellm format
+model_list:
+  - name: deepseek-reasoner
+    model: local-deepseek-reasoner:14b
+    streaming: true
+  - name: qwen2.5-instruct
+    model: local-qwen2.5-instruct:14b
+    streaming: true

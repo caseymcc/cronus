@@ -77,7 +77,7 @@ case $BUILD_TYPE in
 esac
 
 # Create build directory name
-BUILD_DIR="build_${OS}_${ARCH}_${BUILD_TYPE}"
+BUILD_DIR="build/${OS}_${ARCH}_${BUILD_TYPE}"
 
 # Create build directory if it doesn't exist
 mkdir -p $BUILD_DIR
@@ -123,13 +123,13 @@ VCPKG_TRIPLET="${VCPKG_ARCH}-${VCPKG_TARGET}"
 CMAKE_BUILD_TYPE=$(echo $BUILD_TYPE | tr '[:lower:]' '[:upper:]')
 
 # Configure CMake with appropriate options
-cmake .. \
+cmake ../.. \
     -G "$GENERATOR" \
     -DCMAKE_SYSTEM_NAME=$OS \
     -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE \
     $ARCH_FLAGS \
     -DVCPKG_TARGET_TRIPLET=$VCPKG_TRIPLET \
     -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake \
-    -DVCPKG_OVERLAY_PORTS=/app/vcpkg/custom_ports
+    -DVCPKG_OVERLAY_PORTS=/app/server/cronus/vcpkg/custom_ports
 
 echo "CMake configuration complete in $BUILD_DIR"

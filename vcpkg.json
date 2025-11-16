@@ -5,7 +5,6 @@
         "cpr",
         "nlohmann-json",
         "yaml-cpp",
-        "ftxui",
         "cpp-httplib",
         {
             "name": "tree-sitter",
