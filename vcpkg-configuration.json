@@ -2,7 +2,7 @@
     "default-registry": {
       "kind": "git",
       "repository": "https://github.com/microsoft/vcpkg",
-      "baseline": "ef7dbf94b9198bc58f45951adcf1f041fcbc5ea0"
+      "baseline": "74e6536215718009aae747d86d84b78376bf9e09"
     },
     "overlay-ports": [
       "./server/cronus/vcpkg/custom_ports"

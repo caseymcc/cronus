@@ -265,7 +265,8 @@ void Config::load(const std::string &resourceDir)
     }
     configPaths.push_back(std::filesystem::path(".cronus/loreforge"));
 
-    loreforge::initialize(configPaths);
+    // TODO: Initialize loreforge with config paths when the function is implemented
+    // loreforge::initialize(configPaths);
 
     // Load model definitions first
     loadModelDefinitions(resourceDir);

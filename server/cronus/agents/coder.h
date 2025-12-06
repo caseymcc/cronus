@@ -116,7 +116,7 @@ private:
      * @brief Get the current chat history formatted for the LLM
      * @return Vector of messages in the format expected by the LLM
      */
-    std::vector<loreforge::Message> getChatHistoryForLLM() const;
+    std::vector<arbiterAI::Message> getChatHistoryForLLM() const;
 
     /**
      * @brief Extract relevant context from the source map

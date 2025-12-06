@@ -50,7 +50,7 @@ target_include_directories(cronus
         ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 target_link_libraries(cronus PRIVATE
-    arbiterAI
+    arbiterai
     loreforge
     yaml-cpp
     httplib::httplib
@@ -63,3 +63,27 @@ set_target_properties(cronus PROPERTIES
 )
 
 #add_dependencies(cronus web-ui)
+
+# ---------------------- Tests ----------------------
+enable_testing()
+find_package(GTest CONFIG REQUIRED)
+
+add_executable(cronus_arbiterai_tests
+    tests/arbiterAIIntegrationTest.cpp
+    tests/main.cpp
+)
+
+target_include_directories(cronus_arbiterai_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+target_link_libraries(cronus_arbiterai_tests PRIVATE
+    arbiterai
+    yaml-cpp
+    httplib::httplib
+    unofficial::tree-sitter::tree-sitter
+    GTest::gtest
+    GTest::gmock
+)
+
+add_test(NAME ArbiterAIIntegrationTest COMMAND cronus_arbiterai_tests)

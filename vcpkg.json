@@ -3,9 +3,24 @@
     "version": "0.1.0",
     "dependencies": [
         "cpr",
-        "nlohmann-json",
-        "yaml-cpp",
         "cpp-httplib",
+        "crow",
+        {
+            "name": "openblas",
+            "version>=": "0.3.29",
+            "features": ["dynamic-arch", "threads"]
+        },
+        "cxxopts",
+        "faiss",
+        "gtest",
+        "grpc",
+        "json-schema-validator",
+        "libgit2",
+        "nlohmann-json",
+        "picosha2",
+        "protobuf",
+        "spdlog",
+        "yaml-cpp",
         {
             "name": "tree-sitter",
             "features": ["c", "cpp", "csharp", "css", "go", "html", "java", "javascript", "json", "php", "python", "ruby", "rust", "toml", "typescript", "yaml"]

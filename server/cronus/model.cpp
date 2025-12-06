@@ -3,7 +3,7 @@
 #include "cronus/logger.h"
 
 #include "loreforge/loreforge.h"
-#include "loreforge/modelManager.h"
+#include "arbiterAI/modelManager.h"
 
 namespace cronus
 {
@@ -18,11 +18,12 @@ Model::Model(const std::string &modelName, const std::string &provider)
 bool Model::setModel(const std::string &modelName, const std::string &provider)
 {
     // Get model info from ModelManager
-    auto &modelManager = loreforge::ModelManager::instance();
-    auto modelInfo = modelManager.getModelInfo(modelName);
+    auto &modelManager=arbiterAI::ModelManager::instance();
+    auto modelInfo=modelManager.getModelInfo(modelName);
     
-    if (!modelInfo) {
-        logError("Model not found: " + modelName);
+    if(!modelInfo)
+    {
+        logError("Model not found: "+modelName);
         return false;
     }
     
@@ -43,7 +44,7 @@ bool Model::setModel(const std::string &modelName, const std::string &provider)
 }
 
 std::string Model::generate(
-    const std::vector<loreforge::Message> &messages,
+    const std::vector<arbiterAI::Message> &messages,
     bool streaming,
     std::function<void(const std::string &)> callback)
 {
@@ -56,16 +57,16 @@ std::string Model::generate(
 //        return "Error: Model configuration not found.";
 //    }
 
-    loreforge::CompletionRequest request{
+    arbiterAI::CompletionRequest request{
         .model=m_currentModel,
         .messages=messages
     };
 
     if(streaming&&callback)
     {
-        loreforge::ErrorCode result=loreforge::streamingCompletion(request, callback);
+        arbiterAI::ErrorCode result=arbiterAI::ArbiterAI::instance().streamingCompletion(request, callback);
 
-        if(result!=loreforge::ErrorCode::Success)
+        if(result!=arbiterAI::ErrorCode::Success)
         {
             std::string errorMsg=m_currentModel+" streaming completion failed with error code: "+
                 std::to_string(static_cast<int>(result));
@@ -77,10 +78,10 @@ std::string Model::generate(
     }
     else
     {
-        loreforge::CompletionResponse response;
-        loreforge::ErrorCode result=loreforge::completion(request, response);
+        arbiterAI::CompletionResponse response;
+        arbiterAI::ErrorCode result=arbiterAI::ArbiterAI::instance().completion(request, response);
 
-        if(result!=loreforge::ErrorCode::Success)
+        if(result!=arbiterAI::ErrorCode::Success)
         {
             std::string errorMsg=m_currentModel+" completion failed with error code: "+
                 std::to_string(static_cast<int>(result));

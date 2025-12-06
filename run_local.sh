@@ -30,6 +30,9 @@ while getopts "rsv:ap:" opt; do
     esac
 done
 
+# Shift past the parsed options to get remaining arguments
+shift $((OPTIND-1))
+
 # Remove existing container if requested
 if [ $STOP -eq 1 ]; then
     echo "Removing existing container..."
@@ -46,12 +49,77 @@ fi
 NETWORK_OPTS="--add-host=host.docker.internal:host-gateway"
 NETWORK_OPTS="$NETWORK_OPTS -e REACT_APP_API_URL=http://host.docker.internal:$HOST_API_PORT"
 
-# Start container
-echo "Starting development container..."
-docker run -it --rm \
-    --name $CONTAINER_NAME \
-    -v $(pwd):/app \
-    -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
-    -p 3000:3000 \
-    $NETWORK_OPTS \
-    cronus
+# Get host user ID and group ID
+HOST_UID=$(id -u)
+HOST_GID=$(id -g)
+HOST_USER=$(id -un)
+HOST_GROUP=$(id -gn)
+
+# Set up Git configuration mounts
+GIT_MOUNTS=""
+if [ -f "$HOME/.gitconfig" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.gitconfig:/home/$HOST_USER/.gitconfig:ro"
+fi
+if [ -d "$HOME/.ssh" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.ssh:/home/$HOST_USER/.ssh:ro"
+fi
+if [ -f "$HOME/.gitconfig.user" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.gitconfig.user:/home/$HOST_USER/.gitconfig.user:ro"
+fi
+if [ -f "$HOME/.git-credentials" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $HOME/.git-credentials:/home/$HOST_USER/.git-credentials:ro"
+fi
+if [ -n "$SSH_AUTH_SOCK" ]; then
+    GIT_MOUNTS="$GIT_MOUNTS -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent"
+fi
+
+# Check if container is already running
+if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+    echo "Using existing container: $CONTAINER_NAME"
+    # If no command specified, open a shell
+    if [ $# -eq 0 ]; then
+        docker exec -it $CONTAINER_NAME bash
+    else
+        docker exec -it $CONTAINER_NAME "$@"
+    fi
+else
+    # Start container
+    echo "Starting development container..."
+    echo "Using host user: $HOST_USER (UID: $HOST_UID, GID: $HOST_GID)"
+    
+    # If no command specified, run interactive shell
+    if [ $# -eq 0 ]; then
+        docker run -it --rm \
+            --name $CONTAINER_NAME \
+            -e HOST_UID=$HOST_UID \
+            -e HOST_GID=$HOST_GID \
+            -e HOST_USER=$HOST_USER \
+            -e HOST_GROUP=$HOST_GROUP \
+            -v $(pwd):/app \
+            -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
+            $GIT_MOUNTS \
+            -p 3000:3000 \
+            $NETWORK_OPTS \
+            cronus
+    else
+        # Run command and keep container running in background
+        docker run -d \
+            --name $CONTAINER_NAME \
+            -e HOST_UID=$HOST_UID \
+            -e HOST_GID=$HOST_GID \
+            -e HOST_USER=$HOST_USER \
+            -e HOST_GROUP=$HOST_GROUP \
+            -v $(pwd):/app \
+            -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
+            $GIT_MOUNTS \
+            -p 3000:3000 \
+            $NETWORK_OPTS \
+            cronus tail -f /dev/null
+        
+        # Wait a moment for container to start
+        sleep 1
+        
+        # Execute the command
+        docker exec -it $CONTAINER_NAME "$@"
+    fi
+fi

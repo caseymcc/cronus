@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug Cronus",
+            "name": "Debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/linux_x64_debug/server/cronus/cronus",
@@ -11,6 +11,36 @@
             ],
             "stopAtEntry": false,
             "cwd": "/home/caseymcc/projects/test_snake",
+            "environment": [
+                {
+                    "name": "LD_LIBRARY_PATH",
+                    "value": "${workspaceFolder}/build/linux_x64_debug:$LD_LIBRARY_PATH"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "sourceFileMap": {
+                "/app": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Debug unittest",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/linux_x64_debug/server/cronus/cronus_arbiterai_tests",
+            "args": [
+                "--resource-dir" ,"${workspaceFolder}/server/cronus/resources",
+                "--gtest_filter=ArbiterAIIntegrationTest.CompletionBasic"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/server/cronus/tests",
             "environment": [
                 {
                     "name": "LD_LIBRARY_PATH",

@@ -102,7 +102,7 @@ std::string Coder::generateCode(const std::string &description,
     addToHistory("user", userMessage);
 
     // Use the model to generate code
-    std::vector<loreforge::Message> messages=getChatHistoryForLLM();
+    std::vector<arbiterAI::Message> messages=getChatHistoryForLLM();
 
     // If chat history is empty, add a system message
     if(messages.empty()||messages[0].role!="system")
@@ -154,7 +154,7 @@ std::string Coder::explainCode(const std::string &code)
     addToHistory("user", userMessage);
 
     // Use the model to explain the code
-    std::vector<loreforge::Message> messages=getChatHistoryForLLM();
+    std::vector<arbiterAI::Message> messages=getChatHistoryForLLM();
 
     // If chat history is empty, add a system message
     if(messages.empty())
@@ -196,7 +196,7 @@ std::string Coder::suggestRefactoring(const std::string &code, const std::string
     addToHistory("user", userMessage);
 
     // Use the model to suggest refactoring
-    std::vector<loreforge::Message> messages=getChatHistoryForLLM();
+    std::vector<arbiterAI::Message> messages=getChatHistoryForLLM();
 
     // If chat history is empty, add a system message
     if(messages.empty())
@@ -246,7 +246,7 @@ std::vector<std::string> Coder::identifyBugs(const std::string &code)
     addToHistory("user", userMessage);
 
     // Use the model to identify bugs
-    std::vector<loreforge::Message> messages=getChatHistoryForLLM();
+    std::vector<arbiterAI::Message> messages=getChatHistoryForLLM();
 
     // If chat history is empty, add a system message
     if(messages.empty())
@@ -316,7 +316,7 @@ std::string Coder::generateTests(const std::string &code, const std::string &fra
     addToHistory("user", userMessage);
 
     // Use the model to generate tests
-    std::vector<loreforge::Message> messages=getChatHistoryForLLM();
+    std::vector<arbiterAI::Message> messages=getChatHistoryForLLM();
 
     // If chat history is empty, add a system message
     if(messages.empty())
@@ -430,9 +430,9 @@ size_t Coder::estimateTokenCount(const std::string &text) const
     return static_cast<size_t>(std::ceil(text.length()/CHARS_PER_TOKEN));
 }
 
-std::vector<loreforge::Message> Coder::getChatHistoryForLLM() const
+std::vector<arbiterAI::Message> Coder::getChatHistoryForLLM() const
 {
-    std::vector<loreforge::Message> messages;
+    std::vector<arbiterAI::Message> messages;
 
     // Convert our internal chat history to the format expected by loreforge
     for(const auto &msg:m_chatHistory)

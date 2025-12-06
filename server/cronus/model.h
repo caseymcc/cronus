@@ -1,7 +1,9 @@
 #ifndef _cronus_model_h_
 #define _cronus_model_h_
 
-#include "loreforge/loreforge.h"
+#include "arbiterAI/arbiterAI.h"
+#include "arbiterAI/modelManager.h"
+
 #include <string>
 #include <functional>
 #include <memory>
@@ -12,10 +14,10 @@ namespace cronus
 
 /**
  * @class Model
- * @brief Handles interactions with language models through loreforge
+ * @brief Handles interactions with language models through arbiterAI
  *
  * This class provides a unified interface for interacting with various
- * language models through the loreforge library, handling model selection,
+ * language models through the arbiterAI library, handling model selection,
  * API key management, and request formatting.
  */
 class Model
@@ -37,7 +39,7 @@ public:
      * @return Generated text response
      */
     std::string generate(
-        const std::vector<loreforge::Message> &messages,
+        const std::vector<arbiterAI::Message> &messages,
         bool streaming=false,
         std::function<void(const std::string &)> callback=nullptr);
 

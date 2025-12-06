@@ -4,3 +4,7 @@ vcpkg_installed/
 clients/web/build/
 clients/web/node_modules/
 old/
+.github/agents/
+.github/prompts/
+.github/instructions/
+.specify/
