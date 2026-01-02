@@ -292,6 +292,20 @@ void Cronus::startRestApi(int port)
     
     if (!m_restApi->isRunning()) {
         m_restApi->start();
+        
+        // Wire up the response callback to broadcast messages to all connected clients
+        setResponseCallback([this](const std::string& provider, const std::string& response) {
+            if (m_restApi && m_restApi->isRunning()) {
+                json message = {
+                    {"type", "agent_response"},
+                    {"provider", provider},
+                    {"content", response},
+                    {"timestamp", std::time(nullptr)}
+                };
+                m_restApi->broadcastMessage(message.dump());
+            }
+        });
+        
         logInfo("REST API started on " + m_restApi->getBaseUrl());
     } else {
         logWarning("REST API is already running");

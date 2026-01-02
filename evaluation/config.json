@@ -1,0 +1,62 @@
+{
+  "languages": {
+    "cpp": {
+      "enabled": true,
+      "difficulty_levels": [1, 2, 3, 4, 5],
+      "max_exercises": 3,
+      "timeout_seconds": 300,
+      "compiler": "g++",
+      "compiler_flags": ["-std=c++17", "-Wall", "-Wextra"],
+      "test_command": "make test"
+    },
+    "python": {
+      "enabled": true,
+      "difficulty_levels": [1, 2, 3, 4, 5],
+      "max_exercises": 3,
+      "timeout_seconds": 300,
+      "interpreter": "python3",
+      "test_framework": "pytest",
+      "test_command": "pytest"
+    },
+    "javascript": {
+      "enabled": false,
+      "difficulty_levels": [1, 2, 3, 4, 5],
+      "max_exercises": 3,
+      "timeout_seconds": 300,
+      "runtime": "node",
+      "test_framework": "jest",
+      "test_command": "npm test"
+    }
+  },
+  "agent": {
+    "endpoint": "http://192.168.2.106:8000/v1",
+    "api_type": "openai",
+    "model": "default",
+    "max_tokens": 4096,
+    "temperature": 0.2,
+    "retry_attempts": 3,
+    "retry_delay_seconds": 5
+  },
+  "evaluation": {
+    "parallel_workers": 1,
+    "save_generated_code": true,
+    "save_test_output": true,
+    "generate_html_report": true,
+    "generate_json_report": true
+  },
+  "scoring": {
+    "weights": {
+      "correctness": 0.5,
+      "code_quality": 0.2,
+      "performance": 0.2,
+      "completeness": 0.1
+    },
+    "pass_threshold": 0.7
+  },
+  "filters": {
+    "skip_exercises": [],
+    "only_exercises": [],
+    "min_difficulty": 1,
+    "max_difficulty": 10
+  }
+}

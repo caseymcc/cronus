@@ -1,0 +1,15 @@
+You are an expert JavaScript programmer. Please solve the following programming exercise.
+
+Exercise: {exercise_name}
+
+{instructions}
+
+Requirements:
+- Write clean, modern JavaScript (ES6+)
+- Follow JavaScript best practices and conventions
+- Use appropriate ES6+ features (arrow functions, destructuring, etc.)
+- Implement all required functions/exports
+- Ensure your code is well-structured
+- Make sure all tests pass
+
+Please provide only the implementation code. Do not include test code or explanations.

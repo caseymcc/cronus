@@ -1,0 +1,25 @@
+# Ignore downloaded exercises (fetch from source)
+exercises/
+
+# Ignore evaluation results
+results/
+
+# Ignore cache files
+.cache/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Temporary files
+*.tmp
+*.log
+.DS_Store
+
+# Don't ignore the scripts directory or README
+!scripts/
+!README.md
+!config.json

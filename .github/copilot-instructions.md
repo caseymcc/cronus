@@ -17,6 +17,54 @@ The web and VSCode clients should use as much shared code as possible to minimiz
 
 This project uses a Docker-based development environment. **All build commands must be run inside the Docker container.**
 
+## Testing
+
+The project uses Exercism exercises for agent evaluation and testing.
+
+### Agent Evaluation System
+
+The evaluation system tests agent performance on coding challenges across multiple languages:
+
+- **Location**: `evaluation/`
+- **Languages**: C++, Python, JavaScript
+- **Source**: Exercism exercise repositories (downloaded separately, not in repo)
+- **Runtime**: Docker container with all dependencies (pytest, jest, g++, etc.) - automatic
+
+#### Quick Start
+
+```bash
+# 1. Download exercises (one-time setup)
+./evaluation/setup.sh
+
+# 2. Configure agent endpoint (edit evaluation/config.json)
+# Set "endpoint" to your LLM server (e.g., llama.cpp at http://IP:8000/v1)
+# Set "api_type" to "openai" for OpenAI-compatible APIs
+
+# 3. Run evaluation (automatically uses Docker)
+./evaluation/run_evaluation.sh --language python
+
+# 4. View results
+xdg-open evaluation/results/latest/summary.html
+```
+
+#### Key Features
+- **Automatic Docker**: Runs in Docker automatically, no manual setup
+- **OpenAI-compatible**: Works with llama.cpp, vLLM, and other OpenAI API servers
+- **Multi-language**: C++, Python, JavaScript exercises
+- **Comprehensive metrics**: Correctness, code quality, performance, completeness
+
+#### Key Files
+- `evaluation/setup.sh` - Download Exercism exercises
+- `evaluation/run_evaluation.sh` - Run evaluations (auto-Docker)
+- `evaluation/config.json` - Configuration (endpoint, languages, limits)
+- `evaluation/Dockerfile` - Evaluation environment definition
+- `evaluation/QUICKSTART.md` - Detailed usage guide
+- `evaluation/README.md` - Full documentation
+
+See `evaluation/README.md` for comprehensive documentation.
+
+
+
 ### Running Commands in Docker
 
 Use `./run_local.sh` to execute commands inside the Docker container. The script automatically reuses an existing container if one is running, so you don't need to restart Docker for each command:

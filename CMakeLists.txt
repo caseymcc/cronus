@@ -47,5 +47,6 @@ endif()
 
 # Add the cronus server
 add_subdirectory(server/cronus)
+add_subdirectory(clients/cli)
 #add_subdirectory(web)
 

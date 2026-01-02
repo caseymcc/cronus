@@ -8,3 +8,8 @@ old/
 .github/prompts/
 .github/instructions/
 .specify/
+
+# Evaluation system - exercises downloaded from source
+evaluation/exercises/
+evaluation/results/
+evaluation/.cache/

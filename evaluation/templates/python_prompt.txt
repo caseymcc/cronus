@@ -1,0 +1,15 @@
+You are an expert Python programmer. Please solve the following programming exercise.
+
+Exercise: {exercise_name}
+
+{instructions}
+
+Requirements:
+- Write clean, Pythonic code following PEP 8
+- Use Python 3.x features appropriately
+- Include proper docstrings
+- Implement all required functions/classes
+- Ensure your code is efficient and readable
+- Make sure all tests pass
+
+Please provide only the implementation code. Do not include test code or explanations.

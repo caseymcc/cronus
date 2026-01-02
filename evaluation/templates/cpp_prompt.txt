@@ -1,0 +1,15 @@
+You are an expert C++ programmer. Please solve the following programming exercise.
+
+Exercise: {exercise_name}
+
+{instructions}
+
+Requirements:
+- Write clean, modern C++17 code
+- Follow best practices and C++ Core Guidelines
+- Include necessary headers
+- Implement all required functions
+- Ensure your code compiles without warnings
+- Make sure all tests pass
+
+Please provide only the implementation code. Do not include test code or explanations.

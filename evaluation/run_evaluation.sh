@@ -1,0 +1,297 @@
+#!/bin/bash
+# Main evaluation runner script
+# Runs agent evaluation against Exercism exercises
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+EXERCISES_DIR="${SCRIPT_DIR}/exercises"
+RESULTS_DIR="${SCRIPT_DIR}/results"
+SCRIPTS_DIR="${SCRIPT_DIR}/scripts"
+CONFIG_FILE="${SCRIPT_DIR}/config.json"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default values
+LANGUAGE=""
+EXERCISE=""
+DRY_RUN=false
+VERBOSE=false
+USE_DOCKER=false
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_debug() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "${BLUE}[DEBUG]${NC} $1"
+    fi
+}
+
+usage() {
+    cat << EOF
+Usage: $0 [OPTIONS]
+
+Run Cronus agent evaluation against Exercism exercises.
+Automatically runs in Docker container with all dependencies installed.
+
+OPTIONS:
+    -l, --language LANG     Run evaluation for specific language (cpp, python, javascript)
+    -e, --exercise NAME     Run specific exercise by name
+    -d, --dry-run          Show what would be evaluated without running
+    -v, --verbose          Enable verbose output
+    -h, --help             Show this help message
+
+EXAMPLES:
+    # Run all evaluations (automatically in Docker)
+    $0
+
+    # Run Python evaluations only
+    $0 --language python
+
+    # Run specific exercise
+    $0 --language python --exercise hello-world
+
+    # Dry run to see what would be executed
+    $0 --dry-run
+
+    # Verbose output
+    $0 --language cpp --verbose
+
+NOTE:
+    This script automatically runs inside the Cronus Docker container.
+    All dependencies (pytest, jest, g++, etc.) are available in the container.
+EOF
+}
+
+# Detect if we're already inside Docker
+IN_DOCKER=false
+if [ -f /.dockerenv ] || grep -q docker /proc/1/cgroup 2>/dev/null; then
+    IN_DOCKER=true
+fi
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -l|--language)
+            LANGUAGE="$2"
+            shift 2
+            ;;
+        -e|--exercise)
+            EXERCISE="$2"
+            shift 2
+            ;;
+        -d|--dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            log_error "Unknown option: $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+# If not already in Docker, re-execute this script inside the container
+if [ "$IN_DOCKER" = false ]; then
+    log_info "Running evaluation in Docker container..."
+    
+    # Build command to run in docker
+    DOCKER_CMD="./evaluation/run_evaluation.sh"
+    
+    if [ -n "$LANGUAGE" ]; then
+        DOCKER_CMD="$DOCKER_CMD --language $LANGUAGE"
+    fi
+    
+    if [ -n "$EXERCISE" ]; then
+        DOCKER_CMD="$DOCKER_CMD --exercise $EXERCISE"
+    fi
+    
+    if [ "$DRY_RUN" = true ]; then
+        DOCKER_CMD="$DOCKER_CMD --dry-run"
+    fi
+    
+    if [ "$VERBOSE" = true ]; then
+        DOCKER_CMD="$DOCKER_CMD --verbose"
+    fi
+    
+    # Execute in Docker using run_local.sh
+    exec "${PROJECT_ROOT}/run_local.sh" $DOCKER_CMD
+fi
+
+# We're now inside Docker, proceed with evaluation
+log_info "Running inside Docker container"
+
+# Check if exercises are downloaded
+if [ ! -d "${EXERCISES_DIR}" ]; then
+    log_error "Exercises not found. Run './evaluation/setup.sh' first."
+    exit 1
+fi
+
+# Check if Python is available (needed for evaluation scripts)
+if ! command -v python3 &> /dev/null; then
+    log_error "python3 is required but not installed."
+    exit 1
+fi
+
+# Check if config file exists
+if [ ! -f "${CONFIG_FILE}" ]; then
+    log_error "Config file not found: ${CONFIG_FILE}"
+    exit 1
+fi
+
+# Create results directory with timestamp
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+RESULTS_RUN_DIR="${RESULTS_DIR}/archive/${TIMESTAMP}"
+mkdir -p "${RESULTS_RUN_DIR}"
+
+# Create/update latest symlink
+rm -f "${RESULTS_DIR}/latest"
+ln -s "archive/${TIMESTAMP}" "${RESULTS_DIR}/latest"
+
+log_info "Starting evaluation run: ${TIMESTAMP}"
+log_info "Results will be saved to: ${RESULTS_RUN_DIR}"
+
+# Determine which languages to evaluate
+if [ -n "${LANGUAGE}" ]; then
+    LANGUAGES=("${LANGUAGE}")
+else
+    LANGUAGES=(cpp python javascript)
+fi
+
+# Check if agent server is running
+log_info "Checking if agent server is available..."
+AGENT_ENDPOINT=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['agent']['endpoint'])" 2>/dev/null || echo "http://localhost:8080")
+API_TYPE=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['agent'].get('api_type', 'cronus'))" 2>/dev/null || echo "cronus")
+
+# Check different endpoints based on API type
+if [ "$API_TYPE" = "openai" ]; then
+    # For OpenAI-compatible APIs, check /v1/models endpoint
+    if ! curl -s -f "${AGENT_ENDPOINT}/models" >/dev/null 2>&1; then
+        log_warn "Agent server not responding at ${AGENT_ENDPOINT}"
+        log_warn "Make sure the llama.cpp server is running"
+        
+        if [ "$DRY_RUN" = false ]; then
+            read -p "Continue anyway? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    else
+        log_info "OpenAI-compatible API server detected and responding"
+    fi
+else
+    # For Cronus API, check /health endpoint
+    if ! curl -s -o /dev/null -w "%{http_code}" "${AGENT_ENDPOINT}/health" | grep -q "200" 2>/dev/null; then
+        log_warn "Cronus server not responding at ${AGENT_ENDPOINT}"
+        log_warn "Make sure the server is running before evaluation"
+        log_warn "You can start it with: ./run_local.sh ninja -C build/linux_x64_debug && ./run_local.sh ./build/linux_x64_debug/grpc-server"
+        
+        if [ "$DRY_RUN" = false ]; then
+            read -p "Continue anyway? (y/N) " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    fi
+fi
+
+# Run evaluation for each language
+for lang in "${LANGUAGES[@]}"; do
+    log_info "Evaluating ${lang} exercises..."
+    
+    if [ ! -d "${EXERCISES_DIR}/${lang}" ]; then
+        log_warn "Exercises for ${lang} not found, skipping..."
+        continue
+    fi
+    
+    # Create language-specific results directory
+    LANG_RESULTS_DIR="${RESULTS_RUN_DIR}/${lang}"
+    mkdir -p "${LANG_RESULTS_DIR}"
+    
+    # Build evaluation command
+    EVAL_CMD="python3 ${SCRIPTS_DIR}/evaluate_exercise.py"
+    EVAL_CMD="${EVAL_CMD} --language ${lang}"
+    EVAL_CMD="${EVAL_CMD} --exercises-dir ${EXERCISES_DIR}/${lang}"
+    EVAL_CMD="${EVAL_CMD} --results-dir ${LANG_RESULTS_DIR}"
+    EVAL_CMD="${EVAL_CMD} --config ${CONFIG_FILE}"
+    
+    if [ -n "${EXERCISE}" ]; then
+        EVAL_CMD="${EVAL_CMD} --exercise ${EXERCISE}"
+    fi
+    
+    if [ "$VERBOSE" = true ]; then
+        EVAL_CMD="${EVAL_CMD} --verbose"
+    fi
+    
+    if [ "$DRY_RUN" = true ]; then
+        log_info "Would run: ${EVAL_CMD}"
+    else
+        log_debug "Running: ${EVAL_CMD}"
+        ${EVAL_CMD} || log_warn "Evaluation for ${lang} completed with errors"
+    fi
+done
+
+# Generate summary report
+if [ "$DRY_RUN" = false ]; then
+    log_info "Generating summary report..."
+    python3 "${SCRIPTS_DIR}/generate_report.py" \
+        --results-dir "${RESULTS_RUN_DIR}" \
+        --output "${RESULTS_RUN_DIR}/summary.html" \
+        --format html
+    
+    python3 "${SCRIPTS_DIR}/generate_report.py" \
+        --results-dir "${RESULTS_RUN_DIR}" \
+        --output "${RESULTS_RUN_DIR}/summary.json" \
+        --format json
+    
+    log_info "Evaluation complete!"
+    echo ""
+    echo "Results saved to: ${RESULTS_RUN_DIR}"
+    echo "Summary report: ${RESULTS_RUN_DIR}/summary.html"
+    echo "JSON report: ${RESULTS_RUN_DIR}/summary.json"
+    echo ""
+    
+    # Display quick summary
+    if [ -f "${RESULTS_RUN_DIR}/summary.json" ]; then
+        python3 -c "
+import json
+import sys
+with open('${RESULTS_RUN_DIR}/summary.json', 'r') as f:
+    data = json.load(f)
+    print('Quick Summary:')
+    for lang, stats in data.get('languages', {}).items():
+        total = stats.get('total', 0)
+        passed = stats.get('passed', 0)
+        print(f'  {lang}: {passed}/{total} passed ({passed*100//total if total > 0 else 0}%)')
+" 2>/dev/null || true
+    fi
+else
+    log_info "Dry run complete - no changes made"
+fi

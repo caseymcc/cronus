@@ -38,6 +38,12 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# Install Python packages for evaluation system
+RUN pip3 install --no-cache-dir \
+    requests \
+    pytest \
+    pytest-cov
+
 # Install vcpkg
 WORKDIR /opt
 RUN git clone https://github.com/Microsoft/vcpkg.git && \
