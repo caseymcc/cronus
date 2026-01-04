@@ -29,13 +29,14 @@
     }
   },
   "agent": {
-    "endpoint": "http://192.168.2.106:8000/v1",
-    "api_type": "openai",
+    "endpoint": "http://localhost:9000/api",
     "model": "default",
     "max_tokens": 4096,
     "temperature": 0.2,
     "retry_attempts": 3,
-    "retry_delay_seconds": 5
+    "retry_delay_seconds": 5,
+    "cronus_executable": "/app/build/linux_x64_debug/server/cronus/cronus",
+    "cronus_working_dir": "/tmp/cronus_eval"
   },
   "evaluation": {
     "parallel_workers": 1,

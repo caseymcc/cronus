@@ -4,7 +4,22 @@ This directory contains the infrastructure for evaluating Cronus agent performan
 
 ## Overview
 
-The evaluation system tests the agent's ability to solve programming challenges across multiple languages (C++, Python, JavaScript) using exercises from the Exercism platform.
+The evaluation system tests the Cronus agent's ability to solve programming challenges across multiple languages (C++, Python, JavaScript) using exercises from the Exercism platform.
+
+## Architecture
+
+```
+Evaluation Script → Cronus Server → Cronus Coder Agent → arbiterAI → LLM
+                    (port 9000)     (specialized prompts)  (unified API)
+```
+
+The evaluation system:
+- Automatically starts the Cronus server
+- Sends code generation requests via REST API (`/api/input`)
+- Listens for responses via Server-Sent Events (SSE)
+- Captures full interaction details for debugging
+- Automatically stops the server after evaluation
+
 
 ## Directory Structure
 

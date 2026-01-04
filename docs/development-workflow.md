@@ -17,43 +17,190 @@
 git clone https://github.com/yourusername/cronus.git
 cd cronus
 
-# Start Docker development environment
-./runDocker.sh
-
-# Inside container: Build the project
-cd server/loreforge
-./build.sh
+# Build using Docker environment
+./run_local.sh ./generate.sh
+./run_local.sh ninja -C build/linux_x64_debug
 
 # Run tests
-./runServer.sh start
-cd build/linux_x64_debug
-./loreforge_tests
-./runServer.sh stop
+./run_local.sh build/linux_x64_debug/server/cronus/cronus --help
 ```
+
+## Cronus Operational Modes
+
+Cronus supports two operational modes. The mode is automatically detected based on the directory context.
+
+### Single-Agent Mode Setup
+
+Use this mode when working with an existing repository and a single AI agent.
+
+```bash
+# Navigate to your existing project
+cd /path/to/my-project
+
+# Initialize Cronus in single-agent mode
+cronus init
+
+# This creates:
+# .cronus/
+# ├── config.json          # Agent configuration
+# ├── state.json           # Agent state
+# ├── tasks/               # Task tracking
+# ├── context/             # Conversation history
+# └── cache/               # Temporary files
+
+# Start Cronus server
+cronus serve
+
+# Or use with CLI
+cronus chat "Implement feature X"
+```
+
+**Characteristics:**
+- One agent per repository
+- Configuration in `.cronus/` at repo root
+- Direct modification of repository files
+- Persistent context across sessions
+
+### Multi-Agent Mode Setup
+
+Use this mode for parallel agent experimentation and comparison.
+
+```bash
+# Create a new workspace directory
+mkdir my-workspace
+cd my-workspace
+
+# Initialize Cronus in multi-agent mode
+cronus init --multi-agent
+
+# This creates:
+# .cronus/
+# ├── multi-agent.marker
+# ├── config.json          # Global configuration
+# ├── shared/              # Shared resources
+# └── comparison/          # Agent comparison data
+#
+# agents/                  # (created separately for each agent)
+
+# Create agents from a source repository
+cronus agent create alpha --source=/path/to/source/repo --model=gpt-4
+cronus agent create beta --source=/path/to/source/repo --model=claude-3-opus
+
+# This creates:
+# agents/
+# ├── alpha/
+# │   ├── .cronus/         # Alpha's configuration
+# │   ├── .git/            # Alpha's repository
+# │   └── src/             # Alpha's source code
+# └── beta/
+#     ├── .cronus/         # Beta's configuration
+#     ├── .git/            # Beta's repository
+#     └── src/             # Beta's source code
+
+# Start Cronus server (manages all agents)
+cronus serve
+
+# Interact with specific agents
+cronus chat --agent=alpha "Implement feature X"
+cronus chat --agent=beta "Implement feature X"
+
+# Compare results
+cronus compare alpha beta
+```
+
+**Characteristics:**
+- Multiple agents with isolated repositories
+- Each agent has its own repo copy
+- Parallel execution
+- Built-in comparison tools
 
 ## Development Workflow
 
-### 1. Feature Development
+### 1. Single-Agent Feature Development
 
 ```bash
+# In your project directory
+cd /path/to/my-project
+
+# Ensure Cronus is initialized
+cronus init  # If not already done
+
+# Start a development session
+cronus serve &
+
+# Work on features using CLI or web interface
+cronus chat "Add logging to the database module"
+cronus chat "Write unit tests for the new feature"
+cronus chat "Optimize the search algorithm"
+
+# Review changes
+git diff
+
+# Commit when satisfied
+git add .
+git commit -m "Add logging and tests"
+```
+
+### 2. Multi-Agent Development and Comparison
+
+### 2. Multi-Agent Development and Comparison
+
+```bash
+# Create multi-agent workspace
+mkdir experiment-workspace
+cd experiment-workspace
+
+# Initialize with multiple agents
+cronus init --multi-agent
+cronus agent create gpt4 --source=/path/to/project --model=gpt-4
+cronus agent create claude --source=/path/to/project --model=claude-3-opus
+cronus agent create deepseek --source=/path/to/project --model=deepseek-coder
+
+# Start server
+cronus serve &
+
+# Give same task to all agents
+TASK="Refactor the authentication module to use dependency injection"
+cronus chat --agent=gpt4 "$TASK"
+cronus chat --agent=claude "$TASK"
+cronus chat --agent=deepseek "$TASK"
+
+# Compare implementations
+cronus compare gpt4 claude deepseek --metric=all
+
+# Review each agent's solution
+cd .cronus/agents/gpt4/repo && git diff
+cd .cronus/agents/claude/repo && git diff
+cd .cronus/agents/deepseek/repo && git diff
+
+# Select best solution and merge
+cronus merge --agent=claude --to=/path/to/project
+```
+
+### 3. Cronus Development (Building Cronus Itself)
+
+When working on the Cronus project itself:
+
+```bash
+# Clone Cronus repository
+git clone https://github.com/yourusername/cronus.git
+cd cronus
+
 # Create feature branch
-git checkout -b feature/new-analysis
+git checkout -b feature/new-feature
+
+# Build using Docker
+./run_local.sh ./generate.sh
+./run_local.sh ninja -C build/linux_x64_debug
+
+# Run tests
+./run_local.sh build/linux_x64_debug/server/cronus/cronus --test
 
 # Make changes in your IDE
-# (Container mounts workspace, changes are live)
+# (Docker container mounts workspace, changes are live)
 
-# Build
-./build.sh
-
-# Test
-./runServer.sh restart
-./loreforge_tests
-
-# Commit changes
-git add .
-git commit -m "Add new analysis feature"
-git push origin feature/new-analysis
-```
+# Rebuild
+./run_local.sh ninja -C build/linux_x64_debug
 
 ### 2. Iterative Development
 

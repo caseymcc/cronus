@@ -33,6 +33,7 @@ void RestApi::start()
     }
     
     setupRoutes();
+    setupLoggerCallback();
     
     m_running = true;
     m_serverThread = std::thread([this]() {
@@ -107,6 +108,11 @@ void RestApi::setupRoutes()
             {"message", "Cronus API is running"}
         };
         res.set_content(response.dump(), "application/json");
+    });
+    
+    // Get logs endpoint
+    m_server->Get("/api/logs", [this](const httplib::Request& req, httplib::Response& res) {
+        handleGetLogs(req, res);
     });
     
     // SSE endpoint for real-time updates
@@ -608,4 +614,130 @@ void RestApi::handleGetFileContent(const httplib::Request& req, httplib::Respons
     }
 }
 
+void RestApi::setupLoggerCallback()
+{
+    // Set up logger callback to capture and broadcast logs
+    Logger::instance().setCallback([this](LogLevel level, const std::string& message) {
+        // Convert LogLevel to string
+        std::string levelStr;
+        switch (level) {
+            case LogLevel::Debug: levelStr = "debug"; break;
+            case LogLevel::Info: levelStr = "info"; break;
+            case LogLevel::Warning: levelStr = "warning"; break;
+            case LogLevel::Error: levelStr = "error"; break;
+        }
+        
+        // Also print to console (original behavior)
+        auto now = std::time(nullptr);
+        auto tm = *std::localtime(&now);
+        std::stringstream timestampStream;
+        timestampStream << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+        std::string timestamp = timestampStream.str();
+        
+        if (level == LogLevel::Error) {
+            std::cerr << timestamp << " [" << levelStr << "] " << message << std::endl;
+        } else {
+            std::cout << timestamp << " [" << levelStr << "] " << message << std::endl;
+        }
+        
+        // Store in history
+        {
+            std::lock_guard<std::mutex> lock(m_logsMutex);
+            m_logHistory.push_back({timestamp, levelStr, message});
+            
+            // Trim history if needed
+            if (m_logHistory.size() > m_maxLogHistory) {
+                m_logHistory.erase(m_logHistory.begin());
+            }
+        }
+        
+        // Broadcast to connected clients
+        broadcastLog(levelStr, message);
+    });
+}
+
+void RestApi::broadcastLog(const std::string& level, const std::string& message)
+{
+    std::lock_guard<std::mutex> lock(m_sseClientsMutex);
+    
+    auto now = std::time(nullptr);
+    auto tm = *std::localtime(&now);
+    std::stringstream timestampStream;
+    timestampStream << std::put_time(&tm, "%Y-%m-%d %H:%M:%S");
+    
+    json logEvent = {
+        {"type", "log"},
+        {"timestamp", timestampStream.str()},
+        {"level", level},
+        {"message", message}
+    };
+    
+    std::string eventData = "data: " + logEvent.dump() + "\n\n";
+    
+    // Send to all connected clients
+    for (auto it = m_sseClients.begin(); it != m_sseClients.end();) {
+        auto& client = *it;
+        if (!client->connected || !client->send(eventData)) {
+            it = m_sseClients.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+void RestApi::handleGetLogs(const httplib::Request& req, httplib::Response& res)
+{
+    try {
+        // Get optional query parameters
+        int limit = 100; // Default limit
+        std::string levelFilter = ""; // No filter by default
+        
+        if (req.has_param("limit")) {
+            limit = std::stoi(req.get_param_value("limit"));
+            limit = std::min(limit, 1000); // Cap at 1000
+        }
+        
+        if (req.has_param("level")) {
+            levelFilter = req.get_param_value("level");
+        }
+        
+        json logsArray = json::array();
+        
+        {
+            std::lock_guard<std::mutex> lock(m_logsMutex);
+            
+            // Get logs from history
+            int count = 0;
+            for (auto it = m_logHistory.rbegin(); it != m_logHistory.rend() && count < limit; ++it) {
+                // Apply level filter if specified
+                if (!levelFilter.empty() && it->level != levelFilter) {
+                    continue;
+                }
+                
+                logsArray.push_back({
+                    {"timestamp", it->timestamp},
+                    {"level", it->level},
+                    {"message", it->message}
+                });
+                count++;
+            }
+        }
+        
+        json response = {
+            {"logs", logsArray},
+            {"count", logsArray.size()}
+        };
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        res.status = 500;
+        json errorResponse = {
+            {"error", std::string("Error getting logs: ") + e.what()}
+        };
+        res.set_content(errorResponse.dump(), "application/json");
+    }
+}
+
 } // namespace cronus
+

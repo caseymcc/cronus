@@ -64,7 +64,7 @@ The container will persist between commands, making subsequent builds much faste
 - `-r`: Rebuild Docker image before running
 - `-s`: Stop and remove existing container before starting
 - `-v <path>`: Specify custom vcpkg cache directory
-- `-p <port>`: Specify host API port (default: 8080)
+- `-p <port>`: Specify host API port (default: 9000)
 
 ### Web Development Server
 

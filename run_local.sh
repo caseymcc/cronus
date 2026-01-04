@@ -3,35 +3,71 @@
 CONTAINER_NAME="cronus_dev"
 DEFAULT_CACHE_DIR="$HOME/.cache/vcpkg"
 VCPKG_CACHE_DIR="${VCPKG_CACHE_DIR:-$DEFAULT_CACHE_DIR}"
-HOST_API_PORT=8080  # Default port for the host API
+HOST_API_PORT=9000  # Default port for the host API
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 [-r] [-s] [-a] [-p PORT]"
+    echo "Usage: $0 [-r] [-s] [-a] [-p PORT] [-d] [command...]"
     echo "  -r: Rebuild Docker image"
     echo "  -s: Stop running container before starting"
     echo "  -v: Path to vcpkg installation on host system"
     echo "  -a: Enable access to host API (for development server)"
-    echo "  -p: Port where Cronus API is running on host (default: 8080)"
+    echo "  -p: Port where Cronus API is running on host (default: 9000)"
+    echo "  -d: Start the debug client (runs on host, not in Docker)"
+    echo ""
+    echo "Examples:"
+    echo "  $0                       # Start interactive shell in container"
+    echo "  $0 -d                    # Build and start debug client on host"
+    echo "  $0 bash -c 'ls -la'      # Run command in container"
     exit 1
 }
 
 # Parse command line options
 REBUILD=0
 STOP=0
+DEBUG_CLIENT=0
 
-while getopts "rsv:ap:" opt; do
+while getopts "rsv:ap:d" opt; do
     case $opt in
         r) REBUILD=1 ;;
         s) STOP=1 ;;
         v) VCPKG_CACHE_DIR="$OPTARG" ;;
         p) HOST_API_PORT="$OPTARG" ;;
+        d) DEBUG_CLIENT=1 ;;
         ?) usage ;;
     esac
 done
 
 # Shift past the parsed options to get remaining arguments
 shift $((OPTIND-1))
+
+# Handle debug client launch
+if [ $DEBUG_CLIENT -eq 1 ]; then
+    echo "Building and starting debug client..."
+    
+    # First, ensure dependencies are built in Docker
+    echo "Building shared libraries in Docker..."
+    $0 ./clients/build-debug-client.sh
+    
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to build debug client dependencies"
+        exit 1
+    fi
+    
+    # Start the debug client inside Docker with X11 forwarding
+    echo "Starting debug client in Docker with X11 display..."
+    
+    # Allow X11 connections from Docker
+    xhost +local:docker 2>/dev/null || echo "Warning: xhost not available, X11 forwarding may not work"
+    
+    # Run Electron in Docker with X11 display
+    docker exec -it \
+        -e DISPLAY=$DISPLAY \
+        $CONTAINER_NAME \
+        bash -c "cd /app/clients/debug && npm start"
+    
+    exit $?
+fi
 
 # Remove existing container if requested
 if [ $STOP -eq 1 ]; then
@@ -73,6 +109,12 @@ if [ -n "$SSH_AUTH_SOCK" ]; then
     GIT_MOUNTS="$GIT_MOUNTS -v $SSH_AUTH_SOCK:/ssh-agent -e SSH_AUTH_SOCK=/ssh-agent"
 fi
 
+# Set up X11 forwarding for GUI applications
+X11_OPTS=""
+if [ -n "$DISPLAY" ]; then
+    X11_OPTS="-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix:rw"
+fi
+
 # Check if container is already running
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     echo "Using existing container: $CONTAINER_NAME"
@@ -98,6 +140,7 @@ else
             -v $(pwd):/app \
             -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
             $GIT_MOUNTS \
+            $X11_OPTS \
             -p 3000:3000 \
             $NETWORK_OPTS \
             cronus
@@ -112,6 +155,7 @@ else
             -v $(pwd):/app \
             -v "$VCPKG_CACHE_DIR":/vcpkg_cache \
             $GIT_MOUNTS \
+            $X11_OPTS \
             -p 3000:3000 \
             $NETWORK_OPTS \
             cronus tail -f /dev/null

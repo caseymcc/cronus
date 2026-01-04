@@ -14,15 +14,25 @@ RUN apt-get update && apt-get install -y \
     g++ \
     cmake \
     make \
-    nodejs \
-    npm \
+    ca-certificates \
+    gnupg \
+    libgfortran5 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20.x (LTS)
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Python testing tools
 RUN pip3 install --no-cache-dir \
     pytest \
     pytest-cov \
-    requests
+    requests \
+    sseclient-py
 
 # Install Node.js testing tools globally
 RUN npm install -g jest

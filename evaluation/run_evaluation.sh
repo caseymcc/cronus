@@ -120,27 +120,28 @@ done
 if [ "$IN_DOCKER" = false ]; then
     log_info "Running evaluation in Docker container..."
     
-    # Build command to run in docker
-    DOCKER_CMD="./evaluation/run_evaluation.sh"
+    # Build arguments array to pass to docker
+    DOCKER_ARGS=()
     
     if [ -n "$LANGUAGE" ]; then
-        DOCKER_CMD="$DOCKER_CMD --language $LANGUAGE"
+        DOCKER_ARGS+=("--language" "$LANGUAGE")
     fi
     
     if [ -n "$EXERCISE" ]; then
-        DOCKER_CMD="$DOCKER_CMD --exercise $EXERCISE"
+        DOCKER_ARGS+=("--exercise" "$EXERCISE")
     fi
     
     if [ "$DRY_RUN" = true ]; then
-        DOCKER_CMD="$DOCKER_CMD --dry-run"
+        DOCKER_ARGS+=("--dry-run")
     fi
     
     if [ "$VERBOSE" = true ]; then
-        DOCKER_CMD="$DOCKER_CMD --verbose"
+        DOCKER_ARGS+=("--verbose")
     fi
     
-    # Execute in Docker using run_local.sh
-    exec "${PROJECT_ROOT}/run_local.sh" $DOCKER_CMD
+    # Execute in Docker using evaluation's run_in_docker.sh
+    # The container runs from /app/evaluation, so we can call the script directly
+    exec "${SCRIPT_DIR}/run_in_docker.sh" ./run_evaluation.sh "${DOCKER_ARGS[@]}"
 fi
 
 # We're now inside Docker, proceed with evaluation
@@ -157,6 +158,32 @@ if ! command -v python3 &> /dev/null; then
     log_error "python3 is required but not installed."
     exit 1
 fi
+
+# Check if required Python packages are installed
+log_info "Checking Python dependencies..."
+MISSING_DEPS=()
+
+if ! python3 -c "import requests" 2>/dev/null; then
+    MISSING_DEPS+=("requests")
+fi
+
+if ! python3 -c "import sseclient" 2>/dev/null; then
+    MISSING_DEPS+=("sseclient-py")
+fi
+
+if [ ${#MISSING_DEPS[@]} -gt 0 ]; then
+    log_error "Missing Python dependencies: ${MISSING_DEPS[*]}"
+    log_error ""
+    log_error "These packages should be installed in the Docker image."
+    log_error "Please rebuild the evaluation Docker image:"
+    log_error "  cd evaluation && docker build -t cronus-evaluation -f Dockerfile ."
+    log_error ""
+    log_error "Or install manually inside container:"
+    log_error "  pip3 install ${MISSING_DEPS[*]}"
+    exit 1
+fi
+
+log_info "All Python dependencies are installed"
 
 # Check if config file exists
 if [ ! -f "${CONFIG_FILE}" ]; then
@@ -183,44 +210,35 @@ else
     LANGUAGES=(cpp python javascript)
 fi
 
-# Check if agent server is running
-log_info "Checking if agent server is available..."
-AGENT_ENDPOINT=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['agent']['endpoint'])" 2>/dev/null || echo "http://localhost:8080")
-API_TYPE=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['agent'].get('api_type', 'cronus'))" 2>/dev/null || echo "cronus")
+# Check if Cronus executable is built (required for evaluation)
+log_info "Checking if Cronus server is built..."
+CRONUS_EXECUTABLE=$(python3 -c "import json; print(json.load(open('${CONFIG_FILE}'))['agent'].get('cronus_executable', 'build/linux_x64_debug/server/cronus/cronus'))" 2>/dev/null || echo "build/linux_x64_debug/server/cronus/cronus")
 
-# Check different endpoints based on API type
-if [ "$API_TYPE" = "openai" ]; then
-    # For OpenAI-compatible APIs, check /v1/models endpoint
-    if ! curl -s -f "${AGENT_ENDPOINT}/models" >/dev/null 2>&1; then
-        log_warn "Agent server not responding at ${AGENT_ENDPOINT}"
-        log_warn "Make sure the llama.cpp server is running"
-        
-        if [ "$DRY_RUN" = false ]; then
-            read -p "Continue anyway? (y/N) " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                exit 1
-            fi
-        fi
-    else
-        log_info "OpenAI-compatible API server detected and responding"
-    fi
-else
-    # For Cronus API, check /health endpoint
-    if ! curl -s -o /dev/null -w "%{http_code}" "${AGENT_ENDPOINT}/health" | grep -q "200" 2>/dev/null; then
-        log_warn "Cronus server not responding at ${AGENT_ENDPOINT}"
-        log_warn "Make sure the server is running before evaluation"
-        log_warn "You can start it with: ./run_local.sh ninja -C build/linux_x64_debug && ./run_local.sh ./build/linux_x64_debug/grpc-server"
-        
-        if [ "$DRY_RUN" = false ]; then
-            read -p "Continue anyway? (y/N) " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                exit 1
-            fi
-        fi
-    fi
+# Convert to absolute path
+if [[ ! "$CRONUS_EXECUTABLE" = /* ]]; then
+    CRONUS_EXECUTABLE="${PROJECT_ROOT}/${CRONUS_EXECUTABLE}"
 fi
+
+if [ ! -f "${CRONUS_EXECUTABLE}" ]; then
+    log_error "Cronus executable not found at: ${CRONUS_EXECUTABLE}"
+    log_error ""
+    log_error "Please build Cronus first:"
+    log_error "  cd ${PROJECT_ROOT}"
+    log_error "  ./run_local.sh ./generate.sh"
+    log_error "  ./run_local.sh ninja -C build/linux_x64_debug"
+    log_error ""
+    log_error "The evaluation system requires a built Cronus server."
+    exit 1
+fi
+
+if [ ! -x "${CRONUS_EXECUTABLE}" ]; then
+    log_error "Cronus executable is not executable: ${CRONUS_EXECUTABLE}"
+    log_error "Run: chmod +x ${CRONUS_EXECUTABLE}"
+    exit 1
+fi
+
+log_info "Found Cronus executable: ${CRONUS_EXECUTABLE}"
+log_info "Cronus server will be started automatically by evaluation script"
 
 # Run evaluation for each language
 for lang in "${LANGUAGES[@]}"; do
@@ -254,7 +272,28 @@ for lang in "${LANGUAGES[@]}"; do
         log_info "Would run: ${EVAL_CMD}"
     else
         log_debug "Running: ${EVAL_CMD}"
-        ${EVAL_CMD} || log_warn "Evaluation for ${lang} completed with errors"
+        if ${EVAL_CMD}; then
+            log_info "Evaluation for ${lang} completed successfully"
+        else
+            EXIT_CODE=$?
+            log_error "Evaluation for ${lang} failed with exit code ${EXIT_CODE}"
+            
+            # Check common failure reasons
+            if [ ${EXIT_CODE} -eq 1 ]; then
+                log_error ""
+                log_error "Common causes:"
+                log_error "  - Cronus server failed to start (check build status)"
+                log_error "  - Port 9000 already in use (check with: netstat -tlnp | grep 9000)"
+                log_error "  - Cronus server crashed during evaluation"
+                log_error "  - Configuration error in ${CONFIG_FILE}"
+                log_error ""
+                log_error "Check the output above for specific error messages."
+            fi
+            
+            # Don't continue with other languages if this one failed
+            log_warn "Stopping evaluation due to errors"
+            exit ${EXIT_CODE}
+        fi
     fi
 done
 
@@ -272,6 +311,7 @@ if [ "$DRY_RUN" = false ]; then
         --format json
     
     log_info "Evaluation complete!"
+    log_info "Cronus server has been stopped automatically"
     echo ""
     echo "Results saved to: ${RESULTS_RUN_DIR}"
     echo "Summary report: ${RESULTS_RUN_DIR}/summary.html"

@@ -16,6 +16,31 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import requests
 
+# Add scripts directory to Python path
+SCRIPT_DIR = Path(__file__).parent
+sys.path.insert(0, str(SCRIPT_DIR))
+
+# Import Cronus client
+try:
+    from cronus_client import CronusClient
+except ImportError as e:
+    print(f"ERROR: Failed to import cronus_client module: {e}")
+    print(f"Script directory: {SCRIPT_DIR}")
+    
+    # Check if file exists
+    cronus_client_path = SCRIPT_DIR / 'cronus_client.py'
+    if not cronus_client_path.exists():
+        print(f"ERROR: cronus_client.py not found at {cronus_client_path}")
+        sys.exit(1)
+    
+    # Check for missing dependencies
+    print("\nThis is likely due to missing Python dependencies.")
+    print("Required packages: requests, sseclient-py")
+    print("\nTo fix:")
+    print("  1. Rebuild Docker image: ./run_local.sh -r")
+    print("  2. Or install manually: pip3 install requests sseclient-py")
+    sys.exit(1)
+
 
 class ExerciseEvaluator:
     """Evaluates agent performance on a single exercise."""
@@ -24,6 +49,44 @@ class ExerciseEvaluator:
         self.config = config
         self.verbose = verbose
         self.agent_endpoint = config['agent']['endpoint']
+        self.cronus_client = None
+        
+        # Initialize Cronus client
+        cronus_config = config['agent']
+        executable = cronus_config.get('cronus_executable', 'build/linux_x64_debug/server/cronus/cronus')
+        working_dir = cronus_config.get('cronus_working_dir', '/tmp/cronus_eval')
+        
+        # Parse endpoint to get port
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.agent_endpoint)
+        port = parsed.port or 9000
+        
+        self.log("Initializing Cronus client...")
+        self.cronus_client = CronusClient(
+            executable_path=executable,
+            working_dir=working_dir,
+            api_url=f"{parsed.scheme}://{parsed.hostname}:{port}",
+            port=port
+        )
+        
+        # Start the server
+        self.log("Starting Cronus server...")
+        if not self.cronus_client.start_server():
+            error_msg = (
+                "Failed to start Cronus server. Please ensure:\n"
+                "1. Cronus is built: ./run_local.sh ninja -C build/linux_x64_debug\n"
+                f"2. Executable exists at: {executable}\n"
+                f"3. Port {port} is available"
+            )
+            self.log(error_msg, "ERROR")
+            raise RuntimeError(error_msg)
+        
+        self.log("Cronus server started successfully")
+    
+    def __del__(self):
+        """Cleanup on deletion."""
+        if self.cronus_client:
+            self.cronus_client.stop_server()
         
     def log(self, message: str, level: str = 'INFO'):
         """Log a message with timestamp."""
@@ -77,64 +140,60 @@ Make sure your code passes all tests and follows best practices for {language}.
 """
         return prompt
     
-    def invoke_agent(self, prompt: str, language: str) -> Optional[str]:
-        """Call the agent to generate a solution using OpenAI-compatible API."""
+    def invoke_agent(self, prompt: str, language: str) -> Dict[str, Any]:
+        """Call the Cronus agent to generate a solution.
+        
+        Returns a dict with:
+        - code: The generated code
+        - raw_response: The full response from the agent
+        - interaction_details: Detailed log of the interaction
+        """
         try:
-            api_type = self.config['agent'].get('api_type', 'cronus')
+            interaction_details = {
+                'prompt': prompt,
+                'endpoint': self.agent_endpoint,
+                'timestamp': time.strftime('%Y-%m-%d %H:%M:%S')
+            }
             
-            if api_type == 'openai':
-                # OpenAI-compatible API (llama.cpp, etc.)
-                response = requests.post(
-                    f"{self.agent_endpoint}/chat/completions",
-                    json={
-                        'messages': [
-                            {
-                                'role': 'system',
-                                'content': f'You are an expert {language} programmer. Provide only code solutions without explanations.'
-                            },
-                            {
-                                'role': 'user',
-                                'content': prompt
-                            }
-                        ],
-                        'max_tokens': self.config['agent']['max_tokens'],
-                        'temperature': self.config['agent']['temperature'],
-                        'stream': False
-                    },
-                    timeout=self.config['languages'][language]['timeout_seconds']
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    content = result['choices'][0]['message']['content']
-                    return content
-                else:
-                    self.log(f"Agent request failed: {response.status_code} - {response.text}", "ERROR")
-                    return None
+            # Use Cronus client
+            if not self.cronus_client:
+                error_msg = "Cronus client not initialized"
+                self.log(error_msg, "ERROR")
+                interaction_details['error'] = error_msg
+                return {
+                    'code': None,
+                    'raw_response': None,
+                    'interaction_details': interaction_details
+                }
+            
+            timeout = self.config['languages'][language]['timeout_seconds']
+            result = self.cronus_client.generate_code(prompt, timeout=timeout)
+            
+            if result and result['success']:
+                interaction_details['raw_response'] = result['raw_response']
+                return {
+                    'code': result['code'],
+                    'raw_response': result['raw_response'],
+                    'interaction_details': interaction_details
+                }
             else:
-                # Original Cronus API format
-                response = requests.post(
-                    f"{self.agent_endpoint}/api/generate",
-                    json={
-                        'prompt': prompt,
-                        'language': language,
-                        'model': self.config['agent']['model'],
-                        'max_tokens': self.config['agent']['max_tokens'],
-                        'temperature': self.config['agent']['temperature']
-                    },
-                    timeout=self.config['languages'][language]['timeout_seconds']
-                )
+                error_msg = result.get('error', 'Unknown error') if result else 'No response from Cronus'
+                interaction_details['error'] = error_msg
+                return {
+                    'code': None,
+                    'raw_response': None,
+                    'interaction_details': interaction_details
+                }
                 
-                if response.status_code == 200:
-                    result = response.json()
-                    return result.get('code', result.get('response', ''))
-                else:
-                    self.log(f"Agent request failed: {response.status_code}", "ERROR")
-                    return None
-                
-        except requests.exceptions.RequestException as e:
-            self.log(f"Error calling agent: {e}", "ERROR")
-            return None
+        except Exception as e:
+            error_msg = f"Error calling agent: {e}"
+            self.log(error_msg, "ERROR")
+            interaction_details['error'] = error_msg
+            return {
+                'code': None,
+                'raw_response': None,
+                'interaction_details': interaction_details
+            }
     
     def extract_code(self, response: str, language: str) -> str:
         """Extract code from agent response (remove markdown, etc.)."""
@@ -240,21 +299,26 @@ Make sure your code passes all tests and follows best practices for {language}.
         # Invoke agent
         self.log(f"Invoking agent for {exercise['name']}...")
         agent_start_time = time.time()
-        response = self.invoke_agent(prompt, language)
+        agent_response = self.invoke_agent(prompt, language)
         agent_elapsed_time = time.time() - agent_start_time
         
-        if not response:
+        # Extract results from agent response dict
+        generated_code_raw = agent_response.get('code')
+        interaction_details = agent_response.get('interaction_details', {})
+        
+        if not generated_code_raw:
             return {
                 'success': False,
-                'error': 'Agent invocation failed',
+                'error': 'Agent invocation failed - no code generated',
                 'exercise': exercise['name'],
                 'prompt': prompt,
-                'agent_response': None,
-                'agent_elapsed_time': agent_elapsed_time
+                'agent_response': agent_response.get('raw_response'),
+                'agent_elapsed_time': agent_elapsed_time,
+                'interaction_details': interaction_details
             }
         
-        # Extract code
-        generated_code = self.extract_code(response, language)
+        # Extract code (remove markdown formatting, etc.)
+        generated_code = self.extract_code(generated_code_raw, language)
         
         # Create temporary work directory for testing
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -284,9 +348,10 @@ Make sure your code passes all tests and follows best practices for {language}.
             # Additional details for debugging
             'interaction_details': {
                 'prompt': prompt,
-                'raw_response': response,
+                'raw_response': agent_response.get('raw_response'),
                 'extracted_code': generated_code,
-                'instructions': exercise['instructions']
+                'instructions': exercise['instructions'],
+                **interaction_details  # Merge in the detailed interaction log
             }
         }
         
@@ -323,14 +388,29 @@ def main():
     args = parser.parse_args()
     
     # Load configuration
-    with open(args.config, 'r') as f:
-        config = json.load(f)
+    try:
+        with open(args.config, 'r') as f:
+            config = json.load(f)
+    except Exception as e:
+        print(f"ERROR: Failed to load configuration: {e}")
+        sys.exit(1)
     
     # Create results directory
     args.results_dir.mkdir(parents=True, exist_ok=True)
     
     # Initialize evaluator
-    evaluator = ExerciseEvaluator(config, args.verbose)
+    try:
+        evaluator = ExerciseEvaluator(config, args.verbose)
+    except RuntimeError as e:
+        print(f"\nERROR: Failed to initialize evaluator:")
+        print(f"{e}")
+        print("\nEvaluation cannot continue without Cronus server.")
+        sys.exit(1)
+    except Exception as e:
+        print(f"ERROR: Unexpected error during initialization: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
     
     # Find exercises to evaluate
     exercises_path = args.exercises_dir / 'exercises' / 'practice'
@@ -340,6 +420,7 @@ def main():
         exercise_path = exercises_path / args.exercise
         if not exercise_path.exists():
             print(f"Exercise not found: {exercise_path}")
+            evaluator.cronus_client.stop_server()
             sys.exit(1)
         exercises = [exercise_path]
     else:
@@ -351,15 +432,29 @@ def main():
         if max_exercises:
             exercises = exercises[:max_exercises]
     
-    # Run evaluations
+    # Run evaluations with cleanup on exit
     results = []
     passed_count = 0
     
-    for exercise_path in exercises:
-        result = evaluator.evaluate_exercise(exercise_path, args.language, args.results_dir)
-        results.append(result)
-        if result.get('passed', False):
-            passed_count += 1
+    try:
+        for exercise_path in exercises:
+            result = evaluator.evaluate_exercise(exercise_path, args.language, args.results_dir)
+            results.append(result)
+            if result.get('passed', False):
+                passed_count += 1
+    except KeyboardInterrupt:
+        print("\n\nEvaluation interrupted by user")
+        evaluator.cronus_client.stop_server()
+        sys.exit(1)
+    except Exception as e:
+        print(f"\nERROR during evaluation: {e}")
+        import traceback
+        traceback.print_exc()
+        evaluator.cronus_client.stop_server()
+        sys.exit(1)
+    finally:
+        # Always stop the server when done
+        evaluator.cronus_client.stop_server()
     
     # Save summary
     summary = {

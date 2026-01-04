@@ -1,0 +1,102 @@
+{
+  "name": "cronus-vscode",
+  "displayName": "Cronus Debug",
+  "description": "Debug and monitor Cronus AI assistant server",
+  "version": "0.1.0",
+  "publisher": "cronus",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other",
+    "Debuggers"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cronus.openDebugPanel",
+        "title": "Cronus: Open Debug Panel"
+      },
+      {
+        "command": "cronus.reconnect",
+        "title": "Cronus: Reconnect to Server"
+      },
+      {
+        "command": "cronus.disconnect",
+        "title": "Cronus: Disconnect from Server"
+      },
+      {
+        "command": "cronus.clearLogs",
+        "title": "Cronus: Clear Logs"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cronus-debug",
+          "title": "Cronus Debug",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cronus-debug": [
+        {
+          "type": "webview",
+          "id": "cronus.debugView",
+          "name": "Debug Panel"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Cronus Debug",
+      "properties": {
+        "cronus.serverUrl": {
+          "type": "string",
+          "default": "http://localhost:9000",
+          "description": "Cronus server base URL"
+        },
+        "cronus.autoConnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically connect to server on startup"
+        },
+        "cronus.reconnectInterval": {
+          "type": "number",
+          "default": 2000,
+          "description": "Reconnection interval in milliseconds"
+        },
+        "cronus.logLevel": {
+          "type": "string",
+          "enum": ["debug", "info", "warning", "error"],
+          "default": "info",
+          "description": "Logging level"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^2.19.0"
+  },
+  "dependencies": {
+    "@cronus/shared": "file:../shared"
+  }
+}

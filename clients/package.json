@@ -1,0 +1,31 @@
+{
+  "name": "cronus-clients",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cronus AI assistant client applications",
+  "scripts": {
+    "build": "npm run build:shared && npm run build:shared-ui && npm run build:clients",
+    "build:shared": "cd shared && npm run build",
+    "build:shared-ui": "cd shared-ui && npm run build",
+    "build:clients": "cd web && npm run build && cd ../vscode && npm run compile && cd ../debug && npm run build",
+    "build:web": "cd web && npm run build",
+    "build:vscode": "cd vscode && npm run compile",
+    "build:debug": "cd debug && npm run build",
+    "dev:web": "npm run start -w @cronus/web",
+    "dev:vscode": "npm run watch -w cronus-vscode",
+    "dev:debug": "npm run dev -w @cronus/debug",
+    "start:debug": "npm start -w @cronus/debug",
+    "watch:shared": "npm run watch -w @cronus/shared",
+    "watch:shared-ui": "npm run watch -w @cronus/shared-ui",
+    "clean": "npm run clean --workspaces --if-present",
+    "install:all": "npm install",
+    "test": "npm test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

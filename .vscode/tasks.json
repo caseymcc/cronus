@@ -4,12 +4,12 @@
         {
             "label": "open-browser",
             "type": "shell",
-            "command": "google-chrome --new-tab http://localhost:8080",
+            "command": "google-chrome --new-tab http://localhost:9000",
             "windows": {
-                "command": "start http://localhost:8080"
+                "command": "start http://localhost:9000"
             },
             "osx": {
-                "command": "open http://localhost:8080"
+                "command": "open http://localhost:9000"
             },
             "presentation": {
                 "reveal": "never"
@@ -22,7 +22,7 @@
             "label": "wait-for-server",
             "type": "shell",
             "command": "bash",
-            "args": ["-c", "until curl -s http://localhost:8080 > /dev/null; do sleep 1; done"],
+            "args": ["-c", "until curl -s http://localhost:9000 > /dev/null; do sleep 1; done"],
             "presentation": {
                 "reveal": "never"
             },

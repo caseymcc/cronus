@@ -1,6 +1,6 @@
 #include "cronus/cronus.h"
 
-#include "cronus/restApi.h"
+#include "cronus/webServer.h"
 #include "cronus/config.h"
 #include "cronus/agents/promptManager.h"
 
@@ -30,7 +30,7 @@ void Cronus::run(const std::string& resourcePath)
         m_resourcePath = resourcePath;
     }
 
-    startRestApi(8080);
+    startWebServer(9000);
     m_workerThread = std::thread(&Cronus::workerLoop, this);
 
     //wait for thread to start
@@ -46,8 +46,8 @@ void Cronus::run(const std::string& resourcePath)
 
 void Cronus::stop()
 {
-    // Stop the REST API if it's running
-    stopRestApi();
+    // Stop the web server if it's running
+    stopWebServer();
     
     {
         std::lock_guard<std::mutex> lock(m_mutex);
@@ -284,51 +284,45 @@ int Cronus::handleInput(const std::string &input)
     return 0;
 }
 
-void Cronus::startRestApi(int port)
+void Cronus::startWebServer(int port)
 {
-    if (!m_restApi) {
-        m_restApi = std::make_unique<RestApi>(*this, port);
+    if (!m_webServer) {
+        m_webServer = std::make_unique<WebServer>(*this, port);
     }
     
-    if (!m_restApi->isRunning()) {
-        m_restApi->start();
+    if (!m_webServer->isRunning()) {
+        m_webServer->start();
         
         // Wire up the response callback to broadcast messages to all connected clients
         setResponseCallback([this](const std::string& provider, const std::string& response) {
-            if (m_restApi && m_restApi->isRunning()) {
-                json message = {
-                    {"type", "agent_response"},
-                    {"provider", provider},
-                    {"content", response},
-                    {"timestamp", std::time(nullptr)}
-                };
-                m_restApi->broadcastMessage(message.dump());
+            if (m_webServer && m_webServer->isRunning()) {
+                m_webServer->broadcastMessage("agent", response);
             }
         });
         
-        logInfo("REST API started on " + m_restApi->getBaseUrl());
+        Logger::instance().info("Web Server started on " + m_webServer->getBaseUrl());
     } else {
-        logWarning("REST API is already running");
+        Logger::instance().warning("Web Server is already running");
     }
 }
 
-void Cronus::stopRestApi()
+void Cronus::stopWebServer()
 {
-    if (m_restApi && m_restApi->isRunning()) {
-        m_restApi->stop();
-        logInfo("REST API stopped");
+    if (m_webServer && m_webServer->isRunning()) {
+        m_webServer->stop();
+        Logger::instance().info("Web Server stopped");
     }
 }
 
-bool Cronus::isApiRunning() const
+bool Cronus::isWebServerRunning() const
 {
-    return m_restApi && m_restApi->isRunning();
+    return m_webServer && m_webServer->isRunning();
 }
 
-std::string Cronus::getApiBaseUrl() const
+std::string Cronus::getWebServerBaseUrl() const
 {
-    if (m_restApi) {
-        return m_restApi->getBaseUrl();
+    if (m_webServer) {
+        return m_webServer->getBaseUrl();
     }
     return "";
 }
@@ -356,8 +350,8 @@ void Cronus::updateSourceMap()
         m_sourceMap->updateDirectoryStructure();
         
         // Notify connected clients about directory changes
-        if (m_restApi) {
-            m_restApi->broadcastDirectoryUpdate();
+        if (m_webServer) {
+            m_webServer->broadcastDirectoryUpdate();
         }
     }
 }

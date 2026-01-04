@@ -1,0 +1,188 @@
+.log-viewer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: var(--vscode-editor-background, #1e1e1e);
+    border: 1px solid var(--vscode-panel-border, #2d2d2d);
+    border-radius: 4px;
+}
+
+.log-viewer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--vscode-editorGroupHeader-tabsBackground, #252526);
+    border-bottom: 1px solid var(--vscode-panel-border, #2d2d2d);
+}
+
+.log-viewer-title {
+    font-weight: 600;
+    color: var(--vscode-foreground, #cccccc);
+    font-size: 13px;
+}
+
+.log-viewer-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.log-search {
+    padding: 4px 8px;
+    background: var(--vscode-input-background, #3c3c3c);
+    border: 1px solid var(--vscode-input-border, #3c3c3c);
+    color: var(--vscode-input-foreground, #cccccc);
+    font-size: 12px;
+    border-radius: 3px;
+    width: 150px;
+}
+
+.log-search:focus {
+    outline: 1px solid var(--vscode-focusBorder, #007acc);
+}
+
+.log-level-filters {
+    display: flex;
+    gap: 4px;
+}
+
+.log-level-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--vscode-button-border, #2d2d2d);
+    background: var(--vscode-button-secondaryBackground, #3a3d41);
+    color: var(--vscode-button-secondaryForeground, #cccccc);
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.log-level-btn.active {
+    opacity: 1;
+    border-width: 2px;
+}
+
+.log-level-btn.log-level-debug.active {
+    border-color: #858585;
+    color: #858585;
+}
+
+.log-level-btn.log-level-info.active {
+    border-color: #4ec9b0;
+    color: #4ec9b0;
+}
+
+.log-level-btn.log-level-warning.active {
+    border-color: #dcdcaa;
+    color: #dcdcaa;
+}
+
+.log-level-btn.log-level-error.active {
+    border-color: #f48771;
+    color: #f48771;
+}
+
+.log-level-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.log-clear-btn {
+    padding: 4px 12px;
+    background: var(--vscode-button-secondaryBackground, #3a3d41);
+    color: var(--vscode-button-secondaryForeground, #cccccc);
+    border: 1px solid var(--vscode-button-border, #2d2d2d);
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+.log-clear-btn:hover {
+    background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.log-viewer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+    font-family: var(--vscode-editor-font-family, 'Consolas', 'Courier New', monospace);
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.log-viewer-content::-webkit-scrollbar {
+    width: 10px;
+}
+
+.log-viewer-content::-webkit-scrollbar-track {
+    background: var(--vscode-scrollbarSlider-background, #1e1e1e);
+}
+
+.log-viewer-content::-webkit-scrollbar-thumb {
+    background: var(--vscode-scrollbarSlider-background, #3e3e42);
+    border-radius: 5px;
+}
+
+.log-viewer-content::-webkit-scrollbar-thumb:hover {
+    background: var(--vscode-scrollbarSlider-hoverBackground, #4e4e52);
+}
+
+.log-empty {
+    color: var(--vscode-descriptionForeground, #717171);
+    text-align: center;
+    padding: 40px 20px;
+    font-style: italic;
+}
+
+.log-entry {
+    padding: 2px 0;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+.log-timestamp {
+    color: var(--vscode-descriptionForeground, #717171);
+    margin-right: 8px;
+    font-size: 11px;
+}
+
+.log-level {
+    margin-right: 8px;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.log-message {
+    color: var(--vscode-foreground, #cccccc);
+}
+
+.log-source {
+    color: var(--vscode-descriptionForeground, #717171);
+    font-style: italic;
+    margin-left: 8px;
+    font-size: 11px;
+}
+
+/* Level-specific colors */
+.log-entry.log-level-debug .log-level {
+    color: #858585;
+}
+
+.log-entry.log-level-info .log-level {
+    color: #4ec9b0;
+}
+
+.log-entry.log-level-warning .log-level {
+    color: #dcdcaa;
+}
+
+.log-entry.log-level-error .log-level {
+    color: #f48771;
+}
+
+.log-entry.log-level-error .log-message {
+    color: #f48771;
+}

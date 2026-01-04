@@ -9,7 +9,13 @@ old/
 .github/instructions/
 .specify/
 
+clients/debug/build/
+clients/debug/node_modules/
+clients/shared/node_modules/
+clients/shared-ui/node_modules/
+
 # Evaluation system - exercises downloaded from source
 evaluation/exercises/
 evaluation/results/
 evaluation/.cache/
+

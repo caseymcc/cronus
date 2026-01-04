@@ -30,6 +30,31 @@ RUN apt-get update && apt-get install -y \
     && apt-get remove -y nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
+# Install Electron dependencies
+RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libnspr4 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libdbus-1-3 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libatspi2.0-0 \
+    libgtk-3-0 \
+    libgdk-pixbuf2.0-0 \
+    libglib2.0-0 \
+    libexpat1 \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
@@ -42,7 +67,8 @@ ENV PYTHONDONTWRITEBYTECODE=1
 RUN pip3 install --no-cache-dir \
     requests \
     pytest \
-    pytest-cov
+    pytest-cov \
+    sseclient-py
 
 # Install vcpkg
 WORKDIR /opt

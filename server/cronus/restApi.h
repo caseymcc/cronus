@@ -32,15 +32,18 @@ public:
     // Event notification methods
     void broadcastMessage(const std::string& message);
     void broadcastDirectoryUpdate();
+    void broadcastLog(const std::string& level, const std::string& message);
 
 private:
     void setupRoutes();
+    void setupLoggerCallback();
     
     // API endpoints
     void handleProcessInput(const httplib::Request& req, httplib::Response& res);
     void handleGetDirectoryContents(const httplib::Request& req, httplib::Response& res);
     void handleGetSourceMap(const httplib::Request& req, httplib::Response& res);
-    void handleGetFileContent(const httplib::Request& req, httplib::Response& res); // New endpoint
+    void handleGetFileContent(const httplib::Request& req, httplib::Response& res);
+    void handleGetLogs(const httplib::Request& req, httplib::Response& res); // Get historical logs
     
     // SSE (Server-Sent Events) management
     void handleSSEConnection(const httplib::Request& req, httplib::Response& res);
@@ -54,6 +57,16 @@ private:
     
     std::mutex m_sseClientsMutex;
     std::vector<std::shared_ptr<SSEClient>> m_sseClients;
+    
+    // Log history
+    struct LogEntry {
+        std::string timestamp;
+        std::string level;
+        std::string message;
+    };
+    std::mutex m_logsMutex;
+    std::vector<LogEntry> m_logHistory;
+    size_t m_maxLogHistory = 1000; // Keep last 1000 log entries
     
     Cronus& m_cronus;
     int m_port;

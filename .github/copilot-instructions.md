@@ -13,6 +13,23 @@ interactive clients:
 
 The web and VSCode clients should use as much shared code as possible to minimize duplication.
 
+## Documentation
+
+**Documentation Index**: A comprehensive index of all project documentation with detailed summaries is available at `docs/README.md`. This file contains:
+- Complete table of contents for all documentation files
+- Detailed summaries of each document's contents
+- Quick links to key documentation areas
+- Cross-references between related documents
+
+When you need information about the project, check `docs/README.md` first to find the most relevant documentation file.
+
+Key documentation files:
+- `docs/project.md` - Project overview, goals, and core features
+- `docs/architecture.md` - System architecture and dual-mode design
+- `docs/developer.md` - Build environment and developer guide
+- `docs/current_state.md` - Current project status and component maturity
+- `docs/README.md` - **Complete documentation index with summaries**
+
 ## Build Environment
 
 This project uses a Docker-based development environment. **All build commands must be run inside the Docker container.**
@@ -49,19 +66,46 @@ xdg-open evaluation/results/latest/summary.html
 
 #### Key Features
 - **Automatic Docker**: Runs in Docker automatically, no manual setup
-- **OpenAI-compatible**: Works with llama.cpp, vLLM, and other OpenAI API servers
+- **Cronus Agent Integration**: Uses Cronus agent server with specialized coder agents
 - **Multi-language**: C++, Python, JavaScript exercises
 - **Comprehensive metrics**: Correctness, code quality, performance, completeness
+- **Detailed logging**: Captures full agent interactions, prompts, and responses
+
+#### Architecture
+
+```
+Evaluation → Cronus Server → Coder Agent → arbiterAI → LLM
+             (port 9000)      (specialized)  (unified API)
+```
+
+- Automatically builds and starts Cronus server
+- Uses specialized code generation agents
+- Communicates via REST API + SSE
+- Full agent interaction logging
 
 #### Key Files
 - `evaluation/setup.sh` - Download Exercism exercises
 - `evaluation/run_evaluation.sh` - Run evaluations (auto-Docker)
 - `evaluation/config.json` - Configuration (endpoint, languages, limits)
-- `evaluation/Dockerfile` - Evaluation environment definition
+- `evaluation/scripts/cronus_client.py` - Cronus server client with SSE support
+- `evaluation/scripts/evaluate_exercise.py` - Core evaluation logic
 - `evaluation/QUICKSTART.md` - Detailed usage guide
 - `evaluation/README.md` - Full documentation
 
+#### Configuration
+
+```json
+{
+  "agent": {
+    "endpoint": "http://localhost:9000/api",
+    "cronus_executable": "build/linux_x64_debug/server/cronus/cronus",
+    "cronus_working_dir": "/tmp/cronus_eval"
+  }
+}
+```
+
 See `evaluation/README.md` for comprehensive documentation.
+
 
 
 
@@ -116,7 +160,7 @@ The container will persist between commands, making subsequent builds much faste
 - `-r`: Rebuild Docker image before running
 - `-s`: Stop and remove existing container before starting
 - `-v <path>`: Specify custom vcpkg cache directory
-- `-p <port>`: Specify host API port (default: 8080)
+- `-p <port>`: Specify host API port (default: 9000)
 
 ### Web Development Server
 

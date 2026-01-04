@@ -98,7 +98,7 @@ Tests: Multiple test cases covering edge cases
     "javascript": { "enabled": false, "max_exercises": 3 }
   },
   "agent": {
-    "endpoint": "http://localhost:8080",
+    "endpoint": "http://localhost:9000",
     "model": "default",
     "max_tokens": 4096,
     "temperature": 0.2
@@ -126,7 +126,7 @@ The evaluation system needs the Cronus agent server running:
 ### 2. Verify Server is Running
 
 ```bash
-curl http://localhost:8080/health
+curl http://localhost:9000/health
 ```
 
 ### 3. Run Evaluation
@@ -173,7 +173,7 @@ xdg-open evaluation/results/latest/summary.html
 The evaluation script expects the Cronus API to have an endpoint like:
 
 ```python
-POST http://localhost:8080/api/generate
+POST http://localhost:9000/api/generate
 {
   "prompt": "...",
   "language": "python",

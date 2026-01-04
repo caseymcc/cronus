@@ -21,7 +21,7 @@ namespace cronus
 {
 
 // Forward declaration
-class RestApi;
+class WebServer;
 
 struct Task
 {
@@ -60,10 +60,10 @@ public:
     void setResponseCallback(ResponseCallback callback) { m_responseCallback=callback; }
 
     // API related methods
-    void startRestApi(int port = 8080);
-    void stopRestApi();
-    bool isApiRunning() const;
-    std::string getApiBaseUrl() const;
+    void startWebServer(int port = 8080);
+    void stopWebServer();
+    bool isWebServerRunning() const;
+    std::string getWebServerBaseUrl() const;
     
     // For API access
     const std::shared_ptr<SourceMap>& getSourceMap() const { return m_sourceMap; }
@@ -107,8 +107,8 @@ private:
     std::shared_ptr<agents::Coder> m_coder;
     std::shared_ptr<CommandHandler> m_commandHandler;
     
-    // REST API
-    std::unique_ptr<RestApi> m_restApi;
+    // Web Server
+    std::unique_ptr<WebServer> m_webServer;
     
     // List of files explicitly added by the user
     std::vector<std::string> m_addedFiles;

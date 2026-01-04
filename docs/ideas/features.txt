@@ -9,11 +9,13 @@ Currently Implemented Features
        • Deepseek                                                                                                                                   
     • Model configuration management                                                                                                                
     • API key management for different providers                                                                                                    
- 3 Code Analysis                                                                                                                                    
+ 3 Code Analysis (via loreforge)                                                                                                                    
     • Source file parsing using Tree-sitter for multiple languages                                                                                  
     • Support for many programming languages (C, C++, C#, CSS, Go, HTML, Java, JavaScript, JSON, PHP, Python, Ruby, Rust, TOML, TypeScript, YAML)   
     • Source map generation and caching                                                                                                             
     • File tagging system                                                                                                                           
+    • RAG (Retrieval-Augmented Generation) pipeline                                                                                                 
+    • Semantic code search using embeddings                                                                                                         
  4 Configuration System                                                                                                                             
     • Environment variable configuration                                                                                                            
     • File-based configuration                                                                                                                      
@@ -26,9 +28,76 @@ Currently Implemented Features
     • Task queue system                                                                                                                             
     • Worker thread implementation                                                                                                                  
     • Mutex-protected shared resources                                                                                                              
+ 7 Evaluation System                                                                                                                                
+    • Exercism-based agent evaluation (Python, JavaScript, C++)                                                                                     
+    • Comprehensive metrics (correctness, quality, performance)                                                                                     
+    • HTML and JSON report generation                                                                                                               
+    • Full interaction logging and debugging                                                                                                        
 
 
-Potential Features to Add                                                              
+Planned Core Features (Dual-Mode Architecture)
+
+ 1 Operational Mode System ⭐ PRIORITY                                                                                                               
+    • Automatic mode detection (single-agent vs multi-agent)                                                                                        
+    • Single-Agent Mode:                                                                                                                            
+       - One AI agent per repository                                                                                                                
+       - Configuration in .cronus/ at repository root                                                                                               
+       - Direct file modification                                                                                                                   
+       - Lock mechanism to prevent concurrent instances                                                                                             
+    • Multi-Agent Mode:                                                                                                                             
+       - Multiple agents with isolated workspaces                                                                                                   
+       - Each agent in agents/<agent-id>/ with own .cronus/                                                                                         
+       - Parallel agent execution                                                                                                                   
+       - Agent comparison and metrics                                                                                                               
+    • Mode initialization and directory structure setup                                                                                             
+
+ 2 Configuration Management ⭐ PRIORITY                                                                                                              
+    • JSON-based configuration files                                                                                                                
+    • Environment variable substitution (${VAR})                                                                                                    
+    • Configuration validation with JSON schemas                                                                                                    
+    • Hot reload support                                                                                                                            
+    • Configuration inheritance (multi-agent: global → per-agent)                                                                                   
+    • CLI commands: config show/edit/set/validate/reset                                                                                             
+
+ 3 State Persistence ⭐ PRIORITY                                                                                                                     
+    • Agent state tracking (active/idle/error)                                                                                                      
+    • Session management and recovery                                                                                                               
+    • Task state persistence (todo/in-progress/done)                                                                                                
+    • Conversation history (JSON Lines format)                                                                                                      
+    • Atomic file writes (no corruption on crashes)                                                                                                 
+    • Automatic backups (last N versions)                                                                                                           
+    • State recovery from backups                                                                                                                   
+
+ 4 Single-Agent Mode Implementation                                                                                                                 
+    • Agent lifecycle management                                                                                                                    
+    • File modification and tracking                                                                                                                
+    • Task management system                                                                                                                        
+    • Context window management                                                                                                                     
+    • Integration with loreforge                                                                                                                    
+
+ 5 Multi-Agent Infrastructure                                                                                                                       
+    • Agent workspace isolation                                                                                                                     
+    • Repository cloning for each agent                                                                                                             
+    • Per-agent configuration in agents/<id>/.cronus/                                                                                               
+    • Parallel agent execution                                                                                                                      
+    • Agent status monitoring                                                                                                                       
+    • Resource limits per agent                                                                                                                     
+    • CLI: agent create/list/start/stop/remove                                                                                                      
+
+ 6 Agent Comparison System (Multi-Agent)                                                                                                            
+    • Metrics collection:                                                                                                                           
+       - Correctness (test pass rate, compilation)                                                                                                  
+       - Performance (execution time, memory)                                                                                                       
+       - Code quality (linter scores, complexity)                                                                                                   
+       - Productivity (lines changed, commits)                                                                                                      
+    • Code diff generation between agents                                                                                                           
+    • HTML report with interactive charts                                                                                                           
+    • JSON export for analysis                                                                                                                      
+    • Historical metrics tracking                                                                                                                   
+    • CLI: compare, metrics, report commands                                                                                                        
+
+
+Additional Potential Features
 
  1 Code Completion and Generation                                                                                                                   
     • Inline code completion                                                                                                                        
@@ -46,38 +115,68 @@ Potential Features to Add
  5 Version Control Integration                                                                                                                      
     • Git integration for change tracking                                                                                                           
     • Commit message generation                                                                                                                     
+    • Branch management per agent (multi-agent mode)                                                                                                
+    • Repository sync (multi-agent ↔ source repo)                                                                                                   
  6 Project Management                                                                                                                               
     • Task tracking integration                                                                                                                     
     • TODO comment tracking and management                                                                                                          
  7 Performance Optimization                                                                                                                         
     • Caching more aggressively for faster responses                                                                                                
-     • Optimizing token usage with LLMs                                                                                                             
-  8 IDE Integration                                                                                                                                 
-     • VSCode extension                                                                                                                             
-     • Integration with other popular IDEs                                                                                                          
-  9 Collaborative Features                                                                                                                          
-     • Multi-user support                                                                                                                           
-     • Sharing sessions or generated code                                                                                                           
- 10 Learning and Personalization                                                                                                                    
-     • Learning from user preferences                                                                                                               
-     • Project-specific knowledge base                                                                                                              
- 11 Offline Capabilities                                                                                                                            
-     • Local model support                                                                                                                          
-     • Functioning without internet connection                                                                                                      
- 12 Security Features                                                                                                                               
-     • Code scanning for vulnerabilities                                                                                                            
-     • Sensitive information detection           
+    • Optimizing token usage with LLMs                                                                                                              
+    • Context window summarization                                                                                                                  
+ 8 IDE Integration                                                                                                                                  
+    • VSCode extension (in progress)                                                                                                                
+    • Mode-aware interface                                                                                                                          
+    • Agent selection (multi-agent mode)                                                                                                            
+    • Integration with other popular IDEs                                                                                                           
+ 9 Agent Collaboration (Multi-Agent Future)                                                                                                         
+    • Inter-agent communication                                                                                                                     
+    • Coordinated workflows (one writes, another reviews)                                                                                           
+    • Shared context and knowledge                                                                                                                  
+    • Agent specialization (coder, reviewer, tester)                                                                                                
+10 Learning and Personalization                                                                                                                     
+    • Learning from user preferences                                                                                                                
+    • Project-specific knowledge base                                                                                                               
+11 Offline Capabilities                                                                                                                             
+    • Local model support                                                                                                                           
+    • Functioning without internet connection                                                                                                       
+12 Security Features                                                                                                                                
+    • Code scanning for vulnerabilities                                                                                                             
+    • Sensitive information detection                                                                                                               
+    • Secure API key management                                                                                                                     
+13 Cloud Integration (Future)                                                                                                                       
+    • Multi-agent workspace sync to cloud                                                                                                           
+    • Distributed agent execution                                                                                                                   
+    • Remote model access                                                                                                                           
 
 
-Start coordinator at the default 8080
-   - when starting test the 8080 port if coordinator already start register new port id
-   - otherwise start coordinator
+Implementation Notes
 
-Rate file importance with each other based on used 
-   - called functions
-   - call tree
-   - etc...
-   
-When passing full code to the model ask it to summarize the functions, 
-   - store the results in the cache
-   - when using source check cache and if not out of data send the summary (if free context space is getting small)
+• Mode detection priority:
+  1. Check for .cronus/ and parse config
+  2. Check for .git/ or other VCS markers → single-agent
+  3. Check if directory is empty → multi-agent
+  4. Allow explicit override via --mode flag
+
+• Rate file importance based on:
+  - Called functions
+  - Call tree analysis
+  - Dependency graph
+  - Recent modification frequency
+
+• Context optimization:
+  - Summarize functions when context is limited
+  - Cache summaries for reuse
+  - Send full code when context allows, summaries when constrained
+  - Use loreforge embeddings for intelligent context selection
+
+• Multi-agent workspace structure:
+  workspace/
+  ├── .cronus/              # Global config and shared resources
+  └── agents/
+      ├── agent-1/
+      │   ├── .cronus/      # Agent-specific config
+      │   └── [repo files]  # Agent's repository
+      └── agent-2/
+          ├── .cronus/
+          └── [repo files]

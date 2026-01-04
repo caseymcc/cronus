@@ -1,0 +1,64 @@
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+    background: var(--vscode-editor-background, #1e1e1e);
+    border: 1px solid var(--vscode-panel-border, #2d2d2d);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.status-connected .status-dot {
+    background-color: #4caf50;
+    box-shadow: 0 0 4px #4caf50;
+}
+
+.status-disconnected .status-dot {
+    background-color: #f44336;
+}
+
+.status-reconnecting .status-dot {
+    background-color: #ff9800;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.status-text {
+    color: var(--vscode-foreground, #cccccc);
+    font-weight: 500;
+}
+
+.status-latency {
+    display: flex;
+    gap: 4px;
+    color: var(--vscode-descriptionForeground, #999999);
+    font-size: 12px;
+}
+
+.status-attempts {
+    color: var(--vscode-descriptionForeground, #999999);
+    font-size: 11px;
+    font-style: italic;
+}

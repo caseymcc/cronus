@@ -7,7 +7,7 @@ This guide will help you get started with evaluating the Cronus agent using Exer
 - Docker (for containerized builds)
 - Python 3.8+ (for evaluation scripts)
 - Git
-- Cronus server running (or ability to start it)
+- Built Cronus server executable (automatically started by evaluation system)
 
 ## Step 1: Download Exercism Exercises
 
@@ -23,9 +23,11 @@ This will:
 - Create exercise indexes
 - Take a few minutes on first run
 
-## Step 2: Configure Agent Endpoint (Optional)
+## Step 2: Configure Settings (Optional)
 
-Edit `evaluation/config.json` to point to your LLM server:
+The default configuration automatically starts the Cronus agent server during evaluation.
+
+Edit `evaluation/config.json` to customize settings:
 
 ```json
 {
@@ -36,31 +38,44 @@ Edit `evaluation/config.json` to point to your LLM server:
     }
   },
   "agent": {
-    "endpoint": "http://localhost:8080",
-    "api_type": "cronus"  // or "openai" for OpenAI-compatible APIs
+    "endpoint": "http://localhost:9000/api",
+    "cronus_executable": "build/linux_x64_debug/server/cronus/cronus",
+    "cronus_working_dir": "/tmp/cronus_eval"
   }
 }
 ```
 
-For OpenAI-compatible APIs (llama.cpp, vLLM, etc.):
-```json
-{
-  "agent": {
-    "endpoint": "http://192.168.2.106:8000/v1",
-    "api_type": "openai"
-  }
-}
+## Step 3: Build Cronus
+
+Build the Cronus server:
+
+```bash
+./run_local.sh ./generate.sh
+./run_local.sh ninja -C build/linux_x64_debug
 ```
 
-## Step 3: Run Evaluation (Automatic Docker)
+The evaluation system will automatically start and stop the Cronus server as needed.
 
-The evaluation automatically runs in Docker with all dependencies installed:
+## Step 4: Run Evaluation (Automatic Docker)
+
+The evaluation automatically runs in Docker with all dependencies installed.
+
+**Important**: The evaluation script will automatically verify that Cronus is built before starting. If not built, it will display an error with build instructions.
 
 ### Test with One Language First
 
 ```bash
 # Run Python exercises only (recommended for first test)
 ./evaluation/run_evaluation.sh --language python
+```
+
+If Cronus is not built, you'll see:
+
+```
+ERROR: Cronus executable not found
+Please build Cronus first:
+  ./run_local.sh ./generate.sh
+  ./run_local.sh ninja -C build/linux_x64_debug
 ```
 
 ### Run All Evaluations
@@ -74,10 +89,35 @@ The evaluation automatically runs in Docker with all dependencies installed:
 The script automatically:
 1. Detects it's running on the host system
 2. Launches the Cronus Docker container
-3. Re-executes itself with all dependencies (pytest, jest, g++)
-4. Runs the evaluation
-5. Saves results to your local filesystem
+3. Re-executes itself with all dependencies (pytest, jest, g++, sseclient-py)
+4. **Verifies Cronus is built** (stops with error if not)
+5. Starts the Cronus server (via Python evaluation script)
+6. Runs the evaluation with detailed interaction logging
+7. Stops the Cronus server automatically
+8. Saves results to your local filesystem
 
+### Troubleshooting
+
+**"Cronus executable not found"**:
+```bash
+./run_local.sh ./generate.sh
+./run_local.sh ninja -C build/linux_x64_debug
+```
+
+**"Port 9000 already in use"**:
+```bash
+# Find and kill the process using port 9000
+netstat -tlnp | grep 9000
+kill <PID>
+```
+
+**"Cronus server crashed during evaluation"**:
+- Check the error output in the terminal
+- Verify all dependencies are installed
+- Try running Cronus manually to see errors:
+  ```bash
+  ./run_local.sh ./build/linux_x64_debug/server/cronus/cronus --web --port 9000
+  ```
 No manual dependency installation required!
 
 ## Step 4: View Results
@@ -151,7 +191,7 @@ This detailed view is invaluable for:
 
 ```bash
 # Check if server is running
-curl http://localhost:8080/health
+curl http://localhost:9000/health
 
 # Check server logs
 ./run_local.sh docker logs cronus_dev
