@@ -8,12 +8,16 @@ export interface CronusClientConfig {
 }
 export declare class CronusClient extends EventEmitter {
     private config;
-    private sseManager;
+    private ws;
     private healthCheckTimer;
     private connectionStatus;
+    private requestId;
+    private pendingRequests;
+    private reconnectTimer;
+    private reconnectAttempts;
     constructor(config: CronusClientConfig);
     /**
-     * Start the client (connect SSE and start health checks)
+     * Start the client (connect WebSocket and start health checks)
      */
     start(): void;
     /**
@@ -28,6 +32,30 @@ export declare class CronusClient extends EventEmitter {
      * Get current connection status
      */
     getConnectionStatus(): ConnectionStatus;
+    /**
+     * Connect to WebSocket
+     */
+    private connectWebSocket;
+    /**
+     * Disconnect WebSocket
+     */
+    private disconnectWebSocket;
+    /**
+     * Schedule reconnection attempt
+     */
+    private scheduleReconnect;
+    /**
+     * Handle incoming WebSocket message
+     */
+    private handleMessage;
+    /**
+     * Handle JSON-RPC notification
+     */
+    private handleNotification;
+    /**
+     * Send JSON-RPC request and wait for response
+     */
+    private sendRequest;
     /**
      * Fetch the source map (file tree)
      */
@@ -48,10 +76,6 @@ export declare class CronusClient extends EventEmitter {
      * Check server health
      */
     checkHealth(): Promise<ServerHealth>;
-    /**
-     * Setup SSE event handlers
-     */
-    private setupSSEHandlers;
     /**
      * Update connection status
      */

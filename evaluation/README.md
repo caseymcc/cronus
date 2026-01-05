@@ -76,6 +76,12 @@ Edit `evaluation/config.json` to configure:
 
 **All evaluations automatically run in Docker** - no manual dependency installation needed!
 
+The `run_evaluation.sh` script handles everything:
+- Builds Docker image if not present
+- Starts container with all dependencies
+- Runs evaluations inside container
+- Saves results to host filesystem
+
 ### Run All Evaluations
 
 ```bash
@@ -96,14 +102,54 @@ Edit `evaluation/config.json` to configure:
 ./evaluation/run_evaluation.sh --language cpp --exercise hello-world
 ```
 
+### Rebuild Docker Image
+
+If you've updated dependencies or want to force rebuild:
+
+```bash
+./evaluation/run_evaluation.sh --rebuild
+```
+
+This will rebuild the Docker image and exit. To run evaluation after rebuild:
+
+```bash
+# Rebuild image
+./evaluation/run_evaluation.sh --rebuild
+
+# Then run evaluation
+./evaluation/run_evaluation.sh --language python
+```
+
+### Advanced Options
+
+```bash
+# Dry run (see what would be executed)
+./evaluation/run_evaluation.sh --dry-run
+
+# Verbose output
+./evaluation/run_evaluation.sh --verbose
+
+# Run directly on host (not recommended, requires all deps)
+./evaluation/run_evaluation.sh --no-docker
+```
+
 ### How It Works
 
-The evaluation script automatically:
-1. Detects if it's running on the host
-2. Launches the Cronus Docker container
-3. Re-executes itself inside the container with all dependencies available
-4. Runs the evaluation
-5. Saves results back to the host filesystem
+The `run_evaluation.sh` script automatically manages the entire process:
+
+1. **Check Docker Image**: Verifies if evaluation image exists, builds if needed
+2. **Start Container**: Launches container with project mounted and network access
+3. **Run Evaluation**: Executes evaluation inside container with all dependencies
+4. **Save Results**: Writes results back to host filesystem (mounted volume)
+
+Inside the container, the evaluation:
+1. **Loads Exercise**: Reads instructions and test cases
+2. **Generates Prompt**: Creates a prompt from the exercise description
+3. **Starts Cronus**: Launches Cronus server automatically
+4. **Invokes Agent**: Calls the Cronus agent via REST API + WebSocket
+5. **Validates Solution**: Runs tests against the generated code
+6. **Scores Result**: Records pass/fail and performance metrics
+7. **Stops Cronus**: Automatically stops server after evaluation
 
 ## Evaluation Process
 

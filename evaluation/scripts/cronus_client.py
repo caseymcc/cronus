@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Cronus API client for evaluation system.
-Handles starting the Cronus server, sending requests, and collecting SSE responses.
+Handles starting the Cronus server, sending requests via WebSocket JSON-RPC, and collecting responses.
 """
 
 import subprocess
@@ -13,11 +13,11 @@ import signal
 import threading
 from typing import Optional, Dict, Any
 from pathlib import Path
-import sseclient  # pip install sseclient-py
+import websocket  # pip install websocket-client
 
 
 class CronusClient:
-    """Client for interacting with Cronus server."""
+    """Client for interacting with Cronus server via WebSocket JSON-RPC."""
     
     def __init__(self, executable_path: str, working_dir: str,  
                  api_url: str = "http://localhost:9000", port: int = 9000):
@@ -26,9 +26,13 @@ class CronusClient:
         self.api_url = api_url
         self.port = port
         self.process = None
-        self.sse_thread = None
+        self.ws = None
+        self.request_id = 0
+        self.pending_requests = {}
         self.latest_response = None
         self.response_complete = threading.Event()
+        self.ws_thread = None
+        self.lock = threading.Lock()
         
     def start_server(self, timeout: int = 30) -> bool:
         """Start the Cronus server process.
@@ -73,6 +77,7 @@ class CronusClient:
         os.makedirs(self.working_dir, exist_ok=True)
         
         # Start Cronus server in background
+        # Use --web flag to enable HTTP API endpoints (required for evaluation)
         cmd = [
             self.executable_path,
             "--web",
@@ -84,13 +89,15 @@ class CronusClient:
         
         # Set up environment with library path
         env = os.environ.copy()
-        # Add the build directory to LD_LIBRARY_PATH for shared libraries
+        # LD_LIBRARY_PATH should already be set in Docker environment,
+        # but we ensure it includes the build directory for shared libraries
         # Executable is at: /app/build/linux_x64_debug/server/cronus/cronus
         # Libraries are at: /app/build/linux_x64_debug/
         build_dir = str(Path(self.executable_path).parent.parent.parent)
-        print(f"Setting LD_LIBRARY_PATH to include: {build_dir}")
         if 'LD_LIBRARY_PATH' in env:
-            env['LD_LIBRARY_PATH'] = f"{build_dir}:{env['LD_LIBRARY_PATH']}"
+            # Prepend build_dir if not already present
+            if build_dir not in env['LD_LIBRARY_PATH'].split(':'):
+                env['LD_LIBRARY_PATH'] = f"{build_dir}:{env['LD_LIBRARY_PATH']}"
         else:
             env['LD_LIBRARY_PATH'] = build_dir
         print(f"LD_LIBRARY_PATH={env['LD_LIBRARY_PATH']}")
@@ -141,7 +148,9 @@ class CronusClient:
             return False
     
     def stop_server(self):
-        """Stop the Cronus server process."""
+        """Stop the Cronus server process and close WebSocket."""
+        self.close_websocket()
+        
         if self.process:
             print("Stopping Cronus server...")
             self.process.terminate()
@@ -153,36 +162,142 @@ class CronusClient:
             self.process = None
             print("Cronus server stopped")
     
-    def _listen_sse(self):
-        """Listen for SSE events in background thread."""
+    def connect_websocket(self):
+        """Connect to the WebSocket endpoint."""
+        if self.ws:
+            return True
+            
+        ws_url = self.api_url.replace('http', 'ws') + '/ws'
+        
         try:
-            response = requests.get(
-                f"{self.api_url}/api/events",
-                stream=True,
-                headers={'Accept': 'text/event-stream'}
+            self.ws = websocket.WebSocketApp(
+                ws_url,
+                on_message=self._on_message,
+                on_error=self._on_error,
+                on_close=self._on_close,
+                on_open=self._on_open
             )
             
-            client = sseclient.SSEClient(response)
+            # Run WebSocket in separate thread
+            self.ws_thread = threading.Thread(target=self.ws.run_forever, daemon=True)
+            self.ws_thread.start()
             
-            for event in client.events():
-                if event.data:
-                    try:
-                        data = json.loads(event.data)
-                        event_type = data.get('type')
-                        
-                        # Look for response events
-                        if event_type == 'response':
-                            self.latest_response = data.get('message', data.get('response', ''))
-                            self.response_complete.set()
-                            
-                    except json.JSONDecodeError:
-                        pass
-                        
+            # Wait for connection
+            time.sleep(1)
+            return True
         except Exception as e:
-            print(f"SSE listening error: {e}")
+            print(f"WebSocket connection error: {e}")
+            return False
+    
+    def close_websocket(self):
+        """Close WebSocket connection."""
+        if self.ws:
+            self.ws.close()
+            self.ws = None
+        if self.ws_thread:
+            self.ws_thread.join(timeout=2)
+            self.ws_thread = None
+    
+    def _on_open(self, ws):
+        """WebSocket opened."""
+        print("WebSocket connected")
+    
+    def _on_close(self, ws, close_status_code, close_msg):
+        """WebSocket closed."""
+        print(f"WebSocket closed: {close_status_code} - {close_msg}")
+    
+    def _on_error(self, ws, error):
+        """WebSocket error."""
+        print(f"WebSocket error: {error}")
+    
+    def _on_message(self, ws, message):
+        """Handle incoming WebSocket message."""
+        try:
+            data = json.loads(message)
+            
+            # Handle JSON-RPC response
+            if 'id' in data and data.get('id') is not None:
+                request_id = data['id']
+                with self.lock:
+                    if request_id in self.pending_requests:
+                        event = self.pending_requests[request_id]
+                        if 'error' in data:
+                            self.pending_requests[request_id + '_result'] = {
+                                'error': data['error']['message']
+                            }
+                        else:
+                            self.pending_requests[request_id + '_result'] = data.get('result')
+                        event.set()
+            
+            # Handle JSON-RPC notification
+            elif 'method' in data:
+                method = data['method']
+                params = data.get('params', {})
+                
+                # Look for response in message notification
+                if method == 'message':
+                    content = params.get('content', '')
+                    if content:
+                        self.latest_response = content
+                        self.response_complete.set()
+                        
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+    
+    def send_request(self, method: str, params: Optional[Dict] = None, timeout: int = 30) -> Optional[Any]:
+        """Send JSON-RPC request and wait for response."""
+        if not self.ws:
+            print("WebSocket not connected")
+            return None
+        
+        with self.lock:
+            self.request_id += 1
+            request_id = self.request_id
+        
+        request = {
+            'jsonrpc': '2.0',
+            'method': method,
+            'params': params or {},
+            'id': request_id
+        }
+        
+        # Create event for this request
+        event = threading.Event()
+        with self.lock:
+            self.pending_requests[request_id] = event
+        
+        try:
+            # Send request
+            self.ws.send(json.dumps(request))
+            
+            # Wait for response
+            if event.wait(timeout):
+                with self.lock:
+                    result = self.pending_requests.get(request_id + '_result')
+                    # Clean up
+                    del self.pending_requests[request_id]
+                    if request_id + '_result' in self.pending_requests:
+                        del self.pending_requests[request_id + '_result']
+                    
+                    if isinstance(result, dict) and 'error' in result:
+                        print(f"JSON-RPC error: {result['error']}")
+                        return None
+                    return result
+            else:
+                print(f"Request timeout for method: {method}")
+                with self.lock:
+                    if request_id in self.pending_requests:
+                        del self.pending_requests[request_id]
+                return None
+        except Exception as e:
+            print(f"Error sending request: {e}")
+            with self.lock:
+                if request_id in self.pending_requests:
+                    del self.pending_requests[request_id]
+            return None
     
     def generate_code(self, prompt: str, timeout: int = 120) -> Optional[Dict[str, Any]]:
-        """Send a code generation request and wait for response via SSE.
+        """Send a code generation request and wait for response via WebSocket.
         
         Returns dict with:
         - code: Generated code
@@ -193,56 +308,37 @@ class CronusClient:
             print("Cronus server not running")
             return None
         
+        # Connect WebSocket if not already connected
+        if not self.ws:
+            if not self.connect_websocket():
+                return {
+                    'code': None,
+                    'raw_response': None,
+                    'success': False,
+                    'error': 'Failed to connect WebSocket'
+                }
+        
         # Reset response tracking
         self.latest_response = None
         self.response_complete.clear()
         
-        # Start SSE listener if not already running
-        if not self.sse_thread or not self.sse_thread.is_alive():
-            self.sse_thread = threading.Thread(target=self._listen_sse, daemon=True)
-            self.sse_thread.start()
-            time.sleep(1)  # Give it time to connect
+        # Send the request via JSON-RPC
+        self.send_request('input', {'input': prompt, 'sessionId': 'default'})
         
-        # Send the request
-        try:
-            response = requests.post(
-                f"{self.api_url}/api/input",
-                json={'input': prompt},
-                timeout=10
-            )
-            
-            if response.status_code != 200:
-                print(f"Request failed: {response.status_code}")
-                return {
-                    'code': None,
-                    'raw_response': None,
-                    'success': False,
-                    'error': f"HTTP {response.status_code}"
-                }
-            
-            # Wait for SSE response
-            if self.response_complete.wait(timeout=timeout):
-                return {
-                    'code': self.latest_response,
-                    'raw_response': self.latest_response,
-                    'success': bool(self.latest_response)
-                }
-            else:
-                print("Timeout waiting for response")
-                return {
-                    'code': None,
-                    'raw_response': None,
-                    'success': False,
-                    'error': "Timeout waiting for response"
-                }
-                
-        except requests.exceptions.RequestException as e:
-            print(f"Request error: {e}")
+        # Wait for response via notification
+        if self.response_complete.wait(timeout=timeout):
+            return {
+                'code': self.latest_response,
+                'raw_response': self.latest_response,
+                'success': bool(self.latest_response)
+            }
+        else:
+            print("Timeout waiting for response")
             return {
                 'code': None,
                 'raw_response': None,
                 'success': False,
-                'error': str(e)
+                'error': "Timeout waiting for response"
             }
     
     def __enter__(self):

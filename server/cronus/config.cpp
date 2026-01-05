@@ -2,14 +2,18 @@
 
 #include "cronus/config.h"
 #include "cronus/logger.h"
+#include "cronus/modeDetector.h"
+#include "cronus/directoryInitializer.h"
 
 #include "loreforge/loreforge.h"
 
 #include <yaml-cpp/yaml.h>
+#include <nlohmann/json.hpp>
 
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <fstream>
 
 namespace cronus
 {
@@ -17,7 +21,7 @@ namespace cronus
 Config &Config::instance()
 {
     static Config instance;
-    return instance;
+    return instance;    
 }
 
 void Config::setModelAndProvider(const std::string &combined)
@@ -97,6 +101,111 @@ void Config::loadFromFile(const std::filesystem::path &configPath)
         {
             m_apiKeys["anthropic"]=keys["anthropic"].as<std::string>();
         }
+    }
+}
+
+void Config::loadFromJsonFile(const std::filesystem::path &configPath)
+{
+    if(!std::filesystem::exists(configPath))
+    {
+        logWarning("JSON config file does not exist: "+configPath.string());
+        return;
+    }
+
+    try
+    {
+        std::ifstream file(configPath);
+        if(!file.is_open())
+        {
+            logWarning("Failed to open JSON config file: "+configPath.string());
+            return;
+        }
+
+        nlohmann::json config;
+        file >> config;
+
+        // Load mode if specified
+        if(config.contains("mode"))
+        {
+            std::string modeStr = config["mode"].get<std::string>();
+            auto mode = stringToOperationalMode(modeStr);
+            if(mode.has_value())
+            {
+                m_operationalMode = mode.value();
+            }
+        }
+
+        // Load model configuration
+        if(config.contains("model"))
+        {
+            if(config["model"].is_string())
+            {
+                setModelAndProvider(config["model"].get<std::string>());
+            }
+            else if(config["model"].is_object())
+            {
+                auto modelObj = config["model"];
+                if(modelObj.contains("name"))
+                {
+                    std::string modelName = modelObj["name"].get<std::string>();
+                    if(modelObj.contains("provider"))
+                    {
+                        std::string provider = modelObj["provider"].get<std::string>();
+                        setModelAndProvider(provider + "/" + modelName);
+                    }
+                    else
+                    {
+                        setModelAndProvider(modelName);
+                    }
+                }
+            }
+        }
+
+        // Load API keys
+        if(config.contains("api_keys"))
+        {
+            auto keys = config["api_keys"];
+            if(keys.contains("openai") && keys["openai"].is_string())
+            {
+                std::string key = keys["openai"].get<std::string>();
+                // Expand environment variables
+                if(key.find("${") == 0)
+                {
+                    std::string envVar = key.substr(2, key.length() - 3);
+                    const char *envValue = std::getenv(envVar.c_str());
+                    if(envValue)
+                    {
+                        m_apiKeys["openai"] = envValue;
+                    }
+                }
+                else
+                {
+                    m_apiKeys["openai"] = key;
+                }
+            }
+            if(keys.contains("anthropic") && keys["anthropic"].is_string())
+            {
+                std::string key = keys["anthropic"].get<std::string>();
+                // Expand environment variables
+                if(key.find("${") == 0)
+                {
+                    std::string envVar = key.substr(2, key.length() - 3);
+                    const char *envValue = std::getenv(envVar.c_str());
+                    if(envValue)
+                    {
+                        m_apiKeys["anthropic"] = envValue;
+                    }
+                }
+                else
+                {
+                    m_apiKeys["anthropic"] = key;
+                }
+            }
+        }
+    }
+    catch(const std::exception &e)
+    {
+        logError("Error parsing JSON config: " + std::string(e.what()));
     }
 }
 
@@ -258,6 +367,43 @@ void Config::load(const std::string &resourceDir)
     std::vector<std::filesystem::path> configPaths;
     const char *home=std::getenv("HOME");
 
+    // Set working directory
+    m_workingDirectory = std::filesystem::current_path();
+
+    // Detect operational mode
+    ModeDetectionResult detectionResult = ModeDetector::detect(m_workingDirectory);
+    m_operationalMode = detectionResult.mode;
+
+    logInfo("Operational mode detected: " + std::string(operationalModeToString(m_operationalMode)));
+    logInfo("Detection reason: " + detectionResult.detectionReason);
+
+    // Initialize .cronus/ directory if it doesn't exist
+    if(!detectionResult.hasExistingConfig)
+    {
+        logInfo("No existing configuration found. Initializing directory structure...");
+        
+        auto initResult = DirectoryInitializer::initialize(m_workingDirectory, m_operationalMode);
+        
+        if(initResult.success)
+        {
+            logInfo(initResult.message);
+        }
+        else
+        {
+            logWarning(initResult.message);
+        }
+    }
+    else
+    {
+        logInfo("Using existing .cronus/ configuration");
+        
+        // Validate existing structure
+        if(!DirectoryInitializer::validateStructure(m_workingDirectory, m_operationalMode))
+        {
+            logWarning("Existing directory structure may be incomplete or invalid");
+        }
+    }
+
     configPaths.push_back(resourcePath/"loreforge");
     if(home)
     {
@@ -282,6 +428,13 @@ void Config::load(const std::string &resourceDir)
         {
             loadFromFile(homeConfig);
         }
+        
+        // Also try JSON config
+        std::filesystem::path homeConfigJson=std::filesystem::path(home)/".cronus"/"config.json";
+        if(std::filesystem::exists(homeConfigJson))
+        {
+            loadFromJsonFile(homeConfigJson);
+        }
     }
 
     // Load from current directory config
@@ -289,6 +442,13 @@ void Config::load(const std::string &resourceDir)
     if(std::filesystem::exists(localConfig))
     {
         loadFromFile(localConfig);
+    }
+    
+    // Also try JSON config (preferred for new installations)
+    std::filesystem::path localConfigJson=".cronus/config.json";
+    if(std::filesystem::exists(localConfigJson))
+    {
+        loadFromJsonFile(localConfigJson);
     }
 }
 

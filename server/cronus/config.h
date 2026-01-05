@@ -1,6 +1,8 @@
 #ifndef _cronus_config_h_
 #define _cronus_config_h_
 
+#include "cronus/modeDetector.h"
+
 #include <string>
 #include <optional>
 #include <filesystem>
@@ -41,10 +43,53 @@ public:
      */
     std::vector<std::filesystem::path> getConfigPaths() const;
 
+    /**
+     * @brief Get the operational mode (single-agent or multi-agent)
+     * @return Current operational mode
+     */
+    OperationalMode getOperationalMode() const { return m_operationalMode; }
+
+    /**
+     * @brief Set the operational mode
+     * @param mode Operational mode to set
+     */
+    void setOperationalMode(OperationalMode mode) { m_operationalMode = mode; }
+
+    /**
+     * @brief Get the working directory
+     * @return Working directory path
+     */
+    std::filesystem::path getWorkingDirectory() const { return m_workingDirectory; }
+
+    /**
+     * @brief Get the notification host for startup notifications
+     * @return Notification host (default: localhost)
+     */
+    std::string getNotificationHost() const { return m_notificationHost; }
+
+    /**
+     * @brief Get the notification port for startup notifications
+     * @return Notification port (default: 8999)
+     */
+    int getNotificationPort() const { return m_notificationPort; }
+
+    /**
+     * @brief Set the notification host
+     * @param host Notification host
+     */
+    void setNotificationHost(const std::string &host) { m_notificationHost = host; }
+
+    /**
+     * @brief Set the notification port
+     * @param port Notification port
+     */
+    void setNotificationPort(int port) { m_notificationPort = port; }
+
 private:
     Config()=default;
     void loadFromEnv();
     void loadFromFile(const std::filesystem::path &configPath);
+    void loadFromJsonFile(const std::filesystem::path &configPath);
     void loadModelDefinitions(const std::string &resourcePath);
     void loadModelsFromFile(const std::filesystem::path &configPath, bool override=false);
     void loadModelsFromDirectory(const std::filesystem::path &dirPath, bool override=false);
@@ -55,6 +100,10 @@ private:
     std::map<std::string, std::string> m_apiKeys;
     std::vector<ModelConfig> m_modelConfigs;
     std::string m_resourceDirectory;
+    std::filesystem::path m_workingDirectory{ "." };
+    OperationalMode m_operationalMode{ OperationalMode::SingleAgent };
+    std::string m_notificationHost{ "localhost" };
+    int m_notificationPort{ 8999 };
 };
 
 } // namespace cronus

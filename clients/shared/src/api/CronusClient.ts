@@ -1,5 +1,4 @@
 import EventEmitter from 'eventemitter3';
-import { SSEManager } from './SSEManager';
 import {
     Message,
     FileTree,
@@ -17,11 +16,42 @@ export interface CronusClientConfig {
     healthCheckInterval?: number;
 }
 
+interface JsonRpcRequest {
+    jsonrpc: '2.0';
+    method: string;
+    params?: any;
+    id: number | string;
+}
+
+interface JsonRpcResponse {
+    jsonrpc: '2.0';
+    result?: any;
+    error?: {
+        code: number;
+        message: string;
+        data?: any;
+    };
+    id: number | string | null;
+}
+
+interface JsonRpcNotification {
+    jsonrpc: '2.0';
+    method: string;
+    params?: any;
+}
+
 export class CronusClient extends EventEmitter {
     private config: Required<CronusClientConfig>;
-    private sseManager: SSEManager;
+    private ws: WebSocket | null = null;
     private healthCheckTimer: NodeJS.Timeout | null = null;
     private connectionStatus: ConnectionStatus = { connected: false };
+    private requestId = 0;
+    private pendingRequests = new Map<number | string, {
+        resolve: (value: any) => void;
+        reject: (error: Error) => void;
+    }>();
+    private reconnectTimer: NodeJS.Timeout | null = null;
+    private reconnectAttempts = 0;
 
     constructor(config: CronusClientConfig) {
         super();
@@ -31,22 +61,13 @@ export class CronusClient extends EventEmitter {
             maxReconnectAttempts: config.maxReconnectAttempts ?? 0,
             healthCheckInterval: config.healthCheckInterval ?? 30000,
         };
-
-        // Initialize SSE manager
-        this.sseManager = new SSEManager({
-            baseUrl: this.config.baseUrl,
-            reconnectInterval: this.config.reconnectInterval,
-            maxReconnectAttempts: this.config.maxReconnectAttempts,
-        });
-
-        this.setupSSEHandlers();
     }
 
     /**
-     * Start the client (connect SSE and start health checks)
+     * Start the client (connect WebSocket and start health checks)
      */
     start(): void {
-        this.sseManager.connect();
+        this.connectWebSocket();
         this.startHealthCheck();
     }
 
@@ -54,7 +75,7 @@ export class CronusClient extends EventEmitter {
      * Stop the client
      */
     stop(): void {
-        this.sseManager.disconnect();
+        this.disconnectWebSocket();
         this.stopHealthCheck();
     }
 
@@ -62,7 +83,7 @@ export class CronusClient extends EventEmitter {
      * Check if connected to the server
      */
     isConnected(): boolean {
-        return this.connectionStatus.connected;
+        return this.connectionStatus.connected && this.ws?.readyState === WebSocket.OPEN;
     }
 
     /**
@@ -73,65 +94,219 @@ export class CronusClient extends EventEmitter {
     }
 
     /**
+     * Connect to WebSocket
+     */
+    private connectWebSocket(): void {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            return;
+        }
+
+        // Convert HTTP(S) URL to WS(S) URL
+        const wsUrl = this.config.baseUrl.replace(/^http/, 'ws') + '/ws';
+
+        try {
+            this.ws = new WebSocket(wsUrl);
+
+            this.ws.onopen = () => {
+                this.reconnectAttempts = 0;
+                this.updateConnectionStatus(true);
+                this.emit('connected');
+                
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
+            };
+
+            this.ws.onclose = () => {
+                this.updateConnectionStatus(false);
+                this.emit('disconnected');
+                this.scheduleReconnect();
+            };
+
+            this.ws.onerror = (error) => {
+                this.emit('error', new Error('WebSocket error'));
+            };
+
+            this.ws.onmessage = (event) => {
+                this.handleMessage(event.data);
+            };
+        } catch (error) {
+            this.emit('error', error);
+            this.scheduleReconnect();
+        }
+    }
+
+    /**
+     * Disconnect WebSocket
+     */
+    private disconnectWebSocket(): void {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+
+        // Reject all pending requests
+        for (const [id, { reject }] of this.pendingRequests) {
+            reject(new Error('Connection closed'));
+        }
+        this.pendingRequests.clear();
+    }
+
+    /**
+     * Schedule reconnection attempt
+     */
+    private scheduleReconnect(): void {
+        if (this.reconnectTimer) {
+            return;
+        }
+
+        const maxAttempts = this.config.maxReconnectAttempts;
+        if (maxAttempts > 0 && this.reconnectAttempts >= maxAttempts) {
+            this.emit('reconnect-failed', { attempts: this.reconnectAttempts });
+            return;
+        }
+
+        this.reconnectAttempts++;
+        this.emit('reconnecting', { attempt: this.reconnectAttempts, maxAttempts });
+
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            this.connectWebSocket();
+        }, this.config.reconnectInterval);
+    }
+
+    /**
+     * Handle incoming WebSocket message
+     */
+    private handleMessage(data: string): void {
+        try {
+            const message = JSON.parse(data);
+
+            // Handle JSON-RPC response
+            if ('id' in message && message.id !== undefined) {
+                const pending = this.pendingRequests.get(message.id);
+                if (pending) {
+                    this.pendingRequests.delete(message.id);
+                    
+                    if (message.error) {
+                        pending.reject(new Error(message.error.message));
+                    } else {
+                        pending.resolve(message.result);
+                    }
+                }
+            }
+            // Handle JSON-RPC notification
+            else if ('method' in message) {
+                this.handleNotification(message as JsonRpcNotification);
+            }
+        } catch (error) {
+            this.emit('error', error);
+        }
+    }
+
+    /**
+     * Handle JSON-RPC notification
+     */
+    private handleNotification(notification: JsonRpcNotification): void {
+        const { method, params } = notification;
+
+        switch (method) {
+            case 'message':
+                this.emit('message', params);
+                break;
+            case 'log':
+                this.emit('log', params);
+                break;
+            case 'directory_update':
+                this.emit('directory-update', params);
+                break;
+            case 'agent_status':
+                this.emit('agent-status', params);
+                break;
+            default:
+                this.emit('notification', { method, params });
+                break;
+        }
+    }
+
+    /**
+     * Send JSON-RPC request and wait for response
+     */
+    private async sendRequest(method: string, params?: any): Promise<any> {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            throw new Error('WebSocket not connected');
+        }
+
+        const id = ++this.requestId;
+        const request: JsonRpcRequest = {
+            jsonrpc: '2.0',
+            method,
+            params,
+            id,
+        };
+
+        return new Promise((resolve, reject) => {
+            this.pendingRequests.set(id, { resolve, reject });
+
+            try {
+                this.ws!.send(JSON.stringify(request));
+            } catch (error) {
+                this.pendingRequests.delete(id);
+                reject(error);
+            }
+
+            // Set timeout for request
+            setTimeout(() => {
+                if (this.pendingRequests.has(id)) {
+                    this.pendingRequests.delete(id);
+                    reject(new Error('Request timeout'));
+                }
+            }, 30000); // 30 second timeout
+        });
+    }
+
+    /**
      * Fetch the source map (file tree)
      */
     async fetchSourceMap(): Promise<FileTree> {
-        const response = await fetch(`${this.config.baseUrl}/api/sourcemap`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch source map: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data.fileTree || { root: { name: 'root', path: '/', type: 'directory', children: [] } };
+        const result = await this.sendRequest('getSourceMap');
+        return result.fileTree || { root: { name: 'root', path: '/', type: 'directory', children: [] } };
     }
 
     /**
      * Fetch file content
      */
     async fetchFileContent(filePath: string): Promise<FileContent> {
-        const encodedPath = encodeURIComponent(filePath);
-        const response = await fetch(`${this.config.baseUrl}/api/file?path=${encodedPath}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch file: ${response.statusText}`);
-        }
-        return await response.json();
+        return await this.sendRequest('getFile', { path: filePath });
     }
 
     /**
      * Fetch log history
      */
     async fetchLogs(limit: number = 100, levelFilter?: string): Promise<LogEntry[]> {
-        let url = `${this.config.baseUrl}/api/logs?limit=${limit}`;
+        const params: any = { limit };
         if (levelFilter) {
-            url += `&level=${levelFilter}`;
+            params.level = levelFilter;
         }
         
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch logs: ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        return data.logs || [];
+        const result = await this.sendRequest('getLogs', params);
+        return result.logs || [];
     }
 
     /**
      * Send a message/command to the server
      */
     async sendMessage(message: string, sessionId?: string): Promise<void> {
-        const response = await fetch(`${this.config.baseUrl}/api/input`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                input: message,
-                sessionId: sessionId || 'default',
-            }),
+        await this.sendRequest('input', {
+            input: message,
+            sessionId: sessionId || 'default',
         });
-
-        if (!response.ok) {
-            throw new Error(`Failed to send message: ${response.statusText}`);
-        }
     }
 
     /**
@@ -149,72 +324,17 @@ export class CronusClient extends EventEmitter {
 
             const data = await response.json();
             
-            // Update connection status
-            this.updateConnectionStatus(true, latency);
-
             return {
                 status: data.status || 'ok',
                 message: data.message,
                 version: data.version,
             };
         } catch (error) {
-            this.updateConnectionStatus(false);
             return {
                 status: 'error',
                 message: error instanceof Error ? error.message : 'Unknown error',
             };
         }
-    }
-
-    /**
-     * Setup SSE event handlers
-     */
-    private setupSSEHandlers(): void {
-        // Connection events
-        this.sseManager.on('connected', () => {
-            this.updateConnectionStatus(true);
-            this.emit('connected');
-        });
-
-        this.sseManager.on('disconnected', () => {
-            this.updateConnectionStatus(false);
-            this.emit('disconnected');
-        });
-
-        this.sseManager.on('reconnecting', (data) => {
-            this.emit('reconnecting', data);
-        });
-
-        this.sseManager.on('status', (status) => {
-            this.emit('connection-status', status);
-        });
-
-        // Data events
-        this.sseManager.on('message', (data) => {
-            this.emit('message', data);
-        });
-
-        this.sseManager.on('directory_update', (data) => {
-            this.emit('directory-update', data);
-        });
-
-        this.sseManager.on('log', (data) => {
-            this.emit('log', data);
-        });
-
-        this.sseManager.on('agent_status', (data) => {
-            this.emit('agent-status', data);
-        });
-
-        // Forward all events
-        this.sseManager.on('event', (event) => {
-            this.emit('sse-event', event);
-        });
-
-        // Error events
-        this.sseManager.on('error', (error) => {
-            this.emit('error', error);
-        });
     }
 
     /**

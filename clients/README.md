@@ -8,7 +8,8 @@ Monorepo for all Cronus client applications and shared libraries.
 clients/
 ├── shared/          # @cronus/shared - Core API client and utilities
 ├── shared-ui/       # @cronus/shared-ui - React components and hooks
-├── web/             # @cronus/web - React web application
+├── web/             # React web application (browser mode)
+├── app/             # Electron wrapper for web client (standalone mode)
 ├── vscode/          # cronus-vscode - VSCode extension
 └── cli/             # CLI client
 ```
@@ -38,17 +39,43 @@ See [clients/shared-ui/README.md](./shared-ui/README.md) for details.
 
 ### Web Client
 
-React-based web application for Cronus interaction.
+React-based web application for Cronus interaction. Runs in a web browser and connects to a Cronus server.
 
 **Development:**
 ```bash
-npm run dev:web
+cd web
+npm start
 ```
 
 **Build:**
 ```bash
-npm run build:web
+cd web
+npm run build
 ```
+
+See [clients/web/README.md](./web/README.md) for details.
+
+### Standalone App
+
+Electron-based standalone application that wraps the web client. Allows running Cronus as a native desktop application without a browser.
+
+**Build & Run:**
+```bash
+# Build everything (from clients/ directory)
+./build-app.sh
+
+# Or build manually
+cd web && npm run build && cd ../app && npm run build
+
+# Run the app
+cd app
+npm start       # Production mode
+npm run dev     # Development mode with DevTools
+```
+
+The app automatically detects it's running in Electron and uses the preload API for server communication instead of direct HTTP/SSE.
+
+See [clients/app/README.md](./app/README.md) for details.
 
 ### VSCode Extension
 
@@ -89,14 +116,26 @@ npm run build:shared-ui
 
 ### Development Workflow
 
-**Working on Web Client:**
+**Working on Web Client (Browser Mode):**
 ```bash
 # Terminal 1: Watch shared libraries
 npm run watch:shared
 npm run watch:shared-ui
 
 # Terminal 2: Run web dev server
-npm run dev:web
+cd web
+npm start
+```
+
+**Working on Standalone App:**
+```bash
+# Build web client first
+cd web
+npm run build
+
+# Then build and run Electron wrapper
+cd ../app
+npm run dev
 ```
 
 **Working on VSCode Extension:**

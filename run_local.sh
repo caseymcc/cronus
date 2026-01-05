@@ -4,20 +4,21 @@ CONTAINER_NAME="cronus_dev"
 DEFAULT_CACHE_DIR="$HOME/.cache/vcpkg"
 VCPKG_CACHE_DIR="${VCPKG_CACHE_DIR:-$DEFAULT_CACHE_DIR}"
 HOST_API_PORT=9000  # Default port for the host API
+NOTIFICATION_PORT=8999  # Default port for notifications
 
 # Function to show usage
 usage() {
-    echo "Usage: $0 [-r] [-s] [-a] [-p PORT] [-d] [command...]"
+    echo "Usage: $0 [-r] [-s] [-v PATH] [-p PORT] [-a] [command...]"
     echo "  -r: Rebuild Docker image"
     echo "  -s: Stop running container before starting"
     echo "  -v: Path to vcpkg installation on host system"
-    echo "  -a: Enable access to host API (for development server)"
     echo "  -p: Port where Cronus API is running on host (default: 9000)"
-    echo "  -d: Start the debug client (runs on host, not in Docker)"
+    echo "  -n: Notification port (default: 8999)"
+    echo "  -a: Start the standalone Electron app (clients/app)"
     echo ""
     echo "Examples:"
     echo "  $0                       # Start interactive shell in container"
-    echo "  $0 -d                    # Build and start debug client on host"
+    echo "  $0 -a                    # Build and start standalone app"
     echo "  $0 bash -c 'ls -la'      # Run command in container"
     exit 1
 }
@@ -25,15 +26,16 @@ usage() {
 # Parse command line options
 REBUILD=0
 STOP=0
-DEBUG_CLIENT=0
+STANDALONE_APP=0
 
-while getopts "rsv:ap:d" opt; do
+while getopts "rsv:p:n:a" opt; do
     case $opt in
         r) REBUILD=1 ;;
         s) STOP=1 ;;
         v) VCPKG_CACHE_DIR="$OPTARG" ;;
         p) HOST_API_PORT="$OPTARG" ;;
-        d) DEBUG_CLIENT=1 ;;
+        n) NOTIFICATION_PORT="$OPTARG" ;;
+        a) STANDALONE_APP=1 ;;
         ?) usage ;;
     esac
 done
@@ -41,21 +43,21 @@ done
 # Shift past the parsed options to get remaining arguments
 shift $((OPTIND-1))
 
-# Handle debug client launch
-if [ $DEBUG_CLIENT -eq 1 ]; then
-    echo "Building and starting debug client..."
+# Handle standalone app launch
+if [ $STANDALONE_APP -eq 1 ]; then
+    echo "Building and starting standalone Electron app..."
     
     # First, ensure dependencies are built in Docker
     echo "Building shared libraries in Docker..."
-    $0 ./clients/build-debug-client.sh
+    $0 ./clients/build-app.sh
     
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to build debug client dependencies"
+        echo "Error: Failed to build app dependencies"
         exit 1
     fi
     
-    # Start the debug client inside Docker with X11 forwarding
-    echo "Starting debug client in Docker with X11 display..."
+    # Start the app inside Docker with X11 forwarding
+    echo "Starting Cronus standalone app in Docker with X11 display..."
     
     # Allow X11 connections from Docker
     xhost +local:docker 2>/dev/null || echo "Warning: xhost not available, X11 forwarding may not work"
@@ -63,8 +65,10 @@ if [ $DEBUG_CLIENT -eq 1 ]; then
     # Run Electron in Docker with X11 display
     docker exec -it \
         -e DISPLAY=$DISPLAY \
+        -e CRONUS_SERVER_URL=http://localhost:9000 \
+        -e NOTIFICATION_PORT=$NOTIFICATION_PORT \
         $CONTAINER_NAME \
-        bash -c "cd /app/clients/debug && npm start"
+        bash -c "cd /app/clients/app && npm start"
     
     exit $?
 fi
@@ -84,6 +88,7 @@ fi
 # Set up network options for container
 NETWORK_OPTS="--add-host=host.docker.internal:host-gateway"
 NETWORK_OPTS="$NETWORK_OPTS -e REACT_APP_API_URL=http://host.docker.internal:$HOST_API_PORT"
+NETWORK_OPTS="$NETWORK_OPTS -e NOTIFICATION_PORT=$NOTIFICATION_PORT"
 
 # Get host user ID and group ID
 HOST_UID=$(id -u)
@@ -142,6 +147,8 @@ else
             $GIT_MOUNTS \
             $X11_OPTS \
             -p 3000:3000 \
+            -p $HOST_API_PORT:9000 \
+            -p $NOTIFICATION_PORT:8999 \
             $NETWORK_OPTS \
             cronus
     else
@@ -157,6 +164,8 @@ else
             $GIT_MOUNTS \
             $X11_OPTS \
             -p 3000:3000 \
+            -p $HOST_API_PORT:9000 \
+            -p $NOTIFICATION_PORT:8999 \
             $NETWORK_OPTS \
             cronus tail -f /dev/null
         

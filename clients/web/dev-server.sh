@@ -3,7 +3,7 @@
 # It will run inside the Docker container if it exists, otherwise locally
 
 CONTAINER_NAME="cronus_dev"
-DEFAULT_API_URL="http://localhost:8080"
+DEFAULT_API_URL="http://localhost:9000"
 
 # Check if Docker is available
 if command -v docker &> /dev/null; then

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Cronus Debug Client Build Script
-# This script builds all necessary components for the debug client
+# Cronus Standalone App Build Script
+# This script builds the web client and wraps it in an Electron app
 
 set -e  # Exit on error
 
 echo "================================================"
-echo "Building Cronus Debug Client"
+echo "Building Cronus Standalone App"
 echo "================================================"
 
 # Colors for output
@@ -42,15 +42,27 @@ cd shared-ui
 npm run build
 cd ..
 
-# Install debug client dependencies (now that shared-ui is built)
-echo -e "\n${BLUE}Step 5: Installing debug client dependencies...${NC}"
-cd debug
+# Install web client dependencies
+echo -e "\n${BLUE}Step 5: Installing web client dependencies...${NC}"
+cd web
 npm install
 cd ..
 
-# Build debug client
-echo -e "\n${BLUE}Step 6: Building debug client...${NC}"
-cd debug
+# Build web client
+echo -e "\n${BLUE}Step 6: Building web client...${NC}"
+cd web
+npm run build
+cd ..
+
+# Install app (Electron wrapper) dependencies
+echo -e "\n${BLUE}Step 7: Installing app dependencies...${NC}"
+cd app
+npm install
+cd ..
+
+# Build and package the Electron app
+echo -e "\n${BLUE}Step 8: Building Electron app...${NC}"
+cd app
 npm run build
 cd ..
 
@@ -61,8 +73,8 @@ echo -e "${GREEN}================================================${NC}"
 # Fix permissions if running in Docker (HOST_UID and HOST_GID will be set)
 if [ -n "$HOST_UID" ] && [ -n "$HOST_GID" ]; then
     echo -e "\n${BLUE}Fixing file permissions for host user...${NC}"
-    chown -R $HOST_UID:$HOST_GID shared/dist shared-ui/dist debug/dist 2>/dev/null || true
-    chown -R $HOST_UID:$HOST_GID shared/node_modules shared-ui/node_modules debug/node_modules 2>/dev/null || true
+    chown -R $HOST_UID:$HOST_GID shared/dist shared-ui/dist web/build app/dist app/renderer 2>/dev/null || true
+    chown -R $HOST_UID:$HOST_GID shared/node_modules shared-ui/node_modules web/node_modules app/node_modules 2>/dev/null || true
 fi
 
 echo -e "\n${BLUE}Next steps:${NC}"
@@ -70,14 +82,11 @@ echo "1. Start Cronus server:"
 echo "   cd /home/caseymcc/projects/cronus"
 echo "   ./run_local.sh ./build/linux_x64_debug/server/cronus/cronus"
 echo ""
-echo "2. Start debug client:"
-echo "   cd /home/caseymcc/projects/cronus/clients/debug"
+echo "2. Start standalone app:"
+echo "   cd /home/caseymcc/projects/cronus/clients/app"
 echo "   npm start"
 echo ""
-echo "2. Open VSCode extension:"
-echo "   - Open the clients/vscode folder in VSCode"
-echo "   - Press F5 to debug the extension"
-echo "   - Run 'Cronus: Open Debug Panel' from command palette"
-echo ""
-echo "3. Or run web client:"
-echo "   npm run dev:web"
+echo "3. Or run web client in browser:"
+echo "   cd /home/caseymcc/projects/cronus/clients/web"
+echo "   npm start"
+

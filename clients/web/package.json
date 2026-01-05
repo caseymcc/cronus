@@ -3,20 +3,26 @@
     "version": "0.1.0",
     "private": true,
     "dependencies": {
+      "@cronus/shared": "file:../shared",
       "@testing-library/jest-dom": "^5.17.0",
       "@testing-library/react": "^13.4.0",
       "@testing-library/user-event": "^13.5.0",
+      "concurrently": "^8.2.2",
+      "eventemitter3": "^5.0.1",
       "flexlayout-react": "^0.7.15",
       "react": "^18.2.0",
       "react-dom": "^18.2.0",
       "react-scripts": "5.0.1",
-      "web-vitals": "^2.1.4"
+      "web-vitals": "^2.1.4",
+      "ws": "^8.16.0"
     },
     "scripts": {
       "start": "react-scripts start",
       "build": "react-scripts build",
       "test": "react-scripts test",
-      "eject": "react-scripts eject"
+      "eject": "react-scripts eject",
+      "notification-listener": "node notification-listener.js",
+      "dev": "concurrently \"npm run notification-listener\" \"npm start\""
     },
     "eslintConfig": {
       "extends": [
@@ -36,5 +42,5 @@
         "last 1 safari version"
       ]
     },
-    "proxy": "http://localhost:8080"
+    "proxy": "http://localhost:9000"
   }

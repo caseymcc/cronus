@@ -58,7 +58,7 @@ The evaluation system will automatically start and stop the Cronus server as nee
 
 ## Step 4: Run Evaluation (Automatic Docker)
 
-The evaluation automatically runs in Docker with all dependencies installed.
+The evaluation script automatically manages Docker for you - no manual setup needed!
 
 **Important**: The evaluation script will automatically verify that Cronus is built before starting. If not built, it will display an error with build instructions.
 
@@ -84,17 +84,29 @@ Please build Cronus first:
 ./evaluation/run_evaluation.sh
 ```
 
+### Rebuild Docker Image
+
+If you've updated dependencies or Python packages:
+
+```bash
+# Rebuild Docker image (does not run evaluation)
+./evaluation/run_evaluation.sh --rebuild
+
+# Then run evaluation
+./evaluation/run_evaluation.sh --language python
+```
+
 ### How It Works
 
-The script automatically:
-1. Detects it's running on the host system
-2. Launches the Cronus Docker container
-3. Re-executes itself with all dependencies (pytest, jest, g++, sseclient-py)
+The `run_evaluation.sh` script automatically:
+1. Checks if Docker image exists, builds if needed
+2. Starts Docker container with all dependencies (pytest, jest, g++, websocket-client)
+3. Mounts your project directory
 4. **Verifies Cronus is built** (stops with error if not)
-5. Starts the Cronus server (via Python evaluation script)
-6. Runs the evaluation with detailed interaction logging
+5. Starts the Cronus server inside container (via Python evaluation script)
+6. Runs the evaluation with detailed interaction logging via WebSocket
 7. Stops the Cronus server automatically
-8. Saves results to your local filesystem
+8. Saves results to your local filesystem (via mounted volume)
 
 ### Troubleshooting
 

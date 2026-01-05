@@ -30,7 +30,8 @@ void Cronus::run(const std::string& resourcePath)
         m_resourcePath = resourcePath;
     }
 
-    startWebServer(9000);
+    // Note: Web server is now started explicitly via startWebServer()
+    // This allows running Cronus without the web UI
     m_workerThread = std::thread(&Cronus::workerLoop, this);
 
     //wait for thread to start
@@ -290,7 +291,8 @@ void Cronus::startWebServer(int port)
         m_webServer = std::make_unique<WebServer>(*this, port);
     }
     
-    if (!m_webServer->isRunning()) {
+    if (!m_webServer->isRunning())
+    {
         m_webServer->start();
         
         // Wire up the response callback to broadcast messages to all connected clients

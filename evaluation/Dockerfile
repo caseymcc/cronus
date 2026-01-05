@@ -32,10 +32,14 @@ RUN pip3 install --no-cache-dir \
     pytest \
     pytest-cov \
     requests \
-    sseclient-py
+    websocket-client
 
 # Install Node.js testing tools globally
 RUN npm install -g jest
+
+# Set library path for Cronus server to find shared libraries
+# This includes the build directory where libloreforge.so and other libraries are located
+ENV LD_LIBRARY_PATH=/app/build/linux_x64_debug:/app/build/linux_x64_debug/server/loreforge:/app/build/linux_x64_debug/server/arbiterAI
 
 # Set working directory
 WORKDIR /app

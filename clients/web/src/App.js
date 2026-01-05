@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Layout, Model, TabNode, IJsonModel } from 'flexlayout-react';
+import { Layout, Model, TabNode } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
 import './App.css';
 import DirectoryTree from './components/DirectoryTree';
 import Chat from './components/Chat';
 import InputArea from './components/InputArea';
 import FileEditor from './components/FileEditor';
+import { isElectronEnvironment, getApiBaseUrl, subscribeToConnectionEvents, subscribeToLogs } from './utils/electronBridge';
+import { useServerNotifications } from './hooks/useServerNotifications';
+import { useCronusClient } from './hooks/useCronusClient';
 
 function App() {
   const [messages, setMessages] = useState({});
@@ -15,10 +18,19 @@ function App() {
   const [fileTree, setFileTree] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [sseConnected, setSseConnected] = useState(false);
   const [loadedFiles, setLoadedFiles] = useState({});
+  const [isElectron, setIsElectron] = useState(false);
+  const [currentApiUrl, setCurrentApiUrl] = useState(null);
+  const [electronConnected, setElectronConnected] = useState(false);
   
   const layoutRef = useRef(null);
+  const pollingIntervalRef = useRef(null);
+
+  const apiBaseUrl = currentApiUrl || getApiBaseUrl() || process.env.REACT_APP_API_URL || 'http://localhost:9000';
+  
+  // Use CronusClient hook for WebSocket communication (browser mode only)
+  const cronusClient = useCronusClient(!isElectronEnvironment() ? apiBaseUrl : null);
+  const connected = isElectronEnvironment() ? electronConnected : cronusClient.connected;
   
   // Create the initial JSON model for FlexLayout
   const createJsonModel = () => {
@@ -71,15 +83,26 @@ function App() {
     return model;
   };
   
-  const [layoutModel, setLayoutModel] = useState(
+  const [layoutModel] = useState(
     Model.fromJson(createJsonModel())
   );
   const [layoutReady, setLayoutReady] = useState(false);
 
-  const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
-  
-  const pollingIntervalRef = useRef(null);
-  const eventSourceRef = useRef(null);
+  // Handle server startup notifications (browser mode only)
+  const handleServerStartup = useCallback((serverUrl) => {
+    console.log('Server started at:', serverUrl);
+    setCurrentApiUrl(serverUrl);
+    
+    // Reconnect to the new server
+    setTimeout(() => {
+      window.location.reload(); // Simple approach: reload to reconnect
+    }, 500);
+  }, []);
+
+  // Listen for server startup notifications (browser mode only)
+  const { isListening } = useServerNotifications(
+    isElectronEnvironment() ? null : handleServerStartup
+  );
   
   // Function to fetch source map data initially or as fallback
   const fetchSourceMapData = useCallback(async () => {
@@ -137,63 +160,47 @@ function App() {
     }
   }, [apiBaseUrl, loadedFiles]);
   
-  // Setup Server-Sent Events connection
-  const setupSSE = useCallback(() => {
-    // Close any existing connection
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-    }
+  // Set up CronusClient event listeners for real-time updates
+  useEffect(() => {
+    if (!cronusClient.client) return;
     
-    try {
-      // Create new SSE connection
-      const eventSource = new EventSource(`${apiBaseUrl}/api/events`);
-      eventSourceRef.current = eventSource;
-      
-      // Connection opened
-      eventSource.onopen = () => {
-        console.log('SSE connection established');
-        setSseConnected(true);
-      };
-      
-      // Listen for messages
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === 'directory_update' || data.type === 'directory_init') {
-            console.log(`Received ${data.type} from server`);
-            
-            // Update the file tree state with new data
-            if (data.fileTree) {
-              setFileTree(data.fileTree);
-            }
-          }
-        } catch (error) {
-          console.error('Error handling SSE message:', error);
-        }
-      };
-      
-      // Handle errors
-      eventSource.onerror = (error) => {
-        console.error('SSE connection error:', error);
-        setSseConnected(false);
-        
-        // Try to reconnect after a delay
-        setTimeout(() => {
-          setupSSE();
-        }, 5000);
-      };
-      
-      return eventSource;
-    } catch (error) {
-      console.error('Error setting up SSE:', error);
-      setSseConnected(false);
-      return null;
-    }
-  }, [apiBaseUrl]);
+    const handleMessage = (message) => {
+      console.log('Received message from server:', message);
+      // Handle incoming messages
+      const tabId = 'main'; // TODO: route to appropriate tab
+      setMessages(prev => ({
+        ...prev,
+        [tabId]: [...(prev[tabId] || []), message]
+      }));
+    };
+    
+    const handleLog = (log) => {
+      console.log('Received log from server:', log);
+      setLogs(prev => [...prev, log]);
+    };
+    
+    const handleDirectoryUpdate = (data) => {
+      console.log('Received directory update from server');
+      if (data.fileTree) {
+        setFileTree(data.fileTree);
+      }
+    };
+    
+    cronusClient.client.on('message', handleMessage);
+    cronusClient.client.on('log', handleLog);
+    cronusClient.client.on('directory_update', handleDirectoryUpdate);
+    cronusClient.client.on('directory_init', handleDirectoryUpdate);
+    
+    return () => {
+      cronusClient.client.off('message', handleMessage);
+      cronusClient.client.off('log', handleLog);
+      cronusClient.client.off('directory_update', handleDirectoryUpdate);
+      cronusClient.client.off('directory_init', handleDirectoryUpdate);
+    };
+  }, [cronusClient.client]);
   
   // Function to send user input to the API
-  const sendInput = async (input, tabId = 'main') => {
+  const sendInput = useCallback(async (input, tabId = 'main') => {
     try {
       setIsLoading(true);
       // Add user message to chat
@@ -217,7 +224,23 @@ function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiBaseUrl]);
+  
+  // Get the active tab ID from the FlexLayout model
+  const getActiveTabId = useCallback(() => {
+    if (!layoutRef.current) return 'main';
+    
+    const model = layoutRef.current.getModel();
+    const activeTabset = model.getActiveTabset();
+    
+    if (!activeTabset) return 'main';
+    
+    const activeTabNode = activeTabset.getSelectedNode();
+    if (!activeTabNode || activeTabNode.getType() !== 'tab') return 'main';
+    
+    const config = activeTabNode.getConfig() || {};
+    return config.tabId || activeTabNode.getId();
+  }, []);
   
   // Poll for new messages (still need this for messages)
   const pollMessages = useCallback(async () => {
@@ -281,23 +304,7 @@ function App() {
     } catch (error) {
       console.error('Error polling messages:', error);
     }
-  }, [apiBaseUrl]);
-  
-  // Get the active tab ID from the FlexLayout model
-  const getActiveTabId = useCallback(() => {
-    if (!layoutRef.current) return 'main';
-    
-    const model = layoutRef.current.getModel();
-    const activeTabset = model.getActiveTabset();
-    
-    if (!activeTabset) return 'main';
-    
-    const activeTabNode = activeTabset.getSelectedNode();
-    if (!activeTabNode || activeTabNode.getType() !== 'tab') return 'main';
-    
-    const config = activeTabNode.getConfig() || {};
-    return config.tabId || activeTabNode.getId();
-  }, []);
+  }, [apiBaseUrl, getActiveTabId]);
   
   // Create a new tab in the FlexLayout model
   const createTab = useCallback((tabId, title, isFile = false, component = 'chat-panel') => {
@@ -466,6 +473,47 @@ function App() {
   
   // Set up SSE and polling on component mount
   useEffect(() => {
+    // Detect if running in Electron
+    const checkElectron = async () => {
+      const isElectronEnv = isElectronEnvironment();
+      setIsElectron(isElectronEnv);
+      
+      if (isElectronEnv) {
+        console.log('Running in Electron environment');
+        
+        // Subscribe to Electron events
+        const unsubscribe = subscribeToConnectionEvents(
+          () => {
+            console.log('Electron: Connected to Cronus server');
+            setElectronConnected(true);
+          },
+          () => {
+            console.log('Electron: Disconnected from Cronus server');
+            setElectronConnected(false);
+          },
+          (error) => {
+            console.error('Electron: Connection error:', error);
+          }
+        );
+        
+        // Subscribe to logs from Electron
+        const unsubscribeLogs = subscribeToLogs((log) => {
+          setLogs(prev => [...prev, {
+            level: log.level,
+            message: log.message,
+            timestamp: new Date(log.timestamp)
+          }]);
+        });
+        
+        return () => {
+          unsubscribe();
+          unsubscribeLogs();
+        };
+      }
+    };
+    
+    checkElectron();
+    
     // Ensure main tab exists
     if (!messages['main']) {
       setMessages(prev => ({
@@ -474,33 +522,30 @@ function App() {
       }));
     }
     
-    // Fetch source map data initially as a fallback
-    fetchSourceMapData();
-    
-    // Setup SSE for real-time directory updates
-    const eventSource = setupSSE();
-    
-    // Start polling for messages
-    pollingIntervalRef.current = setInterval(pollMessages, 1000);
-    
-    // Clean up on unmount
-    return () => {
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-      }
-      if (eventSource) {
-        eventSource.close();
-      }
-    };
-  }, [fetchSourceMapData, pollMessages, setupSSE]);
+    // Only set up browser polling if NOT in Electron (WebSocket handled by useCronusClient hook)
+    if (!isElectronEnvironment()) {
+      // Fetch source map data initially as a fallback
+      fetchSourceMapData();
+      
+      // Start polling for messages
+      pollingIntervalRef.current = setInterval(pollMessages, 1000);
+      
+      // Clean up on unmount
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+      };
+    }
+  }, [fetchSourceMapData, pollMessages, messages]);
   
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Cronus</h1>
+        <h1>Cronus {isElectron && <span style={{fontSize: '0.6em', opacity: 0.7}}>(Standalone)</span>}</h1>
         <div className="header-controls">
-          <span className={`connection-status ${sseConnected ? 'connected' : 'disconnected'}`}>
-            {sseConnected ? 'Events: Connected' : 'Events: Disconnected'}
+          <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+            {isElectron ? (connected ? 'Server: Connected' : 'Server: Disconnected') : (connected ? 'Events: Connected' : isListening ? 'Waiting for server...' : 'Events: Disconnected')}
           </span>
           <button
             className="control-button"
@@ -548,20 +593,20 @@ function App() {
       <footer className="app-footer">
         <div className="status-bar">
           <div className="status-items">
-            <div className="status-item" title={sseConnected ? "Connected to server events" : "Not connected to server events"}>
-              <div className={`status-indicator ${sseConnected ? 'connected' : 'disconnected'}`}>
+            <div className="status-item" title={connected ? "Connected to server events" : "Not connected to server events"}>
+              <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}>
                 <svg viewBox="0 0 24 24" width="16" height="16">
-                  {sseConnected ? (
+                  {connected ? (
                     <path fill="currentColor" d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
                   ) : (
                     <path fill="currentColor" d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
                   )}
                 </svg>
               </div>
-              <span className="status-text">Events: {sseConnected ? 'Connected' : 'Disconnected'}</span>
+              <span className="status-text">{isElectron ? 'Server' : 'Events'}: {connected ? 'Connected' : 'Disconnected'}</span>
             </div>
             <div className="status-item">
-              <span className="status-text">API URL: {apiBaseUrl}</span>
+              <span className="status-text">{isElectron ? 'Mode: Standalone' : `API URL: ${apiBaseUrl}`}</span>
             </div>
           </div>
         </div>

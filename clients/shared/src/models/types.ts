@@ -62,9 +62,3 @@ export interface ServerHealth {
     version?: string;
     uptime?: number;
 }
-
-export interface SSEEvent {
-    type: string;
-    data: any;
-    timestamp?: number;
-}

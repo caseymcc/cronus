@@ -1,6 +1,7 @@
 #!/bin/bash
 # Main evaluation runner script
 # Runs agent evaluation against Exercism exercises
+# Automatically manages Docker container for evaluation
 
 set -e
 
@@ -10,6 +11,10 @@ EXERCISES_DIR="${SCRIPT_DIR}/exercises"
 RESULTS_DIR="${SCRIPT_DIR}/results"
 SCRIPTS_DIR="${SCRIPT_DIR}/scripts"
 CONFIG_FILE="${SCRIPT_DIR}/config.json"
+
+# Docker configuration
+CONTAINER_NAME="cronus_eval"
+IMAGE_NAME="cronus-evaluation"
 
 # Colors for output
 RED='\033[0;31m'
@@ -23,7 +28,8 @@ LANGUAGE=""
 EXERCISE=""
 DRY_RUN=false
 VERBOSE=false
-USE_DOCKER=false
+REBUILD_DOCKER=false
+NO_DOCKER=false
 
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -48,13 +54,15 @@ usage() {
 Usage: $0 [OPTIONS]
 
 Run Cronus agent evaluation against Exercism exercises.
-Automatically runs in Docker container with all dependencies installed.
+By default, automatically runs in Docker container with all dependencies installed.
 
 OPTIONS:
     -l, --language LANG     Run evaluation for specific language (cpp, python, javascript)
     -e, --exercise NAME     Run specific exercise by name
     -d, --dry-run          Show what would be evaluated without running
     -v, --verbose          Enable verbose output
+    -r, --rebuild          Rebuild Docker image and exit (does not run evaluation)
+    --no-docker            Run directly on host (not recommended, requires all deps)
     -h, --help             Show this help message
 
 EXAMPLES:
@@ -67,6 +75,9 @@ EXAMPLES:
     # Run specific exercise
     $0 --language python --exercise hello-world
 
+    # Rebuild Docker image only (does not run evaluation)
+    $0 --rebuild
+
     # Dry run to see what would be executed
     $0 --dry-run
 
@@ -74,8 +85,17 @@ EXAMPLES:
     $0 --language cpp --verbose
 
 NOTE:
-    This script automatically runs inside the Cronus Docker container.
-    All dependencies (pytest, jest, g++, etc.) are available in the container.
+    This script automatically manages the Docker container.
+    - Builds image if not present
+    - Runs evaluation inside container
+    - All dependencies (pytest, jest, g++, etc.) are available in the container
+    
+    The --rebuild flag ONLY rebuilds the Docker image and exits.
+    To rebuild and then run evaluation, use two commands:
+      $0 --rebuild
+      $0 --language python
+    
+    Use --no-docker only if you have all dependencies installed on your host system.
 EOF
 }
 
@@ -104,6 +124,14 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        -r|--rebuild)
+            REBUILD_DOCKER=true
+            shift
+            ;;
+        --no-docker)
+            NO_DOCKER=true
+            shift
+            ;;
         -h|--help)
             usage
             exit 0
@@ -116,12 +144,38 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# If not already in Docker, re-execute this script inside the container
-if [ "$IN_DOCKER" = false ]; then
-    log_info "Running evaluation in Docker container..."
+# If not already in Docker and not disabled, manage Docker container
+if [ "$IN_DOCKER" = false ] && [ "$NO_DOCKER" = false ]; then
+    log_info "Managing Docker container for evaluation..."
     
-    # Build arguments array to pass to docker
-    DOCKER_ARGS=()
+    # Check if image needs to be built or rebuilt
+    if [ "$REBUILD_DOCKER" = true ] || ! docker image inspect ${IMAGE_NAME} >/dev/null 2>&1; then
+        if [ "$REBUILD_DOCKER" = true ]; then
+            log_info "Rebuilding evaluation Docker image..."
+        else
+            log_info "Building evaluation Docker image (first time)..."
+        fi
+        docker build -t ${IMAGE_NAME} -f "${SCRIPT_DIR}/Dockerfile" "${SCRIPT_DIR}"
+        
+        # If --rebuild was explicitly requested, stop here
+        if [ "$REBUILD_DOCKER" = true ]; then
+            log_info "Docker image rebuilt successfully"
+            log_info "Run without --rebuild to execute evaluation"
+            exit 0
+        fi
+    fi
+    
+    # Remove existing container if running
+    docker rm -f ${CONTAINER_NAME} 2>/dev/null || true
+    
+    # Get host network interface IP (for accessing host services)
+    HOST_IP=$(ip route get 1 | awk '{print $7;exit}')
+    
+    log_info "Running evaluation in Docker container..."
+    log_info "Host IP: ${HOST_IP} (for accessing llama.cpp server)"
+    
+    # Build arguments array to pass to container
+    DOCKER_ARGS=("./run_evaluation.sh")
     
     if [ -n "$LANGUAGE" ]; then
         DOCKER_ARGS+=("--language" "$LANGUAGE")
@@ -139,13 +193,31 @@ if [ "$IN_DOCKER" = false ]; then
         DOCKER_ARGS+=("--verbose")
     fi
     
-    # Execute in Docker using evaluation's run_in_docker.sh
-    # The container runs from /app/evaluation, so we can call the script directly
-    exec "${SCRIPT_DIR}/run_in_docker.sh" ./run_evaluation.sh "${DOCKER_ARGS[@]}"
+    # Add --no-docker to prevent infinite recursion inside container
+    DOCKER_ARGS+=("--no-docker")
+    
+    # Run container with:
+    # - Project mounted at /app
+    # - Network access to host
+    # - Same user permissions
+    exec docker run --rm -it \
+        --name ${CONTAINER_NAME} \
+        --network host \
+        --add-host=host.docker.internal:host-gateway \
+        -v "${PROJECT_ROOT}:/app" \
+        -w /app/evaluation \
+        -e HOST_IP="${HOST_IP}" \
+        ${IMAGE_NAME} \
+        "${DOCKER_ARGS[@]}"
 fi
 
-# We're now inside Docker, proceed with evaluation
-log_info "Running inside Docker container"
+# We're now either inside Docker or running with --no-docker
+if [ "$IN_DOCKER" = true ]; then
+    log_info "Running inside Docker container"
+elif [ "$NO_DOCKER" = true ]; then
+    log_warn "Running directly on host (--no-docker mode)"
+    log_warn "Ensure all dependencies are installed: python3, pytest, jest, g++, etc."
+fi
 
 # Check if exercises are downloaded
 if [ ! -d "${EXERCISES_DIR}" ]; then
@@ -167,8 +239,8 @@ if ! python3 -c "import requests" 2>/dev/null; then
     MISSING_DEPS+=("requests")
 fi
 
-if ! python3 -c "import sseclient" 2>/dev/null; then
-    MISSING_DEPS+=("sseclient-py")
+if ! python3 -c "import websocket" 2>/dev/null; then
+    MISSING_DEPS+=("websocket-client")
 fi
 
 if [ ${#MISSING_DEPS[@]} -gt 0 ]; then

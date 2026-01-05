@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld('cronusAPI', {
     getLogs: (limit?: number, levelFilter?: string) => 
         ipcRenderer.invoke('cronus:get-logs', limit, levelFilter),
 
+    // Environment detection
+    isElectron: () => ipcRenderer.invoke('cronus:is-electron'),
+
     // Event listeners
     onConnected: (callback: () => void) => {
         ipcRenderer.on('cronus:connected', callback);
@@ -41,6 +44,7 @@ export interface CronusAPI {
     getConnectionStatus: () => Promise<{ connected: boolean; serverUrl: string }>;
     setServerUrl: (url: string) => Promise<{ success: boolean; error?: string }>;
     getLogs: (limit?: number, levelFilter?: string) => Promise<{ success: boolean; logs?: any[]; error?: string }>;
+    isElectron: () => Promise<boolean>;
     onConnected: (callback: () => void) => () => void;
     onDisconnected: (callback: () => void) => () => void;
     onError: (callback: (error: string) => void) => () => void;
@@ -49,6 +53,6 @@ export interface CronusAPI {
 
 declare global {
     interface Window {
-        cronusAPI: CronusAPI;
+        cronusAPI?: CronusAPI;
     }
 }

@@ -123,7 +123,10 @@ WebServer::WebServer(Cronus &cronus, int port)
     registerJsonRpcMethod("getLogs", [this](const json& params) { return handleGetLogs(params); });
 
     // Setup routes once in constructor
-    setupRoutes();
+    if (!m_routesSetup) {
+        setupRoutes();
+        m_routesSetup = true;
+    }
 }
 
 WebServer::~WebServer()
@@ -144,7 +147,12 @@ bool WebServer::start()
     m_serverThread=std::thread([this]()
         {
             Logger::instance().info("Starting web server on port "+std::to_string(m_port));
-            m_app.port(m_port).multithreaded().run();
+            try {
+                m_app.port(m_port).multithreaded().run();
+            } catch (const std::exception& e) {
+                Logger::instance().error(std::string("Web server error: ") + e.what());
+                m_running = false;
+            }
         });
 
     return true;

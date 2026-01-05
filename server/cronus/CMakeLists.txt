@@ -19,15 +19,21 @@ set(cronus_src
     ./commandHandler.cpp
     ./config.h
     ./config.cpp
+    ./directoryInitializer.h
+    ./directoryInitializer.cpp
     ./inputParser.h
     ./inputParser.cpp
     ./logger.h
     ./logger.cpp
     ./main.cpp
+    ./modeDetector.h
+    ./modeDetector.cpp
     ./model.h
     ./model.cpp
     ./sourceMap.h
     ./sourceMap.cpp
+    ./startupNotifier.h
+    ./startupNotifier.cpp
     ./webServer.h
     ./webServer.cpp
     agents/coder.h
@@ -94,10 +100,14 @@ set(cronus_test_src
     ${CMAKE_CURRENT_SOURCE_DIR}/commandHandler.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h
     ${CMAKE_CURRENT_SOURCE_DIR}/config.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/directoryInitializer.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/directoryInitializer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/inputParser.h
     ${CMAKE_CURRENT_SOURCE_DIR}/inputParser.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/logger.h
     ${CMAKE_CURRENT_SOURCE_DIR}/logger.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/modeDetector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/modeDetector.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/model.h
     ${CMAKE_CURRENT_SOURCE_DIR}/model.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/sourceMap.h

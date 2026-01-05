@@ -24,7 +24,7 @@ using json = nlohmann::json;
 class WebServer
 {
 public:
-    explicit WebServer(Cronus &cronus, int port = 8080);
+    explicit WebServer(Cronus &cronus, int port = 9000);
     ~WebServer();
 
     bool start();
@@ -43,7 +43,7 @@ private:
     std::string getContentType(const std::string& path);
     
     // JSON-RPC handlers
-    using JsonRpcHandler = std::function<json(const json& params)>;
+    using JsonRpcHandler = std::function<json(const json& params)>; 
     void registerJsonRpcMethod(const std::string& method, JsonRpcHandler handler);
     json handleJsonRpcRequest(const std::string& message);
     
@@ -58,6 +58,7 @@ private:
     crow::SimpleApp m_app;
     std::thread m_serverThread;
     std::atomic<bool> m_running{false};
+    std::atomic<bool> m_routesSetup{false};
     int m_port;
     std::string m_frontendPath;
     

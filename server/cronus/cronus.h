@@ -60,7 +60,7 @@ public:
     void setResponseCallback(ResponseCallback callback) { m_responseCallback=callback; }
 
     // API related methods
-    void startWebServer(int port = 8080);
+    void startWebServer(int port = 9000);
     void stopWebServer();
     bool isWebServerRunning() const;
     std::string getWebServerBaseUrl() const;

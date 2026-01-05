@@ -5,45 +5,42 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CronusClient = void 0;
 const eventemitter3_1 = __importDefault(require("eventemitter3"));
-const SSEManager_1 = require("./SSEManager");
 class CronusClient extends eventemitter3_1.default {
     constructor(config) {
         super();
+        this.ws = null;
         this.healthCheckTimer = null;
         this.connectionStatus = { connected: false };
+        this.requestId = 0;
+        this.pendingRequests = new Map();
+        this.reconnectTimer = null;
+        this.reconnectAttempts = 0;
         this.config = {
             baseUrl: config.baseUrl,
             reconnectInterval: config.reconnectInterval ?? 2000,
             maxReconnectAttempts: config.maxReconnectAttempts ?? 0,
             healthCheckInterval: config.healthCheckInterval ?? 30000,
         };
-        // Initialize SSE manager
-        this.sseManager = new SSEManager_1.SSEManager({
-            baseUrl: this.config.baseUrl,
-            reconnectInterval: this.config.reconnectInterval,
-            maxReconnectAttempts: this.config.maxReconnectAttempts,
-        });
-        this.setupSSEHandlers();
     }
     /**
-     * Start the client (connect SSE and start health checks)
+     * Start the client (connect WebSocket and start health checks)
      */
     start() {
-        this.sseManager.connect();
+        this.connectWebSocket();
         this.startHealthCheck();
     }
     /**
      * Stop the client
      */
     stop() {
-        this.sseManager.disconnect();
+        this.disconnectWebSocket();
         this.stopHealthCheck();
     }
     /**
      * Check if connected to the server
      */
     isConnected() {
-        return this.connectionStatus.connected;
+        return this.connectionStatus.connected && this.ws?.readyState === WebSocket.OPEN;
     }
     /**
      * Get current connection status
@@ -52,59 +49,194 @@ class CronusClient extends eventemitter3_1.default {
         return { ...this.connectionStatus };
     }
     /**
+     * Connect to WebSocket
+     */
+    connectWebSocket() {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            return;
+        }
+        // Convert HTTP(S) URL to WS(S) URL
+        const wsUrl = this.config.baseUrl.replace(/^http/, 'ws') + '/ws';
+        try {
+            this.ws = new WebSocket(wsUrl);
+            this.ws.onopen = () => {
+                this.reconnectAttempts = 0;
+                this.updateConnectionStatus(true);
+                this.emit('connected');
+                if (this.reconnectTimer) {
+                    clearTimeout(this.reconnectTimer);
+                    this.reconnectTimer = null;
+                }
+            };
+            this.ws.onclose = () => {
+                this.updateConnectionStatus(false);
+                this.emit('disconnected');
+                this.scheduleReconnect();
+            };
+            this.ws.onerror = (error) => {
+                this.emit('error', new Error('WebSocket error'));
+            };
+            this.ws.onmessage = (event) => {
+                this.handleMessage(event.data);
+            };
+        }
+        catch (error) {
+            this.emit('error', error);
+            this.scheduleReconnect();
+        }
+    }
+    /**
+     * Disconnect WebSocket
+     */
+    disconnectWebSocket() {
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
+        if (this.ws) {
+            this.ws.close();
+            this.ws = null;
+        }
+        // Reject all pending requests
+        for (const [id, { reject }] of this.pendingRequests) {
+            reject(new Error('Connection closed'));
+        }
+        this.pendingRequests.clear();
+    }
+    /**
+     * Schedule reconnection attempt
+     */
+    scheduleReconnect() {
+        if (this.reconnectTimer) {
+            return;
+        }
+        const maxAttempts = this.config.maxReconnectAttempts;
+        if (maxAttempts > 0 && this.reconnectAttempts >= maxAttempts) {
+            this.emit('reconnect-failed', { attempts: this.reconnectAttempts });
+            return;
+        }
+        this.reconnectAttempts++;
+        this.emit('reconnecting', { attempt: this.reconnectAttempts, maxAttempts });
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            this.connectWebSocket();
+        }, this.config.reconnectInterval);
+    }
+    /**
+     * Handle incoming WebSocket message
+     */
+    handleMessage(data) {
+        try {
+            const message = JSON.parse(data);
+            // Handle JSON-RPC response
+            if ('id' in message && message.id !== undefined) {
+                const pending = this.pendingRequests.get(message.id);
+                if (pending) {
+                    this.pendingRequests.delete(message.id);
+                    if (message.error) {
+                        pending.reject(new Error(message.error.message));
+                    }
+                    else {
+                        pending.resolve(message.result);
+                    }
+                }
+            }
+            // Handle JSON-RPC notification
+            else if ('method' in message) {
+                this.handleNotification(message);
+            }
+        }
+        catch (error) {
+            this.emit('error', error);
+        }
+    }
+    /**
+     * Handle JSON-RPC notification
+     */
+    handleNotification(notification) {
+        const { method, params } = notification;
+        switch (method) {
+            case 'message':
+                this.emit('message', params);
+                break;
+            case 'log':
+                this.emit('log', params);
+                break;
+            case 'directory_update':
+                this.emit('directory-update', params);
+                break;
+            case 'agent_status':
+                this.emit('agent-status', params);
+                break;
+            default:
+                this.emit('notification', { method, params });
+                break;
+        }
+    }
+    /**
+     * Send JSON-RPC request and wait for response
+     */
+    async sendRequest(method, params) {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            throw new Error('WebSocket not connected');
+        }
+        const id = ++this.requestId;
+        const request = {
+            jsonrpc: '2.0',
+            method,
+            params,
+            id,
+        };
+        return new Promise((resolve, reject) => {
+            this.pendingRequests.set(id, { resolve, reject });
+            try {
+                this.ws.send(JSON.stringify(request));
+            }
+            catch (error) {
+                this.pendingRequests.delete(id);
+                reject(error);
+            }
+            // Set timeout for request
+            setTimeout(() => {
+                if (this.pendingRequests.has(id)) {
+                    this.pendingRequests.delete(id);
+                    reject(new Error('Request timeout'));
+                }
+            }, 30000); // 30 second timeout
+        });
+    }
+    /**
      * Fetch the source map (file tree)
      */
     async fetchSourceMap() {
-        const response = await fetch(`${this.config.baseUrl}/api/sourcemap`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch source map: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data.fileTree || { root: { name: 'root', path: '/', type: 'directory', children: [] } };
+        const result = await this.sendRequest('getSourceMap');
+        return result.fileTree || { root: { name: 'root', path: '/', type: 'directory', children: [] } };
     }
     /**
      * Fetch file content
      */
     async fetchFileContent(filePath) {
-        const encodedPath = encodeURIComponent(filePath);
-        const response = await fetch(`${this.config.baseUrl}/api/file?path=${encodedPath}`);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch file: ${response.statusText}`);
-        }
-        return await response.json();
+        return await this.sendRequest('getFile', { path: filePath });
     }
     /**
      * Fetch log history
      */
     async fetchLogs(limit = 100, levelFilter) {
-        let url = `${this.config.baseUrl}/api/logs?limit=${limit}`;
+        const params = { limit };
         if (levelFilter) {
-            url += `&level=${levelFilter}`;
+            params.level = levelFilter;
         }
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch logs: ${response.statusText}`);
-        }
-        const data = await response.json();
-        return data.logs || [];
+        const result = await this.sendRequest('getLogs', params);
+        return result.logs || [];
     }
     /**
      * Send a message/command to the server
      */
     async sendMessage(message, sessionId) {
-        const response = await fetch(`${this.config.baseUrl}/api/input`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                input: message,
-                sessionId: sessionId || 'default',
-            }),
+        await this.sendRequest('input', {
+            input: message,
+            sessionId: sessionId || 'default',
         });
-        if (!response.ok) {
-            throw new Error(`Failed to send message: ${response.statusText}`);
-        }
     }
     /**
      * Check server health
@@ -118,8 +250,6 @@ class CronusClient extends eventemitter3_1.default {
                 return { status: 'error', message: response.statusText };
             }
             const data = await response.json();
-            // Update connection status
-            this.updateConnectionStatus(true, latency);
             return {
                 status: data.status || 'ok',
                 message: data.message,
@@ -127,53 +257,11 @@ class CronusClient extends eventemitter3_1.default {
             };
         }
         catch (error) {
-            this.updateConnectionStatus(false);
             return {
                 status: 'error',
                 message: error instanceof Error ? error.message : 'Unknown error',
             };
         }
-    }
-    /**
-     * Setup SSE event handlers
-     */
-    setupSSEHandlers() {
-        // Connection events
-        this.sseManager.on('connected', () => {
-            this.updateConnectionStatus(true);
-            this.emit('connected');
-        });
-        this.sseManager.on('disconnected', () => {
-            this.updateConnectionStatus(false);
-            this.emit('disconnected');
-        });
-        this.sseManager.on('reconnecting', (data) => {
-            this.emit('reconnecting', data);
-        });
-        this.sseManager.on('status', (status) => {
-            this.emit('connection-status', status);
-        });
-        // Data events
-        this.sseManager.on('message', (data) => {
-            this.emit('message', data);
-        });
-        this.sseManager.on('directory_update', (data) => {
-            this.emit('directory-update', data);
-        });
-        this.sseManager.on('log', (data) => {
-            this.emit('log', data);
-        });
-        this.sseManager.on('agent_status', (data) => {
-            this.emit('agent-status', data);
-        });
-        // Forward all events
-        this.sseManager.on('event', (event) => {
-            this.emit('sse-event', event);
-        });
-        // Error events
-        this.sseManager.on('error', (error) => {
-            this.emit('error', error);
-        });
     }
     /**
      * Update connection status

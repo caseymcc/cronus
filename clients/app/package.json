@@ -1,15 +1,17 @@
 {
-  "name": "@cronus/debug",
+  "name": "@cronus/app",
   "version": "1.0.0",
-  "description": "Standalone debug client for Cronus",
+  "description": "Standalone Electron wrapper for Cronus web client",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cd ../web && npm run build && cd ../app && npm run copy-web-build",
+    "copy-web-build": "rm -rf renderer && mkdir -p renderer && cp -r ../web/build/* renderer/",
+    "build:electron-only": "tsc",
     "start": "npm run build && electron . --no-sandbox",
     "dev": "npm run build && electron . --dev --no-sandbox",
     "package": "npm run build && electron-builder"
   },
-  "keywords": ["cronus", "debug", "electron"],
+  "keywords": ["cronus", "electron", "standalone"],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -23,8 +25,8 @@
     "@cronus/shared-ui": "file:../shared-ui"
   },
   "build": {
-    "appId": "com.cronus.debug",
-    "productName": "Cronus Debug",
+    "appId": "com.cronus.app",
+    "productName": "Cronus",
     "directories": {
       "output": "dist-electron"
     },

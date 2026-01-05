@@ -35,10 +35,10 @@ except ImportError as e:
     
     # Check for missing dependencies
     print("\nThis is likely due to missing Python dependencies.")
-    print("Required packages: requests, sseclient-py")
+    print("Required packages: requests, websocket-client")
     print("\nTo fix:")
     print("  1. Rebuild Docker image: ./run_local.sh -r")
-    print("  2. Or install manually: pip3 install requests sseclient-py")
+    print("  2. Or install manually: pip3 install requests websocket-client")
     sys.exit(1)
 
 
