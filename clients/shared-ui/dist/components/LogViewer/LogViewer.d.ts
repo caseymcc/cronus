@@ -1,6 +1,5 @@
 import React from 'react';
 import { CronusClient } from '@cronus/shared';
-import './LogViewer.css';
 export interface LogViewerProps {
     client: CronusClient | null;
     maxLogs?: number;

@@ -35,7 +35,8 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LogViewer = void 0;
 const react_1 = __importStar(require("react"));
-require("./LogViewer.css");
+const material_1 = require("@mui/material");
+const icons_material_1 = require("@mui/icons-material");
 const LogViewer = ({ client, maxLogs = 500, autoScroll = true, showTimestamp = true, levelFilter = [], className = '', }) => {
     const [logs, setLogs] = (0, react_1.useState)([]);
     const [filter, setFilter] = (0, react_1.useState)('');
@@ -92,17 +93,10 @@ const LogViewer = ({ client, maxLogs = 500, autoScroll = true, showTimestamp = t
     const handleClearLogs = () => {
         setLogs([]);
     };
-    const handleToggleLevel = (level) => {
-        setSelectedLevels((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(level)) {
-                newSet.delete(level);
-            }
-            else {
-                newSet.add(level);
-            }
-            return newSet;
-        });
+    const handleToggleLevels = (event, newLevels) => {
+        if (newLevels.length > 0) {
+            setSelectedLevels(new Set(newLevels));
+        }
     };
     const filteredLogs = logs.filter((log) => {
         // Filter by level
@@ -115,8 +109,33 @@ const LogViewer = ({ client, maxLogs = 500, autoScroll = true, showTimestamp = t
         }
         return true;
     });
-    const getLevelClass = (level) => {
-        return `log-level-${level}`;
+    const getLevelColor = (level) => {
+        switch (level) {
+            case 'debug':
+                return 'default';
+            case 'info':
+                return 'info';
+            case 'warning':
+                return 'warning';
+            case 'error':
+                return 'error';
+            default:
+                return 'default';
+        }
+    };
+    const getLevelIcon = (level) => {
+        switch (level) {
+            case 'debug':
+                return react_1.default.createElement(icons_material_1.BugReport, { fontSize: "small" });
+            case 'info':
+                return react_1.default.createElement(icons_material_1.Info, { fontSize: "small" });
+            case 'warning':
+                return react_1.default.createElement(icons_material_1.Warning, { fontSize: "small" });
+            case 'error':
+                return react_1.default.createElement(icons_material_1.Error, { fontSize: "small" });
+            default:
+                return react_1.default.createElement(icons_material_1.Info, { fontSize: "small" });
+        }
     };
     const formatTimestamp = (timestamp) => {
         if (typeof timestamp === 'string') {
@@ -125,28 +144,69 @@ const LogViewer = ({ client, maxLogs = 500, autoScroll = true, showTimestamp = t
         const date = new Date(timestamp);
         return date.toLocaleTimeString('en-US', { hour12: false });
     };
-    return (react_1.default.createElement("div", { className: `log-viewer ${className}` },
-        react_1.default.createElement("div", { className: "log-viewer-header" },
-            react_1.default.createElement("div", { className: "log-viewer-title" },
+    return (react_1.default.createElement(material_1.Paper, { className: className, sx: {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            overflow: 'hidden',
+        } },
+        react_1.default.createElement(material_1.Box, { sx: {
+                p: 1.5,
+                borderBottom: 1,
+                borderColor: 'divider',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 2,
+            } },
+            react_1.default.createElement(material_1.Typography, { variant: "h6", sx: { fontSize: '1rem' } },
                 "Logs (",
                 filteredLogs.length,
                 ")"),
-            react_1.default.createElement("div", { className: "log-viewer-controls" },
-                react_1.default.createElement("input", { type: "text", className: "log-search", placeholder: "Filter logs...", value: filter, onChange: (e) => setFilter(e.target.value) }),
-                react_1.default.createElement("div", { className: "log-level-filters" }, ['debug', 'info', 'warning', 'error'].map((level) => (react_1.default.createElement("button", { key: level, className: `log-level-btn log-level-${level} ${selectedLevels.has(level) ? 'active' : ''}`, onClick: () => handleToggleLevel(level), title: `Toggle ${level} logs` }, level.charAt(0).toUpperCase())))),
-                react_1.default.createElement("button", { className: "log-clear-btn", onClick: handleClearLogs, title: "Clear logs" }, "Clear"))),
-        react_1.default.createElement("div", { className: "log-viewer-content", ref: logContainerRef },
-            filteredLogs.length === 0 ? (react_1.default.createElement("div", { className: "log-empty" }, "No logs to display")) : (filteredLogs.map((log, index) => (react_1.default.createElement("div", { key: index, className: `log-entry ${getLevelClass(log.level)}` },
-                showTimestamp && (react_1.default.createElement("span", { className: "log-timestamp" }, formatTimestamp(log.timestamp))),
-                react_1.default.createElement("span", { className: "log-level" },
-                    "[",
-                    log.level.toUpperCase(),
-                    "]"),
-                react_1.default.createElement("span", { className: "log-message" }, log.message),
-                log.source && react_1.default.createElement("span", { className: "log-source" },
-                    "(",
-                    log.source,
-                    ")"))))),
+            react_1.default.createElement(material_1.Box, { sx: { display: 'flex', alignItems: 'center', gap: 1, flex: 1 } },
+                react_1.default.createElement(material_1.TextField, { size: "small", placeholder: "Filter logs...", value: filter, onChange: (e) => setFilter(e.target.value), sx: { flex: 1, maxWidth: 300 } }),
+                react_1.default.createElement(material_1.ToggleButtonGroup, { value: Array.from(selectedLevels), onChange: handleToggleLevels, size: "small", "aria-label": "log level filter" },
+                    react_1.default.createElement(material_1.ToggleButton, { value: "debug", "aria-label": "debug" },
+                        react_1.default.createElement(icons_material_1.BugReport, { fontSize: "small" })),
+                    react_1.default.createElement(material_1.ToggleButton, { value: "info", "aria-label": "info" },
+                        react_1.default.createElement(icons_material_1.Info, { fontSize: "small" })),
+                    react_1.default.createElement(material_1.ToggleButton, { value: "warning", "aria-label": "warning" },
+                        react_1.default.createElement(icons_material_1.Warning, { fontSize: "small" })),
+                    react_1.default.createElement(material_1.ToggleButton, { value: "error", "aria-label": "error" },
+                        react_1.default.createElement(icons_material_1.Error, { fontSize: "small" }))),
+                react_1.default.createElement(material_1.Button, { variant: "outlined", size: "small", startIcon: react_1.default.createElement(icons_material_1.Delete, null), onClick: handleClearLogs }, "Clear"))),
+        react_1.default.createElement(material_1.Box, { ref: logContainerRef, sx: {
+                flex: 1,
+                overflow: 'auto',
+                p: 1,
+                fontFamily: 'monospace',
+                fontSize: '0.85rem',
+            } },
+            filteredLogs.length === 0 ? (react_1.default.createElement(material_1.Typography, { variant: "body2", color: "text.secondary", sx: { textAlign: 'center', mt: 4 } }, "No logs to display")) : (filteredLogs.map((log, index) => (react_1.default.createElement(material_1.Box, { key: index, sx: {
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 1,
+                    mb: 0.5,
+                    pb: 0.5,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                } },
+                showTimestamp && (react_1.default.createElement(material_1.Typography, { component: "span", sx: {
+                        color: 'text.secondary',
+                        fontSize: '0.75rem',
+                        minWidth: '80px',
+                    } }, formatTimestamp(log.timestamp))),
+                react_1.default.createElement(material_1.Chip, { icon: getLevelIcon(log.level), label: log.level.toUpperCase(), color: getLevelColor(log.level), size: "small", sx: { minWidth: '90px', fontSize: '0.7rem' } }),
+                react_1.default.createElement(material_1.Typography, { component: "span", sx: {
+                        flex: 1,
+                        wordBreak: 'break-word',
+                        fontSize: '0.85rem',
+                    } },
+                    log.message,
+                    log.source && (react_1.default.createElement(material_1.Typography, { component: "span", color: "text.secondary", sx: { ml: 1, fontSize: '0.75rem' } },
+                        "(",
+                        log.source,
+                        ")"))))))),
             react_1.default.createElement("div", { ref: logsEndRef }))));
 };
 exports.LogViewer = LogViewer;

@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ThemeProvider, CssBaseline, Box, AppBar, Toolbar, Typography, IconButton, Chip } from '@mui/material';
-import { Menu as MenuIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import { Layout, Model, TabNode } from 'flexlayout-react';
 import 'flexlayout-react/style/dark.css';
-import { darkTheme } from '@cronus/shared-ui';
+import './App.css';
 import DirectoryTree from './components/DirectoryTree';
 import Chat from './components/Chat';
 import InputArea from './components/InputArea';
@@ -542,107 +540,78 @@ function App() {
   }, [fetchSourceMapData, pollMessages, messages]);
   
   return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          overflow: 'hidden',
-        }}
-      >
-        <AppBar position="static" elevation={1}>
-          <Toolbar variant="dense">
-            <Typography variant="h6" component="h1" sx={{ flexGrow: 1 }}>
-              Cronus {isElectron && <Typography component="span" variant="caption" sx={{ opacity: 0.7, ml: 1 }}>(Standalone)</Typography>}
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <Chip
-                label={isElectron ? (connected ? 'Server: Connected':'Server: Disconnected'):(connected ? 'Events: Connected':isListening ? 'Waiting for server...':'Events: Disconnected')}
-                color={connected ? 'success':'error'}
-                size="small"
-                variant="outlined"
-              />
-              <IconButton
-                color="inherit"
-                onClick={() => setShowLogs(!showLogs)}
-                size="small"
-                title={showLogs ? 'Hide Logs':'Show Logs'}
-              >
-                {showLogs ? <VisibilityIcon />:<VisibilityOffIcon />}
-              </IconButton>
-              <IconButton
-                color="inherit"
-                onClick={handleNewChat}
-                size="small"
-                title="New Chat"
-              >
-                <MenuIcon />
-              </IconButton>
-              <IconButton
-                color="inherit"
-                onClick={() =>
-                {
-                  const model=layoutRef.current.getModel();
-                  const explorerNode=model.getNodeById('explorer');
-                  const borderNode=model.getBorderNode('left');
-                  
-                  if(explorerNode && borderNode)
-                  {
-                    if(showDirTree)
-                    {
-                      model.hideBorder('left');
-                    }
-                    else
-                    {
-                      model.showBorder('left');
-                    }
-                    setShowDirTree(!showDirTree);
-                  }
-                }}
-                size="small"
-                title={showDirTree ? 'Hide Explorer':'Show Explorer'}
-              >
-                <MenuIcon />
-              </IconButton>
-            </Box>
-          </Toolbar>
-        </AppBar>
-        
-        <Box sx={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-          <Layout
-            model={layoutModel}
-            factory={factory}
-            onModelChange={handleLayoutChange}
-            ref={layoutRef}
-          />
-        </Box>
-        
-        <Box
-          component="footer"
-          sx={{
-            borderTop: 1,
-            borderColor: 'divider',
-            backgroundColor: 'background.paper',
-            px: 2,
-            py: 0.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Chip
-              label={`${isElectron ? 'Server':'Events'}: ${connected ? 'Connected':'Disconnected'}`}
-              color={connected ? 'success':'error'}
-              size="small"
-              variant="outlined"
-            />
-            <Typography variant="caption" color="text.secondary">
-              {isElectron ? 'Mode: Standalone':`API URL: ${apiBaseUrl}`}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-    </ThemeProvider>
+    <div className="app">
+      <header className="app-header">
+        <h1>Cronus {isElectron && <span style={{fontSize: '0.6em', opacity: 0.7}}>(Standalone)</span>}</h1>
+        <div className="header-controls">
+          <span className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
+            {isElectron ? (connected ? 'Server: Connected' : 'Server: Disconnected') : (connected ? 'Events: Connected' : isListening ? 'Waiting for server...' : 'Events: Disconnected')}
+          </span>
+          <button
+            className="control-button"
+            onClick={() => setShowLogs(!showLogs)}
+          >
+            {showLogs ? 'Logs: ON' : 'Logs: OFF'}
+          </button>
+          <button
+            className="control-button"
+            onClick={handleNewChat}
+          >
+            New Chat
+          </button>
+          <button
+            className="control-button"
+            onClick={() => {
+              const model = layoutRef.current.getModel();
+              const explorerNode = model.getNodeById('explorer');
+              const borderNode = model.getBorderNode('left');
+              
+              if (explorerNode && borderNode) {
+                if (showDirTree) {
+                  model.hideBorder('left');
+                } else {
+                  model.showBorder('left');
+                }
+                setShowDirTree(!showDirTree);
+              }
+            }}
+          >
+            {showDirTree ? 'Hide Explorer' : 'Show Explorer'}
+          </button>
+        </div>
+      </header>
+      
+      <div className="app-content">
+        <Layout
+          model={layoutModel}
+          factory={factory}
+          onModelChange={handleLayoutChange}
+          ref={layoutRef}
+        />
+      </div>
+      
+      <footer className="app-footer">
+        <div className="status-bar">
+          <div className="status-items">
+            <div className="status-item" title={connected ? "Connected to server events" : "Not connected to server events"}>
+              <div className={`status-indicator ${connected ? 'connected' : 'disconnected'}`}>
+                <svg viewBox="0 0 24 24" width="16" height="16">
+                  {connected ? (
+                    <path fill="currentColor" d="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z" />
+                  ) : (
+                    <path fill="currentColor" d="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" />
+                  )}
+                </svg>
+              </div>
+              <span className="status-text">{isElectron ? 'Server' : 'Events'}: {connected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+            <div className="status-item">
+              <span className="status-text">{isElectron ? 'Mode: Standalone' : `API URL: ${apiBaseUrl}`}</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
 

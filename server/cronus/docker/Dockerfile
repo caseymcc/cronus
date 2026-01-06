@@ -124,6 +124,8 @@ exec gosu $HOST_UID:$HOST_GID "$@"\n\
 # Install gosu for user switching
 RUN apt-get update && apt-get install -y gosu && rm -rf /var/lib/apt/lists/*
 
+ENV LD_LIBRARY_PATH=/app/build/linux_x64_debug:/app/build/linux_x64_debug/server/loreforge:/app/build/linux_x64_debug/server/arbiterAI
+
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Build command (to be run when container starts)

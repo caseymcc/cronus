@@ -8,4 +8,5 @@ export { ConnectionStatus } from './components/ConnectionStatus';
 export type { ConnectionStatusProps } from './components/ConnectionStatus';
 export { LogViewer } from './components/LogViewer';
 export type { LogViewerProps } from './components/LogViewer';
+export { darkTheme, getTheme } from './theme';
 //# sourceMappingURL=index.d.ts.map

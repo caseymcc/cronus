@@ -1,9 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {
+    Box,
+    Paper,
+    Typography,
+    TextField,
+    Button,
+    ToggleButton,
+    ToggleButtonGroup,
+    Chip,
+} from '@mui/material';
+import {
+    Delete as DeleteIcon,
+    BugReport as DebugIcon,
+    Info as InfoIcon,
+    Warning as WarningIcon,
+    Error as ErrorIcon,
+} from '@mui/icons-material';
 import { CronusClient, LogEntry } from '@cronus/shared';
-import './LogViewer.css';
 
-export interface LogViewerProps {
-    client: CronusClient | null;
+export interface LogViewerProps
+{
+    client: CronusClient|null;
     maxLogs?: number;
     autoScroll?: boolean;
     showTimestamp?: boolean;
@@ -11,31 +28,37 @@ export interface LogViewerProps {
     className?: string;
 }
 
-export const LogViewer: React.FC<LogViewerProps> = ({
+export const LogViewer: React.FC<LogViewerProps>=({
     client,
-    maxLogs = 500,
-    autoScroll = true,
-    showTimestamp = true,
-    levelFilter = [],
-    className = '',
-}) => {
-    const [logs, setLogs] = useState<LogEntry[]>([]);
-    const [filter, setFilter] = useState<string>('');
-    const [selectedLevels, setSelectedLevels] = useState<Set<string>>(
-        new Set(levelFilter.length > 0 ? levelFilter : ['debug', 'info', 'warning', 'error'])
+    maxLogs=500,
+    autoScroll=true,
+    showTimestamp=true,
+    levelFilter=[],
+    className='',
+}) =>
+{
+    const [logs, setLogs]=useState<LogEntry[]>([]);
+    const [filter, setFilter]=useState<string>('');
+    const [selectedLevels, setSelectedLevels]=useState<Set<string>>(
+        new Set(levelFilter.length>0 ? levelFilter:['debug', 'info', 'warning', 'error'])
     );
-    const logsEndRef = useRef<HTMLDivElement>(null);
-    const logContainerRef = useRef<HTMLDivElement>(null);
+    const logsEndRef=useRef<HTMLDivElement>(null);
+    const logContainerRef=useRef<HTMLDivElement>(null);
 
     // Load initial logs
-    useEffect(() => {
-        if (!client) return;
+    useEffect(() =>
+    {
+        if(!client) return;
 
-        const loadInitialLogs = async () => {
-            try {
-                const historicalLogs = await client.fetchLogs(100);
+        const loadInitialLogs=async() =>
+        {
+            try
+            {
+                const historicalLogs=await client.fetchLogs(100);
                 setLogs(historicalLogs);
-            } catch (err) {
+            }
+            catch(err)
+            {
                 console.error('Failed to load initial logs:', err);
             }
         };
@@ -44,23 +67,27 @@ export const LogViewer: React.FC<LogViewerProps> = ({
     }, [client]);
 
     // Listen for new logs
-    useEffect(() => {
-        if (!client) return;
+    useEffect(() =>
+    {
+        if(!client) return;
 
-        const handleLog = (data: any) => {
-            const logEntry: LogEntry = {
-                timestamp: data.timestamp || Date.now(),
-                level: data.level || 'info',
-                message: data.message || '',
+        const handleLog=(data: any) =>
+        {
+            const logEntry: LogEntry={
+                timestamp: data.timestamp||Date.now(),
+                level: data.level||'info',
+                message: data.message||'',
                 source: data.source,
                 metadata: data.metadata,
             };
 
-            setLogs((prevLogs) => {
-                const newLogs = [...prevLogs, logEntry];
+            setLogs((prevLogs) =>
+            {
+                const newLogs=[...prevLogs, logEntry];
                 // Trim to max logs
-                if (newLogs.length > maxLogs) {
-                    return newLogs.slice(newLogs.length - maxLogs);
+                if(newLogs.length>maxLogs)
+                {
+                    return newLogs.slice(newLogs.length-maxLogs);
                 }
                 return newLogs;
             });
@@ -68,109 +95,232 @@ export const LogViewer: React.FC<LogViewerProps> = ({
 
         client.on('log', handleLog);
 
-        return () => {
+        return () =>
+        {
             client.off('log', handleLog);
         };
     }, [client, maxLogs]);
 
     // Auto-scroll to bottom
-    useEffect(() => {
-        if (autoScroll && logsEndRef.current) {
+    useEffect(() =>
+    {
+        if(autoScroll && logsEndRef.current)
+        {
             logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [logs, autoScroll]);
 
-    const handleClearLogs = () => {
+    const handleClearLogs=() =>
+    {
         setLogs([]);
     };
 
-    const handleToggleLevel = (level: string) => {
-        setSelectedLevels((prev) => {
-            const newSet = new Set(prev);
-            if (newSet.has(level)) {
-                newSet.delete(level);
-            } else {
-                newSet.add(level);
-            }
-            return newSet;
-        });
+    const handleToggleLevels=(event: React.MouseEvent<HTMLElement>, newLevels: string[]) =>
+    {
+        if(newLevels.length>0)
+        {
+            setSelectedLevels(new Set(newLevels));
+        }
     };
 
-    const filteredLogs = logs.filter((log) => {
+    const filteredLogs=logs.filter((log) =>
+    {
         // Filter by level
-        if (!selectedLevels.has(log.level)) {
+        if(!selectedLevels.has(log.level))
+        {
             return false;
         }
 
         // Filter by search text
-        if (filter && !log.message.toLowerCase().includes(filter.toLowerCase())) {
+        if(filter && !log.message.toLowerCase().includes(filter.toLowerCase()))
+        {
             return false;
         }
 
         return true;
     });
 
-    const getLevelClass = (level: string): string => {
-        return `log-level-${level}`;
+    const getLevelColor=(level: string): 'default'|'info'|'warning'|'error' =>
+    {
+        switch(level)
+        {
+            case 'debug':
+                return 'default';
+            case 'info':
+                return 'info';
+            case 'warning':
+                return 'warning';
+            case 'error':
+                return 'error';
+            default:
+                return 'default';
+        }
     };
 
-    const formatTimestamp = (timestamp: number | string): string => {
-        if (typeof timestamp === 'string') {
+    const getLevelIcon=(level: string) =>
+    {
+        switch(level)
+        {
+            case 'debug':
+                return <DebugIcon fontSize="small" />;
+            case 'info':
+                return <InfoIcon fontSize="small" />;
+            case 'warning':
+                return <WarningIcon fontSize="small" />;
+            case 'error':
+                return <ErrorIcon fontSize="small" />;
+            default:
+                return <InfoIcon fontSize="small" />;
+        }
+    };
+
+    const formatTimestamp=(timestamp: number|string): string =>
+    {
+        if(typeof timestamp==='string')
+        {
             return timestamp;
         }
-        const date = new Date(timestamp);
+        const date=new Date(timestamp);
         return date.toLocaleTimeString('en-US', { hour12: false });
     };
 
     return (
-        <div className={`log-viewer ${className}`}>
-            <div className="log-viewer-header">
-                <div className="log-viewer-title">Logs ({filteredLogs.length})</div>
-                <div className="log-viewer-controls">
-                    <input
-                        type="text"
-                        className="log-search"
+        <Paper
+            className={className}
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                overflow: 'hidden',
+            }}
+        >
+            <Box
+                sx={{
+                    p: 1.5,
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2,
+                }}
+            >
+                <Typography variant="h6" sx={{ fontSize: '1rem' }}>
+                    Logs ({filteredLogs.length})
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+                    <TextField
+                        size="small"
                         placeholder="Filter logs..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
+                        sx={{ flex: 1, maxWidth: 300 }}
                     />
-                    <div className="log-level-filters">
-                        {['debug', 'info', 'warning', 'error'].map((level) => (
-                            <button
-                                key={level}
-                                className={`log-level-btn log-level-${level} ${
-                                    selectedLevels.has(level) ? 'active' : ''
-                                }`}
-                                onClick={() => handleToggleLevel(level)}
-                                title={`Toggle ${level} logs`}
-                            >
-                                {level.charAt(0).toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
-                    <button className="log-clear-btn" onClick={handleClearLogs} title="Clear logs">
+                    <ToggleButtonGroup
+                        value={Array.from(selectedLevels)}
+                        onChange={handleToggleLevels}
+                        size="small"
+                        aria-label="log level filter"
+                    >
+                        <ToggleButton value="debug" aria-label="debug">
+                            <DebugIcon fontSize="small" />
+                        </ToggleButton>
+                        <ToggleButton value="info" aria-label="info">
+                            <InfoIcon fontSize="small" />
+                        </ToggleButton>
+                        <ToggleButton value="warning" aria-label="warning">
+                            <WarningIcon fontSize="small" />
+                        </ToggleButton>
+                        <ToggleButton value="error" aria-label="error">
+                            <ErrorIcon fontSize="small" />
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={handleClearLogs}
+                    >
                         Clear
-                    </button>
-                </div>
-            </div>
+                    </Button>
+                </Box>
+            </Box>
 
-            <div className="log-viewer-content" ref={logContainerRef}>
-                {filteredLogs.length === 0 ? (
-                    <div className="log-empty">No logs to display</div>
-                ) : (
+            <Box
+                ref={logContainerRef}
+                sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    p: 1,
+                    fontFamily: 'monospace',
+                    fontSize: '0.85rem',
+                }}
+            >
+                {filteredLogs.length===0 ? (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ textAlign: 'center', mt: 4 }}
+                    >
+                        No logs to display
+                    </Typography>
+                ):(
                     filteredLogs.map((log, index) => (
-                        <div key={index} className={`log-entry ${getLevelClass(log.level)}`}>
+                        <Box
+                            key={index}
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 1,
+                                mb: 0.5,
+                                pb: 0.5,
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                            }}
+                        >
                             {showTimestamp && (
-                                <span className="log-timestamp">{formatTimestamp(log.timestamp)}</span>
+                                <Typography
+                                    component="span"
+                                    sx={{
+                                        color: 'text.secondary',
+                                        fontSize: '0.75rem',
+                                        minWidth: '80px',
+                                    }}
+                                >
+                                    {formatTimestamp(log.timestamp)}
+                                </Typography>
                             )}
-                            <span className="log-level">[{log.level.toUpperCase()}]</span>
-                            <span className="log-message">{log.message}</span>
-                            {log.source && <span className="log-source">({log.source})</span>}
-                        </div>
+                            <Chip
+                                icon={getLevelIcon(log.level)}
+                                label={log.level.toUpperCase()}
+                                color={getLevelColor(log.level)}
+                                size="small"
+                                sx={{ minWidth: '90px', fontSize: '0.7rem' }}
+                            />
+                            <Typography
+                                component="span"
+                                sx={{
+                                    flex: 1,
+                                    wordBreak: 'break-word',
+                                    fontSize: '0.85rem',
+                                }}
+                            >
+                                {log.message}
+                                {log.source && (
+                                    <Typography
+                                        component="span"
+                                        color="text.secondary"
+                                        sx={{ ml: 1, fontSize: '0.75rem' }}
+                                    >
+                                        ({log.source})
+                                    </Typography>
+                                )}
+                            </Typography>
+                        </Box>
                     ))
                 )}
                 <div ref={logsEndRef} />
-            </div>
-        </div>
+            </Box>
+        </Paper>
     );
 };

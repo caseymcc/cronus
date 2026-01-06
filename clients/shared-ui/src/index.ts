@@ -13,3 +13,6 @@ export type { ConnectionStatusProps } from './components/ConnectionStatus';
 
 export { LogViewer } from './components/LogViewer';
 export type { LogViewerProps } from './components/LogViewer';
+
+// Theme exports
+export { darkTheme, getTheme } from './theme';

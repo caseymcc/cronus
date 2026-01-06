@@ -1,56 +1,74 @@
 import React from 'react';
+import { Box, Chip, Typography } from '@mui/material';
+import { Circle as CircleIcon } from '@mui/icons-material';
 import { ConnectionStatus } from '@cronus/shared';
-import './ConnectionStatus.css';
 
-export interface ConnectionStatusProps {
+export interface ConnectionStatusProps
+{
     status: ConnectionStatus;
     reconnecting?: boolean;
     className?: string;
 }
 
-export const ConnectionStatusComponent: React.FC<ConnectionStatusProps> = ({
+export const ConnectionStatusComponent: React.FC<ConnectionStatusProps>=({
     status,
-    reconnecting = false,
-    className = '',
-}) => {
-    const getStatusText = () => {
-        if (reconnecting) {
+    reconnecting=false,
+    className='',
+}) =>
+{
+    const getStatusText=() =>
+    {
+        if(reconnecting)
+        {
             return 'Reconnecting...';
         }
-        return status.connected ? 'Connected' : 'Disconnected';
+        return status.connected ? 'Connected':'Disconnected';
     };
 
-    const getStatusClass = () => {
-        if (reconnecting) {
-            return 'status-reconnecting';
+    const getStatusColor=(): 'success'|'error'|'warning' =>
+    {
+        if(reconnecting)
+        {
+            return 'warning';
         }
-        return status.connected ? 'status-connected' : 'status-disconnected';
+        return status.connected ? 'success':'error';
     };
 
-    const formatLatency = () => {
-        if (!status.latency) {
+    const formatLatency=() =>
+    {
+        if(!status.latency)
+        {
             return null;
         }
         return `${status.latency}ms`;
     };
 
     return (
-        <div className={`connection-status ${getStatusClass()} ${className}`}>
-            <div className="status-indicator">
-                <span className="status-dot"></span>
-                <span className="status-text">{getStatusText()}</span>
-            </div>
+        <Box
+            className={className}
+            sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+            }}
+        >
+            <Chip
+                icon={<CircleIcon sx={{ fontSize: 12 }} />}
+                label={getStatusText()}
+                color={getStatusColor()}
+                size="small"
+                variant="outlined"
+            />
             {status.latency && (
-                <div className="status-latency">
-                    <span className="latency-label">Latency:</span>
-                    <span className="latency-value">{formatLatency()}</span>
-                </div>
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                    Latency: {formatLatency()}
+                </Typography>
             )}
             {reconnecting && status.reconnectAttempts && (
-                <div className="status-attempts">
+                <Typography variant="body2" color="warning.main" sx={{ fontSize: '0.75rem' }}>
                     Attempt {status.reconnectAttempts}
-                </div>
+                </Typography>
             )}
-        </div>
+        </Box>
     );
 };

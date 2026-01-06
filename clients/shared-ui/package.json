@@ -17,7 +17,11 @@
     "react-dom": "^18.0.0"
   },
   "dependencies": {
-    "@cronus/shared": "file:../shared"
+    "@cronus/shared": "file:../shared",
+    "@mui/material": "^5.15.0",
+    "@mui/icons-material": "^5.15.0",
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

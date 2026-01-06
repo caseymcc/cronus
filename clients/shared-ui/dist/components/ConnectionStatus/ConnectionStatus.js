@@ -5,7 +5,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ConnectionStatusComponent = void 0;
 const react_1 = __importDefault(require("react"));
-require("./ConnectionStatus.css");
+const material_1 = require("@mui/material");
+const icons_material_1 = require("@mui/icons-material");
 const ConnectionStatusComponent = ({ status, reconnecting = false, className = '', }) => {
     const getStatusText = () => {
         if (reconnecting) {
@@ -13,11 +14,11 @@ const ConnectionStatusComponent = ({ status, reconnecting = false, className = '
         }
         return status.connected ? 'Connected' : 'Disconnected';
     };
-    const getStatusClass = () => {
+    const getStatusColor = () => {
         if (reconnecting) {
-            return 'status-reconnecting';
+            return 'warning';
         }
-        return status.connected ? 'status-connected' : 'status-disconnected';
+        return status.connected ? 'success' : 'error';
     };
     const formatLatency = () => {
         if (!status.latency) {
@@ -25,14 +26,16 @@ const ConnectionStatusComponent = ({ status, reconnecting = false, className = '
         }
         return `${status.latency}ms`;
     };
-    return (react_1.default.createElement("div", { className: `connection-status ${getStatusClass()} ${className}` },
-        react_1.default.createElement("div", { className: "status-indicator" },
-            react_1.default.createElement("span", { className: "status-dot" }),
-            react_1.default.createElement("span", { className: "status-text" }, getStatusText())),
-        status.latency && (react_1.default.createElement("div", { className: "status-latency" },
-            react_1.default.createElement("span", { className: "latency-label" }, "Latency:"),
-            react_1.default.createElement("span", { className: "latency-value" }, formatLatency()))),
-        reconnecting && status.reconnectAttempts && (react_1.default.createElement("div", { className: "status-attempts" },
+    return (react_1.default.createElement(material_1.Box, { className: className, sx: {
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+        } },
+        react_1.default.createElement(material_1.Chip, { icon: react_1.default.createElement(icons_material_1.Circle, { sx: { fontSize: 12 } }), label: getStatusText(), color: getStatusColor(), size: "small", variant: "outlined" }),
+        status.latency && (react_1.default.createElement(material_1.Typography, { variant: "body2", color: "text.secondary", sx: { fontSize: '0.75rem' } },
+            "Latency: ",
+            formatLatency())),
+        reconnecting && status.reconnectAttempts && (react_1.default.createElement(material_1.Typography, { variant: "body2", color: "warning.main", sx: { fontSize: '0.75rem' } },
             "Attempt ",
             status.reconnectAttempts))));
 };
